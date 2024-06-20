@@ -31,10 +31,14 @@ app.use(session({
         sameSite: 'lax'
     }
 }));
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
 app.post('/count', async (req, res) => {
     for (let i = 0; i < 1000; i++){
         console.log(i);
+        await sleep(1000);
     }
     res.status(200).send('Count completed');
 });
