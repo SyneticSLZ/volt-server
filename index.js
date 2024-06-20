@@ -16,7 +16,11 @@ const REDIRECT_URI = process.env.REDIRECT_URI;
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+    origin: 'http://127.0.0.1:5500', // Frontend server origin
+    credentials: true // Allow credentials to be sent
+}));
+
 app.use(session({ secret: 'your-session-secret', resave: false, saveUninitialized: true,     cookie: {
     secure: false, // Set to true if using HTTPS
     httpOnly: true
