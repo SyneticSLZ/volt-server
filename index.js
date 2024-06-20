@@ -84,7 +84,7 @@ app.post('/send-email-smtp', async (req, res) => {
     });
 
     let mailOptions = {
-        from: '"Your Name" <voltmailerhelp@gmail.com>',
+        from: 'Voltmailer <voltmailerhelp@gmail.com>',
         to,
         subject,
         text: body
