@@ -6,6 +6,7 @@ const { google } = require('googleapis');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 dotenv.config();
@@ -32,9 +33,32 @@ app.use(session({
         sameSite: 'lax'
     }
 }));
+
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+
+  function generateJWT(userEmail, tokens) {
+    const payload = {
+        email: userEmail,
+        tokens: tokens
+    };
+    
+    // Use a secret key from your environment variables
+    const secret = process.env.JWT_SECRET || 'your-jwt-secret';
+    
+    return jwt.sign(payload, secret, { expiresIn: '1h' });
+}
+
+function verifyJWT(token) {
+    const secret = process.env.JWT_SECRET || 'your-jwt-secret';
+    try {
+        return jwt.verify(token, secret);
+    } catch (err) {
+        return null;
+    }
+}
+
 
 app.post('/count', async (req, res) => {
     for (let i = 0; i < 1000; i++){
@@ -86,22 +110,29 @@ app.get('/auth/google/callback', async (req, res) => {
     oauth2Client.setCredentials(tokens);
     const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
     const userInfo = await oauth2.userinfo.get();
-    req.session.tokens = tokens;
-    req.session.userEmail = userInfo.data.email;
-    console.log('User email set in session:', req.session.userEmail);
-    res.redirect('https://syneticslz.github.io/test-client/');
+    const jwtToken = generateJWT(userInfo.data.email, tokens);
+    console.log('User email set in session(JWT):', userInfo.data.email);
+    res.redirect(`https://syneticslz.github.io/test-client/?token=${jwtToken}`);
+    // req.session.tokens = tokens;
+    // req.session.userEmail = userInfo.data.email;
+    // res.redirect('https://syneticslz.github.io/test-client/');
 });
 
 app.post('/send-email-gmail', async (req, res) => {
-    const { to, subject, body } = req.body;
-    if (!req.session.tokens) {
+    const token = req.headers['authorization'].split(' ')[1];
+    const userData = verifyJWT(token);
+    
+    if (!userData) {
         return res.status(401).send('Unauthorized');
     }
 
-    oauth2Client.setCredentials(req.session.tokens);
+    const { to, subject, body } = req.body;
+    const { email, tokens } = userData;
+
+    oauth2Client.setCredentials(tokens);
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-    const email = [
+    const emailContent = [
         `To: ${to}`,
         'Content-Type: text/html; charset=utf-8',
         'MIME-Version: 1.0',
@@ -110,7 +141,7 @@ app.post('/send-email-gmail', async (req, res) => {
         body,
     ].join('\n');
 
-    const base64EncodedEmail = Buffer.from(email).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
+    const base64EncodedEmail = Buffer.from(emailContent).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
 
     try {
         await gmail.users.messages.send({
