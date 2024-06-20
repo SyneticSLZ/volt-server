@@ -17,14 +17,19 @@ const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_U
 
 app.use(bodyParser.json());
 app.use(cors({
-    origin: 'http://127.0.0.1:5500', // Frontend server origin
+    origin: 'https://syneticslz.github.io/test-client/', // Frontend server origin
     credentials: true // Allow credentials to be sent
 }));
 
-app.use(session({ secret: 'your-session-secret', resave: false, saveUninitialized: true,     cookie: {
-    secure: false, // Set to true if using HTTPS
-    httpOnly: true
-} }));
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-session-secret', // Use an environment variable for the session secret
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        secure: false, // Set to true if using HTTPS
+        httpOnly: true
+    }
+}));
 
 app.post('/count', async (req, res) => {
     for (let i = 0; i < 1000; i++){
@@ -77,7 +82,7 @@ app.get('/auth/google/callback', async (req, res) => {
     const userInfo = await oauth2.userinfo.get();
     req.session.tokens = tokens;
     req.session.userEmail = userInfo.data.email;
-    res.redirect('http://127.0.0.1:5500/index.html');
+    res.redirect('https://syneticslz.github.io/test-client/');
 });
 
 app.post('/send-email-gmail', async (req, res) => {
