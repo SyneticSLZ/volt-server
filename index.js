@@ -3,79 +3,30 @@ const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const cors = require('cors');
 
 const app = express();
+dotenv.config();
+
 const port = process.env.PORT || 3000;
-const secretKey = 'your-secret-key';
 const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET
-const REDIRECT_URI = process.env.REDIRECT_URI
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
-dotenv.config();
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+    origin: 'http://127.0.0.1:5500', // Frontend server origin
+    credentials: true // Allow credentials to be sent
+}));
 app.use(session({ secret: 'your-session-secret', resave: false, saveUninitialized: true }));
-
-// Dummy database
-const users = [];
-
-// Helper function to authenticate token
-const verifyToken = (req, res, next) => {
-    const token = req.headers['x-access-token'];
-    if (!token) {
-        return res.status(403).send('No token provided');
-    }
-
-    jwt.verify(token, secretKey, (err, decoded) => {
-        if (err) {
-            return res.status(500).send('Failed to authenticate token');
-        }
-        req.userId = decoded.id;
-        next();
-    });
-};
 
 app.post('/count', async (req, res) => {
     for (let i = 0; i < 1000; i++){
         console.log(i);
     }
-})
-// Sign-up route
-app.post('/signup', async (req, res) => {
-    const { email, password, name } = req.body;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    users.push({ email, password: hashedPassword, name });
-
-    res.status(201).send('User registered successfully');
-});
-
-// Login route
-app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-    const user = users.find(u => u.email === email);
-
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-        return res.status(401).send('Invalid email or password');
-    }
-
-    const token = jwt.sign({ id: user.email }, secretKey, { expiresIn: '1h' });
-    res.json({ token });
-});
-
-// Route to get user details
-app.get('/user-details', verifyToken, (req, res) => {
-    const user = users.find(u => u.email === req.userId);
-    if (!user) {
-        return res.status(404).send('User not found');
-    }
-
-    res.status(200).json({ email: user.email, name: user.name });
+    res.status(200).send('Count completed');
 });
 
 // SMTP email sending route
@@ -109,7 +60,7 @@ app.post('/send-email-smtp', async (req, res) => {
 app.get('/auth/google', (req, res) => {
     const url = oauth2Client.generateAuthUrl({
         access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/gmail.send'],
+        scope: ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/userinfo.email'],
     });
     res.redirect(url);
 });
@@ -117,8 +68,12 @@ app.get('/auth/google', (req, res) => {
 app.get('/auth/google/callback', async (req, res) => {
     const { code } = req.query;
     const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+    const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
+    const userInfo = await oauth2.userinfo.get();
     req.session.tokens = tokens;
-    res.redirect('/db.html');
+    req.session.userEmail = userInfo.data.email;
+    res.redirect('http://127.0.0.1:5500/index.html');
 });
 
 app.post('/send-email-gmail', async (req, res) => {
@@ -154,7 +109,14 @@ app.post('/send-email-gmail', async (req, res) => {
     }
 });
 
+app.get('/get-user-email', (req, res) => {
+    if (req.session.userEmail) {
+        res.status(200).json({ email: req.session.userEmail });
+    } else {
+        res.status(401).send('Unauthorized');
+    }
+});
+
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
-
 });
