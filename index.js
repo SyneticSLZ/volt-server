@@ -55,9 +55,11 @@ function verifyJWT(token) {
     try {
         return jwt.verify(token, secret);
     } catch (err) {
+        console.error('JWT verification failed:', err);
         return null;
     }
 }
+
 
 
 app.post('/count', async (req, res) => {
@@ -121,13 +123,16 @@ app.get('/auth/google/callback', async (req, res) => {
 app.post('/send-email-gmail', async (req, res) => {
     const token = req.headers['authorization'].split(' ')[1];
     const userData = verifyJWT(token);
-    
+
     if (!userData) {
         return res.status(401).send('Unauthorized');
     }
 
+    console.log('User Data:', userData);
     const { to, subject, body } = req.body;
     const { email, tokens } = userData;
+
+    console.log('Tokens:', tokens);
 
     oauth2Client.setCredentials(tokens);
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
@@ -152,9 +157,12 @@ app.post('/send-email-gmail', async (req, res) => {
         });
         res.status(200).send('Email sent successfully');
     } catch (error) {
+        console.error('Error sending email:', error);
         res.status(500).send('Error sending email: ' + error.message);
     }
 });
+
+
 
 app.get('/get-user-email', (req, res) => {
     console.log('Session userEmail:', req.session.userEmail);
