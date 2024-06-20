@@ -17,7 +17,10 @@ const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_U
 
 app.use(bodyParser.json());
 app.use(cors());
-app.use(session({ secret: 'your-session-secret', resave: false, saveUninitialized: true }));
+app.use(session({ secret: 'your-session-secret', resave: false, saveUninitialized: true,     cookie: {
+    secure: false, // Set to true if using HTTPS
+    httpOnly: true
+} }));
 
 app.post('/count', async (req, res) => {
     for (let i = 0; i < 1000; i++){
