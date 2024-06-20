@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
+const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,6 +16,7 @@ const REDIRECT_URI = 'your-redirect-uri';
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
 app.use(bodyParser.json());
+app.use(cors());
 app.use(session({ secret: 'your-session-secret', resave: false, saveUninitialized: true }));
 
 // Dummy database
