@@ -11,9 +11,9 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 const secretKey = 'your-secret-key';
-const CLIENT_ID = process.env.PORTCLIENT_ID;
-const CLIENT_SECRET = process.env.PORTCLIENT_SECRET
-const REDIRECT_URI = process.env.PORTREDIRECT_URI
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET
+const REDIRECT_URI = process.env.REDIRECT_URI
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
 dotenv.config();
@@ -40,6 +40,11 @@ const verifyToken = (req, res, next) => {
     });
 };
 
+app.post('/count', async (req, res) => {
+    for (let i = 0; i < 1000; i++){
+        console.log(i);
+    }
+})
 // Sign-up route
 app.post('/signup', async (req, res) => {
     const { email, password, name } = req.body;
