@@ -1,4 +1,5 @@
 const express = require('express');
+const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 const bodyParser = require('body-parser');
@@ -10,11 +11,12 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 const secretKey = 'your-secret-key';
-const CLIENT_ID = 'your-google-client-id';
-const CLIENT_SECRET = 'your-google-client-secret';
-const REDIRECT_URI = 'your-redirect-uri';
+const CLIENT_ID = process.env.PORTCLIENT_ID;
+const CLIENT_SECRET = process.env.PORTCLIENT_SECRET
+const REDIRECT_URI = process.env.PORTREDIRECT_URI
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
+dotenv.config();
 app.use(bodyParser.json());
 app.use(cors());
 app.use(session({ secret: 'your-session-secret', resave: false, saveUninitialized: true }));
