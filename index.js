@@ -26,8 +26,9 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     cookie: {
-        secure: false, // Set to true if using HTTPS
-        httpOnly: true
+        secure: true, // Set to true if using HTTPS
+        httpOnly: true,
+        sameSite: 'lax'
     }
 }));
 
@@ -82,6 +83,7 @@ app.get('/auth/google/callback', async (req, res) => {
     const userInfo = await oauth2.userinfo.get();
     req.session.tokens = tokens;
     req.session.userEmail = userInfo.data.email;
+    console.log('User email set in session:', req.session.userEmail);
     res.redirect('https://syneticslz.github.io/test-client/');
 });
 
@@ -119,6 +121,7 @@ app.post('/send-email-gmail', async (req, res) => {
 });
 
 app.get('/get-user-email', (req, res) => {
+    console.log('Session userEmail:', req.session.userEmail);
     if (req.session.userEmail) {
         res.status(200).json({ email: req.session.userEmail });
     } else {
