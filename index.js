@@ -79,7 +79,7 @@ app.post('/send-email-smtp', async (req, res) => {
         service: 'gmail',
         auth: {
             user: 'voltmailerhelp@gmail.com',
-            pass: 'PlutoandMars1!'
+            pass: 'okwv awih fwmi'
         }
     });
 
