@@ -7,9 +7,16 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-
+const mongoose = require('mongoose');
+const Customer = require('./models/customer');
 const app = express();
 dotenv.config();
+
+// This is your test secret API key.
+const stripe = require('stripe')('sk_test_51MNx4UKJeZAyw8f48GWSXpvAEKCzEU5ISvITCblYwxBpKMhUF9yZcnaosy2ukX9I8iDhMkvctmBMZWBqygrDC08r00r0xpZvXa');
+
+
+const YOUR_DOMAIN = 'https://syneticslz.github.io/test-client';
 
 const port = process.env.PORT || 3000;
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -18,6 +25,7 @@ const REDIRECT_URI = process.env.REDIRECT_URI;
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
 app.use(bodyParser.json());
+app.use(express.static('public'));
 app.use(cors({
     origin: 'https://syneticslz.github.io', // Frontend server origin
     credentials: true // Allow credentials to be sent
@@ -33,6 +41,45 @@ app.use(session({
         sameSite: 'lax'
     }
 }));
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.log(err));
+
+// Helper functions
+async function findCustomer(email) {
+    return await Customer.findOne({ email });
+}
+
+async function addCustomerToDb(data) {
+    const customer = new Customer({
+        stripeID: data.stripeID,
+        email: data.email,
+        plan: data.plan,
+        total_emails: data.total_emails,
+        priceID: data.priceID,
+        password: data.password,
+        name: data.name,
+        plan_emails: data.plan_emails
+    });
+    await customer.save();
+}
+
+async function loginToDatabase(email, password) {
+    const customer = await findCustomer(email);
+    if (customer) {
+        if (customer.password) {
+            return password === customer.password ? true : 'Wrong Password';
+        } else {
+            return 'Please sign in with Google';
+        }
+    } else {
+        return 'Account Not found';
+    }
+}
+
+
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -60,6 +107,77 @@ function verifyJWT(token) {
     }
 }
 
+function generateEmailJWT(email) {
+    const payload = { email };
+    const secret = process.env.JWT_SECRET || 'your-jwt-secret';
+    return jwt.sign(payload, secret, { expiresIn: '1h' });
+}
+
+function verifyEmailJWT(token) {
+    const secret = process.env.JWT_SECRET || 'your-jwt-secret';
+    try {
+        return jwt.verify(token, secret);
+    } catch (err) {
+        console.error('JWT verification failed:', err);
+        return null;
+    }
+}
+
+
+// Routes
+
+app.post('/login-customer', async (req, res) => {
+    const { email, password } = req.body;
+    const result = await loginToDatabase(email, password);
+
+    if (result === true) {
+        const customer = await findCustomer(email);
+        if (customer) {
+            const token = generateEmailJWT(email);
+            res.json({ success: true, token });
+        } else {
+            res.status(404).json({ error: 'User account not found. Please sign up.' });
+        }
+    } else {
+        res.status(400).json({ error: result });
+    }
+});
+
+
+app.post('/signup-customer', async (req, res) => {
+    const { email, password } = req.body;
+    const customer = await findCustomer(email);
+
+    if (customer) {
+        if (customer.password) {
+            res.json({ success: false, error: "User already has an account." });
+        } else {
+            res.json({ success: false, error: "This email is linked to a Google account." });
+        }
+    } else {
+        // Redirect to the pricing page with email and password
+        res.json({ 
+            success: true, 
+            redirectUrl: `https://syneticslz.github.io/test-client/pricing.html?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}` 
+        });
+    }
+});
+
+app.get('/user-data', async (req, res) => {
+    const token = req.headers['authorization'].split(' ')[1];
+    const decoded = verifyEmailJWT(token);
+
+    if (!decoded) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const customer = await findCustomer(decoded.email);
+    if (customer) {
+        res.json(customer);
+    } else {
+        res.status(404).json({ error: 'User account not found' });
+    }
+});
 
 
 app.post('/count', async (req, res) => {
@@ -78,7 +196,7 @@ app.post('/send-email-smtp', async (req, res) => {
         service: 'gmail',
         auth: {
             user: 'voltmailerhelp@gmail.com',
-            pass: 'okwv awih fwmi'
+            pass: 'okwvawihfwmi'
         }
     });
 
@@ -112,9 +230,21 @@ app.get('/auth/google/callback', async (req, res) => {
     oauth2Client.setCredentials(tokens);
     const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
     const userInfo = await oauth2.userinfo.get();
+    const email = userInfo.data.email;
     const jwtToken = generateJWT(userInfo.data.email, tokens);
     console.log('User email set in session(JWT):', userInfo.data.email);
-    res.redirect(`https://syneticslz.github.io/test-client/?token=${jwtToken}`);
+    const customer = await findCustomer(email);
+
+    if (customer) {
+
+        res.redirect(`https://syneticslz.github.io/test-client/?token=${jwtToken}`);
+    } else {
+        // User does not exist, redirect to the pricing page for signup
+        res.redirect(`https://syneticslz.github.io/test-client/pricing.html?token=${jwtToken}`);
+    }
+
+
+
     // req.session.tokens = tokens;
     // req.session.userEmail = userInfo.data.email;
     // res.redirect('https://syneticslz.github.io/test-client/');
@@ -172,6 +302,131 @@ app.get('/get-user-email', (req, res) => {
         res.status(401).send('Unauthorized');
     }
 });
+
+
+// STRIPE
+
+app.post('/create-checkout-session', async (req, res) => {
+    const customer_email = req.body.email
+    const password = req.body.password
+
+  const session = await stripe.checkout.sessions.create({
+    ui_mode: 'embedded',
+    line_items: [
+      {
+        // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+        price: 'price_1PSlQ1KJeZAyw8f41gAgAb7o',
+        quantity: 1,
+      },
+    ],
+    customer_email: customer_email,
+    mode: 'subscription',
+    return_url: `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}&password={password}`,
+  });
+
+  res.send({clientSecret: session.client_secret});
+});
+
+
+app.post('/create-checkout-session-free', async (req, res) => {
+    const customer_email = req.body.email
+    const password = req.body.password
+
+    const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        ui_mode: 'embedded',
+        customer_email: customer_email,
+        return_url:  `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}&password={password}`,
+        line_items: [
+          {
+            price: '{{PRICE_ID}}',
+            quantity: 1,
+          },
+        ],
+        subscription_data: {
+          trial_settings: {
+            end_behavior: {
+              missing_payment_method: 'cancel',
+            },
+          },
+          trial_period_days: 30,
+        },
+        payment_method_collection: 'if_required',
+      });
+
+  res.send({clientSecret: session.client_secret});
+});
+
+
+
+
+app.post('/create-checkout-session-token', async (req, res) => {
+    const token = req.body.token;
+    const customer_email = req.body.email;
+    if (!token) {
+        return res.status(400).send({ error: 'Token is required' });
+    }
+
+  const session = await stripe.checkout.sessions.create({
+    ui_mode: 'embedded',
+    line_items: [
+      {
+        // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+        price: 'price_1PSlQ1KJeZAyw8f41gAgAb7o',
+        quantity: 1,
+      },
+    ],
+    customer_email: customer_email,
+    mode: 'subscription',
+    return_url: `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}&token={token}`,
+  });
+
+  res.send({clientSecret: session.client_secret});
+});
+
+
+app.post('/create-checkout-session-free-token', async (req, res) => {
+    const token = req.body.token;
+    const customer_email = req.body.email;
+    if (!token) {
+        return res.status(400).send({ error: 'Token is required' });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        ui_mode: 'embedded',
+        customer_email: customer_email,
+        return_url:  `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}&token={token}`,
+        line_items: [
+          {
+            price: 'price_1PKf2PKJeZAyw8f418JphiK0',
+            quantity: 1,
+          },
+        ],
+        subscription_data: {
+          trial_settings: {
+            end_behavior: {
+              missing_payment_method: 'cancel',
+            },
+          },
+          trial_period_days: 30,
+        },
+        payment_method_collection: 'if_required',
+      });
+
+  res.send({clientSecret: session.client_secret});
+});
+
+app.get('/session-status', async (req, res) => {
+  const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+
+  res.send({
+    status: session.status,
+    customer_email: session.customer_details.email
+  });
+});
+
+
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
