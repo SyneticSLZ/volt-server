@@ -11,6 +11,9 @@ const mongoose = require('mongoose');
 const Customer = require('./models/customer');
 const app = express();
 dotenv.config();
+const openai = require('openai');
+
+openai.apiKey = process.env.OPENAI_API_KEY;
 
 // This is your test secret API key.
 const stripe = require('stripe')('sk_test_51MNx4UKJeZAyw8f48GWSXpvAEKCzEU5ISvITCblYwxBpKMhUF9yZcnaosy2ukX9I8iDhMkvctmBMZWBqygrDC08r00r0xpZvXa');
@@ -340,7 +343,7 @@ app.post('/create-checkout-session-free', async (req, res) => {
         return_url:  `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}&password={password}`,
         line_items: [
           {
-            price: '{{PRICE_ID}}',
+            price: 'price_1PKf2PKJeZAyw8f418JphiK0',
             quantity: 1,
           },
         ],
@@ -426,6 +429,25 @@ app.get('/session-status', async (req, res) => {
     customer_email: session.customer_details.email
   });
 });
+
+app.post('/create-billing-portal-session', async (req, res) => {
+    const { customerId } = req.body; // Assuming customerId is sent in the body
+
+    try {
+        const session = await stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: '${YOUR_DOMAIN}/Dashboard.html', // The URL to redirect to after billing portal
+        });
+
+        res.json({ url: session.url });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+//OPENAI
+
 
 
 
