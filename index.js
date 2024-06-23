@@ -267,7 +267,7 @@ app.get('/auth/google/callback', async (req, res) => {
 
     if (customer) {
 
-        res.redirect(`https://syneticslz.github.io/test-client/?token=${jwtToken}`);
+        res.redirect(`https://syneticslz.github.io/test-client/Dashboard.html?googletoken=${jwtToken}`);
     } else {
         // User does not exist, redirect to the pricing page for signup
         res.redirect(`https://syneticslz.github.io/test-client/pricing.html?email=${encodeURIComponent(userInfo.data.email)}&password=null`);
