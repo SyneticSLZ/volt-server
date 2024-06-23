@@ -365,12 +365,8 @@ app.post('/create-checkout-session-free', async (req, res) => {
 
 
 app.post('/create-checkout-session-token', async (req, res) => {
-    const token = req.body.token;
-    const customer_email = req.body.email;
-    if (!token) {
-        return res.status(400).send({ error: 'Token is required' });
-    }
 
+    const customer_email = req.body.email;
   const session = await stripe.checkout.sessions.create({
     ui_mode: 'embedded',
     line_items: [
@@ -382,7 +378,7 @@ app.post('/create-checkout-session-token', async (req, res) => {
     ],
     customer_email: customer_email,
     mode: 'subscription',
-    return_url: `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}&token={token}`,
+    return_url: `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}`,
   });
 
   res.send({clientSecret: session.client_secret});
@@ -390,17 +386,17 @@ app.post('/create-checkout-session-token', async (req, res) => {
 
 
 app.post('/create-checkout-session-free-token', async (req, res) => {
-    const token = req.body.token;
+    // const token = req.body.token;
     const customer_email = req.body.email;
-    if (!token) {
-        return res.status(400).send({ error: 'Token is required' });
-    }
+    // if (!token) {
+    //     return res.status(400).send({ error: 'Token is required' });
+    // }
 
     const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         ui_mode: 'embedded',
         customer_email: customer_email,
-        return_url:  `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}&token={token}`,
+        return_url:  `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}`,
         line_items: [
           {
             price: 'price_1PKf2PKJeZAyw8f418JphiK0',
