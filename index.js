@@ -209,6 +209,22 @@ app.get('/user-data', async (req, res) => {
     }
 });
 
+app.get('/google-user-data', async (req, res) => {
+    const token = req.headers['authorization'].split(' ')[1];
+    const decoded = verifyJWT(token);
+
+    if (!decoded) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const customer = await findCustomer(decoded.email);
+    if (customer) {
+        res.json(customer);
+    } else {
+        res.status(404).json({ error: 'User account not found' });
+    }
+});
+
 
 app.post('/count', async (req, res) => {
     for (let i = 0; i < 1000; i++){
@@ -270,7 +286,7 @@ app.get('/auth/google/callback', async (req, res) => {
         res.redirect(`https://syneticslz.github.io/test-client/Dashboard.html?googletoken=${jwtToken}`);
     } else {
         // User does not exist, redirect to the pricing page for signup
-        res.redirect(`https://syneticslz.github.io/test-client/pricing.html?email=${encodeURIComponent(userInfo.data.email)}&password=null`);
+        res.redirect(`https://syneticslz.github.io/test-client/pricing.html?email=${encodeURIComponent(userInfo.data.email)}&password=null&token=${jwtToken}`);
     }
 
 
@@ -332,6 +348,7 @@ app.get('/get-user-email', (req, res) => {
         res.status(401).send('Unauthorized');
     }
 });
+
 
 
 // STRIPE
