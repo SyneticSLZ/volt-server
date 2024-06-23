@@ -131,7 +131,7 @@ function verifyEmailJWT(token) {
 // Routes
 app.post('/add-customer-to-db', async (req, res) => {
     const data = req.body;
-
+    print(data)
     try {
         const customer = new Customer({
             stripeID: data.stripeID,
@@ -144,8 +144,8 @@ app.post('/add-customer-to-db', async (req, res) => {
             plan_emails: data.plan_emails
         });
 
-        await customer.save();
-        // res.send('Customer added successfully');
+        await customer.save()
+        print('Customer added successfully');
         const token = generateEmailJWT(data.email);
         const dashboardUrl = `${YOUR_DOMAIN}/Dashboard.html?token=${token}`;
         
