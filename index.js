@@ -312,6 +312,7 @@ app.get('/get-user-email', (req, res) => {
 
 app.post('/create-checkout-session', async (req, res) => {
     const customer_email = req.body.email
+    const name = req.body.name 
     const password = req.body.password
 
   const session = await stripe.checkout.sessions.create({
@@ -325,7 +326,7 @@ app.post('/create-checkout-session', async (req, res) => {
     ],
     customer_email: customer_email,
     mode: 'subscription',
-    return_url: `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}&password={password}`,
+    return_url: `${YOUR_DOMAIN}/payment.html?session_id=${CHECKOUT_SESSION_ID}&email=${customer_email}&password=${password}&name=${name}`,
   });
 
   res.send({clientSecret: session.client_secret});
@@ -335,12 +336,13 @@ app.post('/create-checkout-session', async (req, res) => {
 app.post('/create-checkout-session-free', async (req, res) => {
     const customer_email = req.body.email
     const password = req.body.password
+    const name = req.body.name
 
     const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         ui_mode: 'embedded',
         customer_email: customer_email,
-        return_url:  `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}&password={password}`,
+        return_url: `${YOUR_DOMAIN}/payment.html?session_id=${CHECKOUT_SESSION_ID}&email=${customer_email}&password=${password}&name=${name}`,
         line_items: [
           {
             price: 'price_1PKf2PKJeZAyw8f418JphiK0',
@@ -416,6 +418,9 @@ app.post('/create-checkout-session-free-token', async (req, res) => {
 
   res.send({clientSecret: session.client_secret});
 });
+
+
+
 
 app.get('/session-status', async (req, res) => {
   const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
