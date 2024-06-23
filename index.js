@@ -145,7 +145,7 @@ app.post('/add-customer-to-db', async (req, res) => {
         });
 
         await customer.save();
-        res.send('Customer added successfully');
+        // res.send('Customer added successfully');
         const token = generateEmailJWT(data.email);
         const dashboardUrl = `${YOUR_DOMAIN}/Dashboard.html?token=${token}`;
         
