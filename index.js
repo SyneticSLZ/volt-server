@@ -129,6 +129,32 @@ function verifyEmailJWT(token) {
 
 
 // Routes
+app.post('/add-customer-to-db', async (req, res) => {
+    const data = req.body;
+
+    try {
+        const customer = new Customer({
+            stripeID: data.stripeID,
+            email: data.email,
+            plan: data.plan,
+            total_emails: data.total_emails,
+            priceID: data.priceID,
+            password: data.password,
+            name: data.name,
+            plan_emails: data.plan_emails
+        });
+
+        await customer.save();
+        res.send('Customer added successfully');
+        const token = generateEmailJWT(data.email);
+        const dashboardUrl = `${YOUR_DOMAIN}/Dashboard.html?token=${token}`;
+        
+        res.json({ redirectUrl: dashboardUrl });
+
+    } catch (error) {
+        res.status(500).send('Error adding customer to the database');
+    }
+});
 
 app.post('/login-customer', async (req, res) => {
     const { email, password } = req.body;
@@ -326,7 +352,7 @@ app.post('/create-checkout-session', async (req, res) => {
     ],
     customer_email: customer_email,
     mode: 'subscription',
-    return_url: `${YOUR_DOMAIN}/payment.html?session_id=${CHECKOUT_SESSION_ID}&email=${customer_email}&password=${password}&name=${name}`,
+    return_url: `${YOUR_DOMAIN}/payment.html?session_id=${CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
   });
 
   res.send({clientSecret: session.client_secret});
@@ -342,7 +368,7 @@ app.post('/create-checkout-session-free', async (req, res) => {
         mode: 'subscription',
         ui_mode: 'embedded',
         customer_email: customer_email,
-        return_url: `${YOUR_DOMAIN}/payment.html?session_id=${CHECKOUT_SESSION_ID}&email=${customer_email}&password=${password}&name=${name}`,
+        return_url: `${YOUR_DOMAIN}/payment.html?session_id=${CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
         line_items: [
           {
             price: 'price_1PKf2PKJeZAyw8f418JphiK0',
@@ -430,6 +456,22 @@ app.get('/session-status', async (req, res) => {
     customer_email: session.customer_details.email
   });
 });
+
+app.get('/get-session-details', async (req, res) => {
+    const sessionId = req.query.session_id;
+
+    try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId, {
+            expand: ['line_items', 'customer']
+        });
+
+        res.json(session);
+    } catch (error) {
+        res.status(500).send('Error retrieving session details');
+    }
+});
+
+
 
 app.post('/create-billing-portal-session', async (req, res) => {
     const { customerId } = req.body; // Assuming customerId is sent in the body
