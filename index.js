@@ -352,7 +352,7 @@ app.post('/create-checkout-session', async (req, res) => {
     ],
     customer_email: customer_email,
     mode: 'subscription',
-    return_url: `${YOUR_DOMAIN}/payment.html?session_id=${CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
+    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
   });
 
   res.send({clientSecret: session.client_secret});
@@ -368,7 +368,7 @@ app.post('/create-checkout-session-free', async (req, res) => {
         mode: 'subscription',
         ui_mode: 'embedded',
         customer_email: customer_email,
-        return_url: `${YOUR_DOMAIN}/payment.html?session_id=${CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
+        return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
         line_items: [
           {
             price: 'price_1PKf2PKJeZAyw8f418JphiK0',
