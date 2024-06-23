@@ -448,14 +448,56 @@ app.post('/create-checkout-session-free-token', async (req, res) => {
 
 
 
-app.get('/session-status', async (req, res) => {
-  const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+// app.get('/session-status', async (req, res) => {
+//   const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
 
-  res.send({
-    status: session.status,
-    customer_email: session.customer_details.email
+//   res.send({
+//     status: session.status,
+//     customer_email: session.customer_details.email
+//   });
+// });
+
+app.get('/session-status', async (req, res) => {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+      
+      // Retrieve line items for the session
+      const lineItems = await stripe.checkout.sessions.listLineItems(req.query.session_id);
+  
+      // Check if line items are available and get the ID of the first price
+      let firstPriceId = null;
+      if (lineItems.data.length > 0) {
+        firstPriceId = lineItems.data[0].price.id;
+      }
+  
+      res.send({
+        status: session.status,
+        customer_email: session.customer_details.email,
+        amount_subtotal: session.amount_subtotal,
+        amount_total: session.amount_total,
+        payment_status: session.payment_status,
+        currency: session.currency,
+        customer: session.customer,
+        first_price_id: firstPriceId,  // Add the first price ID here
+        line_items: lineItems.data.map(item => ({
+          price_id: item.price.id,
+          product_name: item.description
+        })),
+        mode: session.mode,
+        created: session.created,
+        expires_at: session.expires_at,
+        success_url: session.success_url,
+        cancel_url: session.cancel_url,
+        payment_method_types: session.payment_method_types,
+        metadata: session.metadata
+      });
+    } catch (error) {
+      res.status(500).send({ error: error.message });
+    }
   });
-});
+
+
+
 
 app.get('/get-session-details', async (req, res) => {
     const sessionId = req.query.session_id;
