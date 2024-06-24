@@ -149,11 +149,13 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
                 }
             }
             console.log('Timeout reached');
+            return null;
         };
 
         await checkRunStatus();
     } catch (error) {
         console.error('Error:', error);
+        return null;
     }
 }
 
