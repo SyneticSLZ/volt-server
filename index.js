@@ -128,7 +128,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
                         run.thread_id
                     );
                     console.log("Messages listed");
-                    for (const message of messages.data.reverse()) {
+                    for (const message of messages.data) {
                         console.log(`${message.role} > ${message.content[0].text.value}`);
                         return message.content[0].text.value;
                     }
@@ -313,7 +313,7 @@ const sendEmail = async (subject, message, to, token) => {
 
             // Generate the email content using AddMessageToThread
             const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname);
-
+            console.log("Email-content : ", emailContent)
             const lines = emailContent.split('\n');
             const subjectLine = lines[0].replace('Subject: ', '');
             const mainMessage = lines.slice(1).join('\n').trim();
