@@ -122,7 +122,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
 
         const checkRunStatus = async () => {
             while (timeElapsed < timeout) {
-                run = await openai.beta.threads.runs.get(run.id);
+                run = await openai.beta.threads.runs.retrieve(run.id);
                 if (run.status === 'completed') {
                     const messages = await openai.beta.threads.messages.list(
                         run.thread_id
@@ -225,7 +225,7 @@ function verifyEmailJWT(token) {
     }
 }
 
-const sendEmail = async (subject, message, to, token) => {
+const sendEmainl = async (subject, message, to, token) => {
     try {
         const response = await axios.post(
             '/send-email-gmail',
@@ -245,6 +245,49 @@ const sendEmail = async (subject, message, to, token) => {
         console.error(`Error sending email to ${to}:`, error);
     }
 };
+
+
+const sendEmail = async (subject, message, to, token) => {
+    // const token = req.headers['authorization'].split(' ')[1];
+    const userData = verifyJWT(token);
+
+    if (!userData) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    console.log('User Data:', userData);
+    const { email, tokens } = userData;
+
+    console.log('Tokens:', tokens);
+
+    oauth2Client.setCredentials(tokens);
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const emailContent = [
+        `To: ${to}`,
+        'Content-Type: text/html; charset=utf-8',
+        'MIME-Version: 1.0',
+        `Subject: ${subject}`,
+        '',
+        message,
+    ].join('\n');
+
+    const base64EncodedEmail = Buffer.from(emailContent).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
+
+    try {
+        await gmail.users.messages.send({
+            userId: 'me',
+            requestBody: {
+                raw: base64EncodedEmail,
+            },
+        });
+        res.status(200).send('Email sent successfully');
+    } catch (error) {
+        console.error('Error sending email:', error);
+        res.status(500).send('Error sending email: ' + error.message);
+    }
+};
+
 
 // Routes
 
