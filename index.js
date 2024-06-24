@@ -122,7 +122,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
 
         const checkRunStatus = async () => {
             while (timeElapsed < timeout) {
-                run = await openai.beta.threads.runs.retrieve(run.id);
+                run = await openai.beta.threads.runs.retrieve(ThreadID);
                 if (run.status === 'completed') {
                     const messages = await openai.beta.threads.messages.list(
                         run.thread_id
