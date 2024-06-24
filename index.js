@@ -1,4 +1,4 @@
-
+const { Configuration, OpenAIApi } = require('openai');
 const express = require('express');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
@@ -16,7 +16,11 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const nlp = require('compromise');
 
-openai.apiKey = process.env.OPENAI_API_KEY;
+const openaiConfig = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY, // Ensure your API key is stored in environment variables
+});
+const openai = new OpenAIApi(openaiConfig);
+const ASSISTANT_ID = "asst_shvdCBA7snGDSENhmE5iugIm"
 
 // This is your test secret API key.
 const stripe = require('stripe')('sk_test_51MNx4UKJeZAyw8f48GWSXpvAEKCzEU5ISvITCblYwxBpKMhUF9yZcnaosy2ukX9I8iDhMkvctmBMZWBqygrDC08r00r0xpZvXa');
@@ -93,7 +97,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
             ThreadID.id,
             {
                 role: "user",
-                content: `I'm selling ${user_pitch}, This is the data I have on the company and what they do from their website ${website_content}. And this is the user's pitch: ${user_pitch}. This is the name you should use to address them in the email ${To} from me, ${Me}. I want you to create the email where the first line is the subject line and then the greeting and content follows.`
+                content: `I'm selling ${user_pitch}, This is the data I have on the company and what they do from their website ${website_content}. And this is the user's pitch: ${user_pitch}. This is the name you should use to address them in the email ${To} from me, ${Me}. `
             }
         );
         console.log("Message added");
@@ -102,8 +106,8 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
         let run = await openai.beta.threads.runs.createAndPoll(
             ThreadID,
             {
-                assistant_id: process.env.assistant_id,
-                instructions: "Please address the user as Jane Doe. The user has a premium account."
+                assistant_id: ASSISTANT_ID,
+                instructions: "I want you to create the email where the first line is the subject line and then the greeting and content follows."
             }
         );
         console.log("Run created");
@@ -218,8 +222,73 @@ function verifyEmailJWT(token) {
     }
 }
 
+const sendEmail = async (subject, message, to, token) => {
+    try {
+        const response = await axios.post(
+            '/send-email-gmail',
+            {
+                to: to,
+                subject: subject,
+                body: message
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            }
+        );
+        console.log(`Message to ${to} successfully sent: ${response.data}`);
+    } catch (error) {
+        console.error(`Error sending email to ${to}:`, error);
+    }
+};
 
 // Routes
+
+// async function sendEmails(credentialsDict, submittedData, userPitch, Uname, token) {
+    app.post('/send-emails', async (req, res) => {
+    const { submittedData, userPitch, Uname, token } = req.body;
+
+    res.status(200).send('Emails are being sent in the background. You can close the tab.');
+
+    let SENT_EMAILS = 0;
+    const threadID = await CreateThread();
+    setImmediate(async () => {
+    for (const data of submittedData) {
+        try {
+            console.log(`Starting send to ${data.email}`);
+
+            const summary = await summarizeWebsite(data.website_content);
+            console.log(summary);
+
+            const To = data.name;
+
+            console.log(`Email: ${data.email}, Website Content: ${summary}, Uname: ${Uname}, To: ${To}`);
+
+            // Generate the email content using AddMessageToThread
+            const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname);
+
+            const lines = emailContent.split('\n');
+            const subjectLine = lines[0].replace('Subject: ', '');
+            const mainMessage = lines.slice(1).join('\n').trim();
+
+            console.log(`Email: ${data.email}, Subject: ${subjectLine}, Message: ${mainMessage}`);
+
+            // Send the email
+            await sendEmail(subjectLine, mainMessage, To, token);
+            SENT_EMAILS += 1;
+
+        } catch (error) {
+            console.log(`Error processing email for ${data.email}: ${error}`);
+            // Handle the exception (log it, update status, etc.)
+        }
+    }
+
+    res.json({ status: 'completed', sent_emails: SENT_EMAILS });
+});
+});
+
+
 app.post('/add-customer-to-db', async (req, res) => {
     const data = req.body;
     console.log(data)
