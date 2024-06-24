@@ -129,8 +129,17 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
                     );
                     console.log("Messages listed");
                     for (const message of messages.data) {
-                        console.log(`${message.role} > ${message.content[0].text.value}`);
-                        return message.content[0].text.value;
+                        const content = message.content[0].text.value;
+
+                        // Split the content to get the subject and body
+                        const lines = content.split('\n');
+                        const subject = lines[0];
+                        const body = lines.slice(1).join('\n');
+
+                        console.log("Subject:", subject);
+                        console.log("Body:", body);
+
+                        return { subject, body };
                     }
                 } else {
                     console.log(run.status);
@@ -313,16 +322,20 @@ const sendEmail = async (subject, message, to, token) => {
 
             // Generate the email content using AddMessageToThread
             const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname);
-            console.log("Email-content : ", emailContent)
-            const lines = emailContent.split('\n');
-            const subjectLine = lines[0].replace('Subject: ', '');
-            const mainMessage = lines.slice(1).join('\n').trim();
 
-            console.log(`Email: ${data.email}, Subject: ${subjectLine}, Message: ${mainMessage}`);
-
+            if (emailContent) {
+                console.log("Subject:", emailContent.subject);
+                console.log("Body:", emailContent.body);
+                
             // Send the email
-            await sendEmail(subjectLine, mainMessage, To, token);
+            await sendEmail(semailContent.subject, emailContent.body, To, token);
             SENT_EMAILS += 1;
+
+            } else {
+                console.log("Failed to retrieve email content.");
+            }           
+
+            // console.log(`Email: ${data.email}, Subject: ${subjectLine}, Message: ${mainMessage}`);
 
         } catch (error) {
             console.log(`Error processing email for ${data.email}: ${error}`);
