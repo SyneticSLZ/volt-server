@@ -52,6 +52,69 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 // Helper functions
+
+async function CreateThread(){
+    const thread = await openai.beta.threads.create();
+    return thread
+}
+
+async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me) {
+    try {
+        // Create the message
+        const message = await openai.beta.threads.messages.create(
+            ThreadID.id,
+            {
+                role: "user",
+                content: `I'm selling ${user_pitch}, This is the data I have on the company and what they do from their website ${website_content}. And this is the user's pitch: ${user_pitch}. This is the name you should use to address them in the email ${To} from me, ${Me}. I want you to create the email where the first line is the subject line and then the greeting and content follows.`
+            }
+        );
+        console.log("Message added");
+
+        // Create and poll the run
+        let run = await openai.beta.threads.runs.createAndPoll(
+            ThreadID,
+            {
+                assistant_id: process.env.assistant_id,
+                instructions: "Please address the user as Jane Doe. The user has a premium account."
+            }
+        );
+        console.log("Run created");
+
+        // Polling loop for the run status
+        let timeElapsed = 0;
+        const timeout = 60; // Timeout duration in seconds
+        const interval = 5; // Interval duration in seconds
+
+        const checkRunStatus = async () => {
+            while (timeElapsed < timeout) {
+                run = await openai.beta.threads.runs.get(run.id);
+                if (run.status === 'completed') {
+                    const messages = await openai.beta.threads.messages.list(
+                        run.thread_id
+                    );
+                    console.log("Messages listed");
+                    for (const message of messages.data.reverse()) {
+                        console.log(`${message.role} > ${message.content[0].text.value}`);
+                        return message.content[0].text.value;
+                    }
+                } else {
+                    console.log(run.status);
+                    console.log(`Time elapsed: ${timeElapsed} seconds`);
+                    timeElapsed += interval;
+                    await new Promise(resolve => setTimeout(resolve, interval * 1000)); // Wait for the interval duration
+                }
+            }
+            console.log('Timeout reached');
+        };
+
+        await checkRunStatus();
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+
+
 async function findCustomer(email) {
     return await Customer.findOne({ email });
 }
@@ -538,7 +601,7 @@ app.post('/create-billing-portal-session', async (req, res) => {
     try {
         const session = await stripe.billingPortal.sessions.create({
             customer: customerId,
-            return_url: '${YOUR_DOMAIN}/Dashboard.html', // The URL to redirect to after billing portal
+            return_url: `${YOUR_DOMAIN}/Dashboard.html`, // The URL to redirect to after billing portal
         });
 
         res.json({ url: session.url });
@@ -549,6 +612,7 @@ app.post('/create-billing-portal-session', async (req, res) => {
 
 
 //OPENAI
+
 
 
 
