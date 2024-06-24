@@ -12,6 +12,9 @@ const Customer = require('./models/customer');
 const app = express();
 dotenv.config();
 const openai = require('openai');
+const axios = require('axios');
+const cheerio = require('cheerio');
+const nlp = require('compromise');
 
 openai.apiKey = process.env.OPENAI_API_KEY;
 
@@ -52,6 +55,31 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 // Helper functions
+async function summarizeWebsite(url) {
+    if (!url) {
+        throw new Error('URL is required');
+    }
+
+    try {
+        // Fetch the website content
+        const { data } = await axios.get(url);
+        
+        // Parse the HTML content
+        const $ = cheerio.load(data);
+        const textContent = $('body').text();
+
+        // Use NLP to extract and summarize information
+        const doc = nlp(textContent);
+        const sentences = doc.sentences().out('array');
+        const businessInfo = sentences.slice(0, 5).join(' '); // Adjust the slicing as necessary
+
+        return businessInfo;
+    } catch (error) {
+        console.error(error);
+        throw new Error('Failed to fetch and summarize the website');
+    }
+}
+
 
 async function CreateThread(){
     const thread = await openai.beta.threads.create();
