@@ -90,7 +90,7 @@ async function summarizeWebsite(url) {
 async function CreateThread(){
     const thread = await openai.beta.threads.create();
     console.log("thread created");
-    return thread
+    return thread.id
 }
 
 async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me) {
