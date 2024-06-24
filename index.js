@@ -596,12 +596,12 @@ app.get('/get-session-details', async (req, res) => {
 
 
 app.post('/create-billing-portal-session', async (req, res) => {
-    const { customerId } = req.body; // Assuming customerId is sent in the body
-
+    const { customerId, email } = req.body; // Assuming customerId is sent in the body
+    const token = generateEmailJWT(email);
     try {
         const session = await stripe.billingPortal.sessions.create({
             customer: customerId,
-            return_url: `${YOUR_DOMAIN}/Dashboard.html`, // The URL to redirect to after billing portal
+            return_url: `${YOUR_DOMAIN}/Dashboard.html?token=${token}`, // The URL to redirect to after billing portal
         });
 
         res.json({ url: session.url });
