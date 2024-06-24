@@ -324,10 +324,10 @@ const sendEmail = async (subject, message, to, token) => {
 
             // Generate the email content using AddMessageToThread
             const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname);
-
+            const { subject, body } = emailContent;
             // if (emailContent) {
-                console.log("Subject:", emailContent.subject);
-                console.log("Body:", emailContent.body);
+                console.log("Subject:", subject);
+                console.log("Body:", body);
                 
             // Send the email
             await sendEmail(semailContent.subject, emailContent.body, To, token);
