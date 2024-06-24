@@ -1,4 +1,4 @@
-const { Configuration, OpenAIApi } = require('openai');
+const { Configuration, OpenAI } = require('openai');
 const express = require('express');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
@@ -15,11 +15,13 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const nlp = require('compromise');
 
-const openaiConfig = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY, // Ensure your API key is stored in environment variables
-});
-const openai = new OpenAIApi(openaiConfig);
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
 const ASSISTANT_ID = "asst_shvdCBA7snGDSENhmE5iugIm"
+
+
 
 // This is your test secret API key.
 const stripe = require('stripe')('sk_test_51MNx4UKJeZAyw8f48GWSXpvAEKCzEU5ISvITCblYwxBpKMhUF9yZcnaosy2ukX9I8iDhMkvctmBMZWBqygrDC08r00r0xpZvXa');
