@@ -139,7 +139,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
                         // console.log("Subject:", subject);
                         // console.log("Body:", body);
 
-                        return { subject, body };
+                        return subject;
                     }
                 } else {
                     console.log(run.status);
@@ -316,7 +316,7 @@ const sendEmail = async (subject, message, to, token) => {
             console.log(`Starting send to ${data.email}`);
 
             const summary = await summarizeWebsite(data.website);
-            console.log(summary);
+            // console.log(summary);
 
             const To = data.name;
 
@@ -324,10 +324,11 @@ const sendEmail = async (subject, message, to, token) => {
 
             // Generate the email content using AddMessageToThread
             const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname);
-            const { subject, body } = emailContent;
+            console.log("returned : ", emailContent)
+            // const { subject, body } = emailContent;
             // if (emailContent) {
-                console.log("Subject:", subject);
-                console.log("Body:", body);
+                // console.log("Subject:", subject);
+                // console.log("Body:", body);
                 
             // Send the email
             await sendEmail(semailContent.subject, emailContent.body, To, token);
