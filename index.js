@@ -93,7 +93,7 @@ async function CreateThread(){
     return thread.id
 }
 
-async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me) {
+async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, token) {
     try {
         // Create the message
         const message = await openai.beta.threads.messages.create(
@@ -138,8 +138,10 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
 
                         // console.log("Subject:", subject);
                         // console.log("Body:", body);
+                        await sendEmail(subject, body, To, token);
+                        SENT_EMAILS += 1;
 
-                        return subject;
+                        return "True";
                     }
                 } else {
                     console.log(run.status);
@@ -323,7 +325,7 @@ const sendEmail = async (subject, message, to, token) => {
             console.log(`Email: ${data.email}, Website Content: ${summary}, Uname: ${Uname}, To: ${To}`);
 
             // Generate the email content using AddMessageToThread
-            const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname);
+            const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, token);
             console.log("returned : ", emailContent)
             // const { subject, body } = emailContent;
             // if (emailContent) {
@@ -331,8 +333,8 @@ const sendEmail = async (subject, message, to, token) => {
                 // console.log("Body:", body);
                 
             // Send the email
-            await sendEmail(semailContent.subject, emailContent.body, To, token);
-            SENT_EMAILS += 1;
+            // await sendEmail(semailContent.subject, emailContent.body, To, token);
+            // SENT_EMAILS += 1;
 
             // } else {
                 // console.log("Failed to retrieve email content.");
