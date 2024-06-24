@@ -11,7 +11,6 @@ const mongoose = require('mongoose');
 const Customer = require('./models/customer');
 const app = express();
 dotenv.config();
-const openai = require('openai');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const nlp = require('compromise');
