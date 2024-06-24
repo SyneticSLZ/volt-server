@@ -64,6 +64,7 @@ async function summarizeWebsite(url) {
     if (!url) {
         throw new Error('URL is required');
     }
+    
 
     try {
         // Fetch the website content
@@ -88,6 +89,7 @@ async function summarizeWebsite(url) {
 
 async function CreateThread(){
     const thread = await openai.beta.threads.create();
+    console.log("thread created");
     return thread
 }
 
@@ -259,7 +261,7 @@ const sendEmail = async (subject, message, to, token) => {
         try {
             console.log(`Starting send to ${data.email}`);
 
-            const summary = await summarizeWebsite(data.website_content);
+            const summary = await summarizeWebsite(data.website);
             console.log(summary);
 
             const To = data.name;
