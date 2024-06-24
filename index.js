@@ -97,7 +97,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
     try {
         // Create the message
         const message = await openai.beta.threads.messages.create(
-            ThreadID.id,
+            ThreadID,
             {
                 role: "user",
                 content: `I'm selling ${user_pitch}, This is the data I have on the company and what they do from their website ${website_content}. And this is the user's pitch: ${user_pitch}. This is the name you should use to address them in the email ${To} from me, ${Me}. `
