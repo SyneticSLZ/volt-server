@@ -135,13 +135,14 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
                         const lines = content.split('\n');
                         const subject = lines[0];
                         const body = lines.slice(1).join('\n');
-
+                         const s = subject
+                         const b = body
                         // console.log("Subject:", subject);
                         // console.log("Body:", body);
                         await sendEmail(subject, body, To, token);
                         SENT_EMAILS += 1;
 
-                        return "True";
+                        return { s , b };
                     }
                 } else {
                     console.log(run.status);
@@ -327,14 +328,14 @@ const sendEmail = async (subject, message, to, token) => {
             // Generate the email content using AddMessageToThread
             const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, token);
             console.log("returned : ", emailContent)
-            // const { subject, body } = emailContent;
+            const { s, b } = emailContent;
             // if (emailContent) {
-                // console.log("Subject:", subject);
-                // console.log("Body:", body);
+                console.log("Subject:", s);
+                console.log("Body:", b);
                 
             // Send the email
-            // await sendEmail(semailContent.subject, emailContent.body, To, token);
-            // SENT_EMAILS += 1;
+            await sendEmail(semailContent.subject, emailContent.body, To, token);
+            SENT_EMAILS += 1;
 
             // } else {
                 // console.log("Failed to retrieve email content.");
