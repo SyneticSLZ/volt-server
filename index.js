@@ -473,7 +473,8 @@ app.post('/add-customer-to-db', async (req, res) => {
             priceID: data.priceID,
             password: data.password,
             name: data.name,
-            plan_emails: data.plan_emails
+            plan_emails: data.plan_emails,
+            affiliate: data.affiliate
         });
 
         await customer.save()

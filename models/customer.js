@@ -8,7 +8,8 @@ const customerSchema = new mongoose.Schema({
     priceID: String,
     password: String,
     name: String,
-    plan_emails: Number
+    plan_emails: Number,
+    affiliate: String
 });
 
 const Customer = mongoose.model('Customer', customerSchema);
