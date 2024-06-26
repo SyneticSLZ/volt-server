@@ -355,7 +355,8 @@ const sendEmail = async (subject, message, to, token, res) => {
         }
     }
 
-    res.json({ status: 'completed', sent_emails: SENT_EMAILS });
+    // res.json({ status: 'completed', sent_emails: SENT_EMAILS });
+    console.log("completed")
 });
 });
 
