@@ -21,7 +21,7 @@ const openai = new OpenAI({
 
 const ASSISTANT_ID = "asst_shvdCBA7snGDSENhmE5iugIm"
 
-
+let IsLogged_IN = False;
 
 // This is your test secret API key.
 const stripe = require('stripe')('sk_test_51MNx4UKJeZAyw8f48GWSXpvAEKCzEU5ISvITCblYwxBpKMhUF9yZcnaosy2ukX9I8iDhMkvctmBMZWBqygrDC08r00r0xpZvXa');
@@ -595,12 +595,25 @@ app.post('/send-email-smtp', async (req, res) => {
 
 // Gmail API email sending route
 app.get('/auth/google', (req, res) => {
+
     const url = oauth2Client.generateAuthUrl({
         access_type: 'offline',
         scope: ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/userinfo.email'],
     });
     res.redirect(url);
 });
+
+// Gmail API email sending route
+app.get('/get/auth/google', (req, res) => {
+    IsLogged_IN = True;
+    const url = oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/userinfo.email'],
+    });
+    res.redirect(url);
+});
+
+
 
 app.get('/auth/google/callback', async (req, res) => {
     const { code } = req.query;
@@ -613,6 +626,10 @@ app.get('/auth/google/callback', async (req, res) => {
     console.log('User email set in session(JWT):', userInfo.data.email);
     const customer = await findCustomer(email);
 
+    if (IsLogged_IN){
+        res.redirect(`https://syneticslz.github.io/test-client/Dashboard.html?connectedgoogletoken=${jwtToken}`);
+    }
+else {
     if (customer) {
 
         res.redirect(`https://syneticslz.github.io/test-client/Dashboard.html?googletoken=${jwtToken}`);
@@ -620,7 +637,7 @@ app.get('/auth/google/callback', async (req, res) => {
         // User does not exist, redirect to the pricing page for signup
         res.redirect(`https://syneticslz.github.io/test-client/pricing.html?email=${encodeURIComponent(userInfo.data.email)}&password=null&token=${jwtToken}`);
     }
-
+}
 
 
     // req.session.tokens = tokens;
