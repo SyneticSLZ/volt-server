@@ -125,12 +125,25 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
 
         const checkRunStatus = async () => {
             while (timeElapsed < timeout) {
-                run = await openai.beta.threads.runs.retrieve(ThreadID, run.id);
+                // run = await openai.beta.threads.runs.retrieve(ThreadID, run.id);
+
+                try {
+                    run = await openai.beta.threads.runs.retrieve(ThreadID, run.id);
+                } catch (error) {
+                    console.error('Error retrieving run status:', error);
+                    // Optionally, you can break the loop or continue based on the error type
+                    break;
+                }
+
+
                 if (run.status === 'completed') {
+
                     const messages = await openai.beta.threads.messages.list(
                         run.thread_id
                     );
-                    console.log("Messages listed");
+                    console.log("Messages listed", messages);
+
+
                     for (const message of messages.data) {
                         const content = message.content[0].text.value;
 
@@ -149,6 +162,8 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
 
                         return { subject_c , body_c };
                     }
+
+
                 } else {
                     console.log(run.status);
                     console.log(`Time elapsed: ${timeElapsed} seconds`);
@@ -157,6 +172,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
                 }
             }
             console.log('Timeout reached');
+
             return null;
         };
 
