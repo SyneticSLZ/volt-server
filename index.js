@@ -93,6 +93,9 @@ async function CreateThread(){
     return thread.id
 }
 
+const subject_line = "";
+const body_content = "";
+
 async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, token) {
     try {
         // Create the message
@@ -133,16 +136,18 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
 
                         // Split the content to get the subject and body
                         const lines = content.split('\n');
-                        const subject = lines[0];
-                        const body = lines.slice(1).join('\n');
+                        const subject_c = lines[0];
+                        const body_c = lines.slice(1).join('\n');
                         //  const s = subject
                         //  const b = body
-                        console.log("Subject:", subject);
-                        console.log("Body:", body);
+                        body_content = body_c
+                        subject_line = subject_c
+                        console.log("Subject:", subject_c);
+                        console.log("Body:", body_c);
                         // await sendEmail(subject, body, To, token);
                         // SENT_EMAILS += 1;
 
-                        return { s , b };
+                        return { subject_c , body_c };
                     }
                 } else {
                     console.log(run.status);
@@ -263,6 +268,7 @@ const sendEmainl = async (subject, message, to, token) => {
 
 const sendEmail = async (subject, message, to, token) => {
     // const token = req.headers['authorization'].split(' ')[1];
+    console.log("data is :" , to, mesasge, subject )
     const userData = verifyJWT(token);
 
     if (!userData) {
@@ -334,7 +340,7 @@ const sendEmail = async (subject, message, to, token) => {
                 // console.log("Body:", b);
                 
             // Send the email
-            await sendEmail(semailContent.subject, emailContent.body, To, token);
+            await sendEmail(emailContent.subject, emailContent.body, To, token);
             SENT_EMAILS += 1;
 
             // } else {
