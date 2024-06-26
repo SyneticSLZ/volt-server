@@ -93,8 +93,8 @@ async function CreateThread(){
     return thread.id
 }
 
-const subject_line = "";
-const body_content = "";
+let subject_line = "";
+let body_content = "";
 
 async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, token) {
     try {
@@ -340,7 +340,7 @@ const sendEmail = async (subject, message, to, token) => {
                 // console.log("Body:", b);
                 
             // Send the email
-            await sendEmail(emailContent.subject, emailContent.body, To, token);
+            await sendEmail(subject_line, body_content, To, token);
             SENT_EMAILS += 1;
 
             // } else {
