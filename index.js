@@ -166,7 +166,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
 
 
                 } else {
-                    console.log(run.status);
+                    console.log("status: ", run.status);
                     console.log(`Time elapsed: ${timeElapsed} seconds`);
                     timeElapsed += interval;
                     await new Promise(resolve => setTimeout(resolve, interval * 1000)); // Wait for the interval duration
