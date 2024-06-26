@@ -352,14 +352,14 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         });
         console.log('Email sent successfully');
 
-        // const customer = await customersCollection.findOne({ email: myemail });
+        const customer = await customersCollection.findOne({ email: email });
         // if (customer && customer.total_emails >= emailsToUse) {
-        //     const newTotalEmails = customer.total_emails + 1;
-        //     await customersCollection.updateOne(
-        //         { email: email },
-        //         { $set: { total_emails: newTotalEmails } }
-        //     );
-        //     res.json({ message: `Emails used! ${newTotalEmails} emails used.` });
+            const newTotalEmails = customer.total_emails + 1;
+            await customersCollection.updateOne(
+                { email: email },
+                { $set: { total_emails: newTotalEmails } }
+            );
+            console.log(`Emails used! ${newTotalEmails} emails used.`);
         // } else {
         //     res.status(400).json({ message: "Not enough emails left or customer not found" });
         // }
