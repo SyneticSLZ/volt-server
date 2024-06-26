@@ -120,7 +120,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
 
         // Polling loop for the run status
         let timeElapsed = 0;
-        const timeout = 60; // Timeout duration in seconds
+        const timeout = 140; // Timeout duration in seconds
         const interval = 5; // Interval duration in seconds
 
         const checkRunStatus = async () => {
