@@ -393,13 +393,14 @@ app.post('/send-bulk-manual', async (req, res) => {
 
 // Route to generate email content
 app.post('/generate-email-content', async (req, res) => {
+    console.log("personalizing email")
     const { website, userPitch, Uname, To} = req.body;
     const threadID = await CreateThread();
-
+console.log("threadid :  ", threadID)
     try {
 
         const summary = await summarizeWebsite(website);
-
+        console.log("summarized : ", summary)
         const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname);
         console.log("returned : ", emailContent)
 
