@@ -60,7 +60,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 // Helper functions
-async function summarizeWebsite(url) {
+async function summarsizeWebsite(url) {
     if (!url) {
         throw new Error('URL is required');
     }
@@ -83,6 +83,24 @@ async function summarizeWebsite(url) {
     } catch (error) {
         console.error(error);
         throw new Error('Failed to fetch and summarize the website');
+    }
+}
+
+async function summarizeWebsite(url) {
+    try {
+        const response = await fetch(`https://cors-anywhere.herokuapp.com/${url}`);
+        const text = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+        const metaDescription = doc.querySelector("meta[name='description']")?.getAttribute("content");
+        if (metaDescription) {
+            return metaDescription.split(" ").slice(0, 20).join(" ");
+        } else {
+            return "Description not found.";
+        }
+    } catch (error) {
+        console.error(error);
+        return "Error fetching description.";
     }
 }
 
