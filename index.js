@@ -144,8 +144,9 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
                     console.log("Messages listed", messages);
 
 
-                    for (const message of messages.data) {
-                        const content = message.content[0].text.value;
+                    // for (const message of messages.data) {
+                        // const content = message.content[0].text.value;
+                        const content = messages.data[0].content[0].text.value
 
                         // Split the content to get the subject and body
                         const lines = content.split('\n');
@@ -161,7 +162,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
                         // SENT_EMAILS += 1;
 
                         return { subject_c , body_c };
-                    }
+                    // }
 
 
                 } else {
