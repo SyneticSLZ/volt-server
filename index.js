@@ -268,7 +268,7 @@ const sendEmainl = async (subject, message, to, token) => {
 
 
 
-const sendEmail = async (subject, message, to, token, email) => {
+const sendEmail = async (subject, message, to, token, myemail) => {
     // const token = req.headers['authorization'].split(' ')[1];
     console.log("data is :" , to, message, subject )
     const userData = verifyJWT(token);
@@ -305,7 +305,7 @@ const sendEmail = async (subject, message, to, token, email) => {
         });
         console.log('Email sent successfully');
 
-        const customer = await customersCollection.findOne({ email: email });
+        const customer = await customersCollection.findOne({ email: myemail });
         if (customer && customer.total_emails >= emailsToUse) {
             const newTotalEmails = customer.total_emails + 1;
             await customersCollection.updateOne(
