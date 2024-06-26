@@ -266,7 +266,7 @@ const sendEmainl = async (subject, message, to, token) => {
 };
 
 
-const sendEmail = async (subject, message, to, token) => {
+const sendEmail = async (subject, message, to, token, res) => {
     // const token = req.headers['authorization'].split(' ')[1];
     console.log("data is :" , to, message, subject )
     const userData = verifyJWT(token);
@@ -284,7 +284,7 @@ const sendEmail = async (subject, message, to, token) => {
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
     const emailContent = [
-        `To: ${to}`,
+        `To: <${to}>`,
         'Content-Type: text/html; charset=utf-8',
         'MIME-Version: 1.0',
         `Subject: ${subject}`,
@@ -340,7 +340,7 @@ const sendEmail = async (subject, message, to, token) => {
                 // console.log("Body:", b);
                 
             // Send the email
-            await sendEmail(subject_line, body_content, To, token);
+            await sendEmail(subject_line, body_content, To, token, res);
             SENT_EMAILS += 1;
 
             // } else {
