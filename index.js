@@ -14,8 +14,6 @@ dotenv.config();
 const axios = require('axios');
 const cheerio = require('cheerio');
 const nlp = require('compromise');
-const fetch = require('node-fetch');
-const { JSDOM } = require('jsdom');
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -89,22 +87,34 @@ async function summarsizeWebsite(url) {
 }
 
 async function summarizeWebsite(url) {
+    if (!url) {
+        throw new Error('URL is required');
+    }
+    
     try {
-        const response = await fetch(`https://cors-anywhere.herokuapp.com/${url}`);
-        const text = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'text/html');
-        const metaDescription = doc.querySelector("meta[name='description']")?.getAttribute("content");
-        if (metaDescription) {
-            return metaDescription.split(" ").slice(0, 20).join(" ");
-        } else {
-            return "Description not found.";
+        // Fetch the website content
+        const { data } = await axios.get(url);
+        
+        // Parse the HTML content
+        const $ = cheerio.load(data);
+
+        // Attempt to extract meta description
+        let description = $('meta[name="description"]').attr('content');
+        
+        if (!description) {
+            // Fallback to using headings and first paragraphs if no meta description is present
+            const headings = $('h1, h2').map((i, el) => $(el).text()).get();
+            const paragraphs = $('p').map((i, el) => $(el).text()).get();
+            description = headings.concat(paragraphs).slice(0, 3).join(' ').trim();
         }
+
+        return description;
     } catch (error) {
         console.error(error);
-        return "Error fetching description.";
+        throw new Error('Failed to fetch and summarize the website');
     }
 }
+
 
 
 async function CreateThread(){
