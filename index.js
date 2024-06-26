@@ -268,7 +268,7 @@ const sendEmainl = async (subject, message, to, token) => {
 
 const sendEmail = async (subject, message, to, token) => {
     // const token = req.headers['authorization'].split(' ')[1];
-    console.log("data is :" , to, mesasge, subject )
+    console.log("data is :" , to, message, subject )
     const userData = verifyJWT(token);
 
     if (!userData) {
