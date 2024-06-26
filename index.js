@@ -96,7 +96,7 @@ async function CreateThread(){
 let subject_line = "";
 let body_content = "";
 
-async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, token) {
+async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me) {
     try {
         // Create the message
         const message = await openai.beta.threads.messages.create(
@@ -266,7 +266,9 @@ const sendEmainl = async (subject, message, to, token) => {
 };
 
 
-const sendEmail = async (subject, message, to, token, res) => {
+
+
+const sendEmail = async (subject, message, to, token, email) => {
     // const token = req.headers['authorization'].split(' ')[1];
     console.log("data is :" , to, message, subject )
     const userData = verifyJWT(token);
@@ -302,6 +304,19 @@ const sendEmail = async (subject, message, to, token, res) => {
             },
         });
         console.log('Email sent successfully');
+
+        const customer = await customersCollection.findOne({ email: email });
+        if (customer && customer.total_emails >= emailsToUse) {
+            const newTotalEmails = customer.total_emails + 1;
+            await customersCollection.updateOne(
+                { email: email },
+                { $set: { total_emails: newTotalEmails } }
+            );
+            res.json({ message: `Emails used! ${newTotalEmails} emails used.` });
+        } else {
+            res.status(400).json({ message: "Not enough emails left or customer not found" });
+        }
+
     } catch (error) {
         console.error('Error sending email:', error);
         // res.status(500).send('Error sending email: ' + error.message);
@@ -313,7 +328,7 @@ const sendEmail = async (subject, message, to, token, res) => {
 
 // async function sendEmails(credentialsDict, submittedData, userPitch, Uname, token) {
     app.post('/send-emails', async (req, res) => {
-    const { submittedData, userPitch, Uname, token } = req.body;
+    const { submittedData, userPitch, Uname, token, myemail } = req.body;
 
     res.status(200).send('Emails are being sent in the background. You can close the tab.');
 
@@ -340,7 +355,7 @@ const sendEmail = async (subject, message, to, token, res) => {
                 // console.log("Body:", b);
                 
             // Send the email
-            await sendEmail(subject_line, body_content, data.email, token);
+            await sendEmail(subject_line, body_content, data.email, token, myemail);
             SENT_EMAILS += 1;
 
             // } else {
@@ -359,6 +374,43 @@ const sendEmail = async (subject, message, to, token, res) => {
     console.log("completed")
 });
 });
+
+
+// Route to send bulk emails manually
+app.post('/send-bulk-manual', async (req, res) => {
+    const { token, subject, content, email, myemail } = req.body;
+
+    try {
+        // await sendBulkEmails(generatedData, token);
+        await sendEmail(subject, content, email, token, myemail);
+        res.json({ message: 'Bulk emails sent successfully' });
+    } catch (error) {
+        console.log(`Error sending bulk emails manually: ${error}`);
+        res.status(500).json({ error: 'Failed to send bulk emails' });
+    }
+});
+
+
+// Route to generate email content
+app.post('/generate-email-content', async (req, res) => {
+    const { website, userPitch, Uname, To} = req.body;
+    const threadID = await CreateThread();
+
+    try {
+
+        const summary = await summarizeWebsite(website);
+
+        const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname);
+        console.log("returned : ", emailContent)
+
+        res.json({ subject_line, body_content, To });
+
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate email content' });
+    }
+});
+
+
 
 
 app.post('/add-customer-to-db', async (req, res) => {
