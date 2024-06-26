@@ -340,7 +340,7 @@ const sendEmail = async (subject, message, to, token, res) => {
                 // console.log("Body:", b);
                 
             // Send the email
-            await sendEmail(subject_line, body_content, To, token, res);
+            await sendEmail(subject_line, body_content, data.email, token, res);
             SENT_EMAILS += 1;
 
             // } else {
