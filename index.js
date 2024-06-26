@@ -272,7 +272,7 @@ const sendEmail = async (subject, message, to, token, res) => {
     const userData = verifyJWT(token);
 
     if (!userData) {
-        return res.status(401).send('Unauthorized');
+        return 
     }
 
     console.log('User Data:', userData);
@@ -301,10 +301,10 @@ const sendEmail = async (subject, message, to, token, res) => {
                 raw: base64EncodedEmail,
             },
         });
-        res.status(200).send('Email sent successfully');
+        console.log('Email sent successfully');
     } catch (error) {
         console.error('Error sending email:', error);
-        res.status(500).send('Error sending email: ' + error.message);
+        // res.status(500).send('Error sending email: ' + error.message);
     }
 };
 
@@ -340,7 +340,7 @@ const sendEmail = async (subject, message, to, token, res) => {
                 // console.log("Body:", b);
                 
             // Send the email
-            await sendEmail(subject_line, body_content, data.email, token, res);
+            await sendEmail(subject_line, body_content, data.email, token);
             SENT_EMAILS += 1;
 
             // } else {
