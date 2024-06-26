@@ -20,8 +20,10 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "googleapis": "^140.0.0",
+    "jsdom": "^24.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.4.3",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.14",
     "openai": "^4.52.0",
     "stripe": "^15.12.0"

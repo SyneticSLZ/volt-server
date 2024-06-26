@@ -14,6 +14,8 @@ dotenv.config();
 const axios = require('axios');
 const cheerio = require('cheerio');
 const nlp = require('compromise');
+const fetch = require('node-fetch');
+const { JSDOM } = require('jsdom');
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
