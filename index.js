@@ -605,14 +605,14 @@ app.get('/auth/google', (req, res) => {
 });
 
 // Gmail API email sending route
-app.get('/get/auth/google', (req, res) => {
-    IsLogged_IN = True;
-    const url = oauth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/userinfo.email'],
-    });
-    res.redirect(url);
-});
+// app.get('/get/auth/google', (req, res) => {
+//     IsLogged_IN = True;
+//     const url = oauth2Client.generateAuthUrl({
+//         access_type: 'offline',
+//         scope: ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/userinfo.email'],
+//     });
+//     res.redirect(url);
+// });
 
 
 
