@@ -594,6 +594,76 @@ app.post('/send-email-smtp', async (req, res) => {
     }
 });
 
+// reset passworrrd 
+
+app.post('/request-password-reset', async (req, res) => {
+    const { email } = req.body;
+    const user = await findCustomer(email);
+  
+    if (!user) {
+      return res.status(400).send('User with this email does not exist.');
+    }
+  
+    const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    // Optionally store the token in DB or cache
+  
+    // Send the email
+
+
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'voltmailerhelp@gmail.com',
+          pass: 'chys ltjh yxlo isbu', // App password if 2FA is enabled
+        },
+      });
+    
+      // Define email options
+      const mailOptions = {
+        from: 'voltmailerhelp@gmail.com',
+        to: email,
+        subject: 'Password Reset',
+        text: `Click the link to reset your password: https://syneticslz.github.io/test-client/reset-password?token=${resetToken}`,
+        html: `<p>Click the link to reset your password: <a href="https://syneticslz.github.io/test-client/reset-password?token=${resetToken}">Reset Password</a></p>`,
+      };
+
+  
+    await transporter.sendMail(mailOptions);
+    console.log('Message sent: %s', info.messageId);
+    res.send('Password reset email sent.');
+
+    
+
+  });
+  
+
+  app.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+  
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await findCustomer(decoded.email);
+  
+      if (!user) {
+        return res.status(400).send('Invalid token or user does not exist.');
+      }
+  
+      // Validate new password (e.g., length, complexity)
+      if (newPassword.length < 8) {
+        return res.status(400).send('Password must be at least 8 characters long.');
+      }
+  
+      user.password = await bcrypt.hash(newPassword, 10); // Hash the new password
+      await user.save();
+  
+      res.send('Password has been reset.');
+    } catch (error) {
+      res.status(400).send('Invalid token.');
+    }
+  });
+  
+
 // Gmail API email sending route
 app.get('/auth/google', (req, res) => {
 
