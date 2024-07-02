@@ -637,8 +637,6 @@ app.post('/request-password-reset', async (req, res) => {
     console.log('Message sent: %s', info.messageId);
     res.send('Password reset email sent.');
 
-    
-
   });
   
 
