@@ -628,8 +628,8 @@ app.post('/request-password-reset', async (req, res) => {
         from: 'voltmailerhelp@gmail.com',
         to: email,
         subject: 'Password Reset',
-        text: `Click the link to reset your password: https://syneticslz.github.io/test-client/reset-password?token=${resetToken}`,
-        html: `<p>Click the link to reset your password: <a href="https://syneticslz.github.io/test-client/reset-password?token=${resetToken}">Reset Password</a></p>`,
+        text: `Click the link to reset your password: https://syneticslz.github.io/test-client/reset-password?token=${token}`,
+        html: `<p>Click the link to reset your password: <a href="https://syneticslz.github.io/test-client/reset-password?token=${token}">Reset Password</a></p>`,
       };
 
   
