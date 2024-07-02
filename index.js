@@ -237,10 +237,14 @@ async function addCustomerToDb(data) {
 async function loginToDatabase(email, password) {
     const customer = await findCustomer(email);
     if (customer) {
-        if (customer.password) {
-            return password === customer.password ? true : 'Wrong Password';
-        } else {
+        let C_password = customer.password
+        if (C_password == "null") {
+
             return 'Please sign in with Google';
+
+        } else {
+
+            return password === C_password ? true : 'Wrong Password';
         }
     } else {
         return 'Account Not found';
