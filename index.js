@@ -21,7 +21,7 @@ const openai = new OpenAI({
 
 const ASSISTANT_ID = "asst_shvdCBA7snGDSENhmE5iugIm"
 
-let IsLogged_IN = False;
+let IsLogged_IN = false;
 
 // This is your test secret API key.
 const stripe = require('stripe')('sk_test_51MNx4UKJeZAyw8f48GWSXpvAEKCzEU5ISvITCblYwxBpKMhUF9yZcnaosy2ukX9I8iDhMkvctmBMZWBqygrDC08r00r0xpZvXa');
