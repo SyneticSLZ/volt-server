@@ -608,7 +608,7 @@ app.post('/request-password-reset', async (req, res) => {
       return res.status(400).send('User with this email does not exist.');
     }
   
-    const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const token = jwt.sign({ email: email }, "process.env.JWT_SECRET", { expiresIn: '15m' });
     // Optionally store the token in DB or cache
   
     // Send the email
@@ -646,7 +646,7 @@ app.post('/request-password-reset', async (req, res) => {
     const { token, newPassword } = req.body;
   
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, "process.env.JWT_SECRET");
       const user = await findCustomer(decoded.email);
   
       if (!user) {
