@@ -634,7 +634,7 @@ app.post('/request-password-reset', async (req, res) => {
 
   
     await transporter.sendMail(mailOptions);
-    console.log('Message sent: %s', info.messageId);
+    console.log('Message sent: %s');
     res.send('Password reset email sent.');
 
   });
