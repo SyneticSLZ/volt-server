@@ -629,7 +629,35 @@ app.post('/request-password-reset', async (req, res) => {
         to: email,
         subject: 'Password Reset',
         text: `Click the link to reset your password: https://voltmailer.com/reset-password?token=${token}`,
-        html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
+        // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
+        html: `
+        <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="background-color: #0046AD; padding: 20px; text-align: center;">
+                <img src="https://voltmailer.com/logo.png" alt="VoltMailer Logo" style="max-width: 150px;">
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 20px; background-color: #f4f4f4;">
+                <h2 style="color: #0046AD;">Password Reset Request</h2>
+                <p>Hello,</p>
+                <p>We received a request to reset your password. Click the button below to reset it.</p>
+                <p style="text-align: center;">
+                  <a href="https://voltmailer.com/reset-password?token=${token}" style="background-color: #0046AD; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+                </p>
+                <p>If you did not request a password reset, please ignore this email.</p>
+                <p>Thanks,<br>The VoltMailer Team</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color: #0046AD; padding: 10px; text-align: center; color: white;">
+                <p style="margin: 0;">&copy; 2024 VoltMailer. All rights reserved.</p>
+              </td>
+            </tr>
+          </table>
+        </div>
+      `,
       };
 
   
@@ -639,6 +667,37 @@ app.post('/request-password-reset', async (req, res) => {
 
   });
   
+
+
+  app.post('/send-email', async (req, res) => {
+    const { email, textarea } = req.body;
+
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'voltmailerhelp@gmail.com',
+          pass: 'chys ltjh yxlo isbu', // App password if 2FA is enabled
+        },
+      });
+    
+      // Define email options
+      const mailOptions = {
+        from: 'voltmailerhelp@gmail.com',
+        to: 'voltmailerhelp@gmail.com',
+        subject: ` ${email} | Help`,
+        text: textarea,
+      };
+
+  
+    await transporter.sendMail(mailOptions);
+    console.log('Message sent: %s');
+    res.send('Password reset email sent.');
+
+
+  });
+
+
 
   app.post('/reset-password', async (req, res) => {
     const { token, newPassword } = req.body;
