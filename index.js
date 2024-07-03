@@ -631,32 +631,33 @@ app.post('/request-password-reset', async (req, res) => {
         text: `Click the link to reset your password: https://voltmailer.com/reset-password?token=${token}`,
         // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
         html: `
-        <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333;">
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="background-color: #0046AD; padding: 20px; text-align: center;">
-                <img src="https://voltmailer.com/logo.png" alt="VoltMailer Logo" style="max-width: 150px;">
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 20px; background-color: #f4f4f4;">
-                <h2 style="color: #0046AD;">Password Reset Request</h2>
-                <p>Hello,</p>
-                <p>We received a request to reset your password. Click the button below to reset it.</p>
-                <p style="text-align: center;">
-                  <a href="https://voltmailer.com/reset-password?token=${token}" style="background-color: #0046AD; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-                </p>
-                <p>If you did not request a password reset, please ignore this email.</p>
-                <p>Thanks,<br>The VoltMailer Team</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="background-color: #0046AD; padding: 10px; text-align: center; color: white;">
-                <p style="margin: 0;">&copy; 2024 VoltMailer. All rights reserved.</p>
-              </td>
-            </tr>
-          </table>
-        </div>
+<div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background-color: #ffffff;
+">
+<table style="width: 100%; border-collapse: collapse;">
+<tr>
+  <td style="background-color: #02021E; padding: 8px; text-align: left;">
+    <img src="https://voltmailer.com/vm.png" alt="VoltMailer Logo" style="max-width: 150px;">
+  </td>
+</tr>
+<tr>
+  <td style="padding: 20px; ">
+    <h2 style="color: #02021E;">Password Reset Request</h2>
+    <p>Hello,</p>
+    <p>We received a request to reset your password. Click the button below to reset it.</p>
+    <p style="text-align: center;">
+      <a href="https://voltmailer.com/reset-password?token=${token}" style="background-color: #02021E;  color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-bottom: 20px; margin-top: 20px;">Reset Password</a>
+    </p>
+    <p>If you did not request a password reset, please ignore this email.</p>
+    <p>Thanks,<br>The VoltMailer Team</p>
+  </td>
+</tr>
+<tr>
+  <td style="background-color: #02021E; padding: 10px; text-align: center; color: white;">
+    <p style="margin: 0;">&copy; 2024 VoltMailer. All rights reserved.</p>
+  </td>
+</tr>
+</table>
+</div>
       `,
       };
 
