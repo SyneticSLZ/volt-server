@@ -27,7 +27,7 @@ let IsLogged_IN = false;
 const stripe = require('stripe')('sk_test_51MNx4UKJeZAyw8f48GWSXpvAEKCzEU5ISvITCblYwxBpKMhUF9yZcnaosy2ukX9I8iDhMkvctmBMZWBqygrDC08r00r0xpZvXa');
 
 
-const YOUR_DOMAIN = 'https://syneticslz.github.io/test-client';
+const YOUR_DOMAIN = 'https://voltmailer.com';
 
 const port = process.env.PORT || 3000;
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -525,7 +525,7 @@ app.post('/signup-customer', async (req, res) => {
         // Redirect to the pricing page with email and password
         res.json({ 
             success: true, 
-            redirectUrl: `https://syneticslz.github.io/test-client/pricing.html?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}` 
+            redirectUrl: `https://voltmailer.com/pricing.html?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}` 
         });
     }
 });
@@ -628,8 +628,8 @@ app.post('/request-password-reset', async (req, res) => {
         from: 'voltmailerhelp@gmail.com',
         to: email,
         subject: 'Password Reset',
-        text: `Click the link to reset your password: https://syneticslz.github.io/test-client/reset-password?token=${token}`,
-        html: `<p>Click the link to reset your password: <a href="https://syneticslz.github.io/test-client/reset-password?token=${token}">Reset Password</a></p>`,
+        text: `Click the link to reset your password: https://voltmailer.com/reset-password?token=${token}`,
+        html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
       };
 
   
@@ -700,22 +700,22 @@ app.get('/auth/google/callback', async (req, res) => {
     const customer = await findCustomer(email);
 
     if (IsLogged_IN){
-        res.redirect(`https://syneticslz.github.io/test-client/Dashboard.html?connectedgoogletoken=${jwtToken}`);
+        res.redirect(`https://voltmailer.com/Dashboard.html?connectedgoogletoken=${jwtToken}`);
     }
 else {
     if (customer) {
 
-        res.redirect(`https://syneticslz.github.io/test-client/Dashboard.html?googletoken=${jwtToken}`);
+        res.redirect(`https://voltmailer.com/Dashboard.html?googletoken=${jwtToken}`);
     } else {
         // User does not exist, redirect to the pricing page for signup
-        res.redirect(`https://syneticslz.github.io/test-client/pricing.html?email=${encodeURIComponent(userInfo.data.email)}&password=null&token=${jwtToken}`);
+        res.redirect(`https://voltmailer.com/pricing.html?email=${encodeURIComponent(userInfo.data.email)}&password=null&token=${jwtToken}`);
     }
 }
 
 
     // req.session.tokens = tokens;
     // req.session.userEmail = userInfo.data.email;
-    // res.redirect('https://syneticslz.github.io/test-client/');
+    // res.redirect('https://voltmailer.com/');
 });
 
 app.post('/send-email-gmail', async (req, res) => {
