@@ -315,8 +315,24 @@ const sendEmainl = async (subject, message, to, token) => {
         console.error(`Error sending email to ${to}:`, error);
     }
 };
+const updateCustomer = async (email, updateData, res) => {
+    try {
+        const updatedCustomer = await Customer.findOneAndUpdate(
+            { email: email },
+            updateData,
+            { new: true } // This option returns the modified document rather than the original
+        );
 
+        if (!updatedCustomer) {
+            return res.status(404).send('Customer not found');
+        }
 
+        return res.json({ message: 'Customer updated successfully', customer: updatedCustomer });
+    } catch (error) {
+        console.error('Error updating customer:', error);
+        return res.status(500).send('Error updating customer in the database');
+    }
+};
 
 
 const sendEmail = async (subject, message, to, token, myemail) => {
@@ -356,7 +372,7 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         });
         console.log('Email sent successfully');
 
-        const customer = await customersCollection.findOne({ email: email });
+        const customer = await Customer.findOne({ email: email });
         // if (customer && customer.total_emails >= emailsToUse) {
             const newTotalEmails = customer.total_emails + 1;
             await customersCollection.updateOne(
@@ -462,6 +478,29 @@ console.log("threadid :  ", threadID)
     }
 });
 
+
+// Endpoint to update a customer by email
+app.post('/update-customer-by-email', async (req, res) => {
+    const email = req.body.email;
+    const updateData = req.body;
+
+    try {
+        const updatedCustomer = await Customer.findOneAndUpdate(
+            { email: email },
+            updateData,
+            { new: true } // This option returns the modified document rather than the original
+        );
+
+        if (!updatedCustomer) {
+            return res.status(404).send('Customer not found');
+        }
+
+        res.json({ message: 'Customer updated successfully', customer: updatedCustomer });
+    } catch (error) {
+        console.error('Error updating customer:', error);
+        res.status(500).send('Error updating customer in the database');
+    }
+});
 
 
 
