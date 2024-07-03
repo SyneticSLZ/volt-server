@@ -38,7 +38,7 @@ const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_U
 app.use(bodyParser.json());
 app.use(express.static('public'));
 app.use(cors({
-    origin: 'https://syneticslz.github.io', // Frontend server origin
+    origin: 'https://voltmailer.com', // Frontend server origin
     credentials: true // Allow credentials to be sent
 }));
 
