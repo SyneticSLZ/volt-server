@@ -628,7 +628,7 @@ app.post('/request-password-reset', async (req, res) => {
         from: 'voltmailerhelp@gmail.com',
         to: email,
         subject: 'Password Reset',
-        text: `Click the link to reset your password: https://voltmailer.com/reset-password?token=${token}`,
+        text: `Click the link to reset your password: https://voltmailer.com/Oldlogin?token=${token}`,
         // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
         html: `
 <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background-color: #ffffff;
@@ -645,7 +645,7 @@ app.post('/request-password-reset', async (req, res) => {
     <p>Hello,</p>
     <p>We received a request to reset your password. Click the button below to reset it.</p>
     <p style="text-align: center;">
-      <a href="https://voltmailer.com/reset-password?token=${token}" style="background-color: #02021E;  color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-bottom: 20px; margin-top: 20px;">Reset Password</a>
+      <a href="https://voltmailer.com/Oldlogin?token=${token}" style="background-color: #02021E;  color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-bottom: 20px; margin-top: 20px;">Reset Password</a>
     </p>
     <p>If you did not request a password reset, please ignore this email.</p>
     <p>Thanks,<br>The VoltMailer Team</p>
