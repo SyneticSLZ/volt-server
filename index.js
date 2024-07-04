@@ -133,7 +133,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
             ThreadID,
             {
                 role: "user",
-                content: `I'm selling ${user_pitch}, This is the data I have on the company and what they do from their website ${website_content}. And this is the user's pitch: ${user_pitch}. This is the name you should use to address them in the email ${To} from my name, ${Me}. I want you to create the email where the first line is the subject line and then the greeting and content follows. I wnat thie output to be professional, so no blank fieldse. [company name ] ect. My company name is Voltmailer.`
+                content: `I'm selling ${user_pitch}, This is the data I have on the company and what they do from their website ${website_content}. And this is the user's pitch: ${user_pitch}. This is the name you should use to address them in the email ${To} from my name, ${Me}. I want you to create the email where the first line is the subject line and then the greeting and content follows. I wnat thie output to be professional, so no blank fieldse. [company name ] ect.`
             }
         );
         console.log("Message added");
