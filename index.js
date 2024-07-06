@@ -14,6 +14,10 @@ dotenv.config();
 const axios = require('axios');
 const cheerio = require('cheerio');
 const nlp = require('compromise');
+// const fetch = require('node-fetch');
+const fs = require('fs');
+
+app.use(bodyParser.json());
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -1296,7 +1300,41 @@ app.post('/create-billing-portal-session', async (req, res) => {
 });
 
 
-//OPENAI
+//
+
+
+
+app.post('/domain-search', async (req, res) => {
+    const { domain, company, department, seniority, limit, offset } = req.body;
+    const apiKey = 'f5fe414af8a4b569907f5dfbeae9359e06754a2a'; // Replace with your actual API key
+
+    try {
+        const fetch = await import('node-fetch'); // Dynamic import
+        const response = await fetch.default(`https://api.hunter.io/v2/domain-search?domain=${domain}&company=${company}&department=${department.join(',')}&seniority=${seniority.join(',')}&limit=${limit}&offset=${offset}&api_key=${apiKey}`);
+        const data = await response.json();
+
+        if (response.ok) {
+            const results = data.data.emails;
+            const csvContent = results.map(result => [
+                result.value,
+                result.type,
+                result.confidence,
+                result.first_name,
+                result.last_name,
+                result.position,
+                result.seniority,
+                result.department
+            ].join(',')).join('\n');
+
+            fs.writeFileSync('results.csv', csvContent);
+            res.status(200).json(data);
+        } else {
+            res.status(response.status).json(data);
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 
 
