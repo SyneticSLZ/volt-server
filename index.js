@@ -941,7 +941,7 @@ app.post('/request-password-reset', async (req, res) => {
 
 
   app.post('/send-email', async (req, res) => {
-    const { email, textarea } = req.body;
+    const { email, textarea, website } = req.body;
 
 
     const transporter = nodemailer.createTransport({
@@ -956,7 +956,7 @@ app.post('/request-password-reset', async (req, res) => {
       const mailOptions = {
         from: 'voltmailerhelp@gmail.com',
         to: 'voltmailerhelp@gmail.com',
-        subject: ` ${email} | Help`,
+        subject: ` ${email} | ${website}|  Help`,
         text: textarea,
       };
 
