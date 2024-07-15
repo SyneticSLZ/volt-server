@@ -1038,7 +1038,7 @@ else {
         res.redirect(`https://voltmailer.com/Dashboard.html?googletoken=${jwtToken}`);
     } else {
         // User does not exist, redirect to the pricing page for signup
-        res.redirect(`https://voltmailer.com/pricing.html?email=${encodeURIComponent(userInfo.data.email)}&password=null&token=${jwtToken}`);
+        res.redirect(`https://voltmailer.com/Oldlogin.html?email=${encodeURIComponent(userInfo.data.email)}&password=null&google=${jwtToken}`);
     }
 }
 
@@ -1214,6 +1214,39 @@ app.post('/create-checkout-session-free-token', async (req, res) => {
   res.send({clientSecret: session.client_secret});
 });
 
+
+app.post('/create-free-sub', async (req, res) => {
+    const { email, password, name } = req.body;
+
+    try {
+        // Step 1: Create a new customer
+        const customer = await stripe.customers.create({
+            email: email,
+            name: name,
+        });
+
+        // Step 2: Create a subscription for the customer with a free trial
+        const subscription = await stripe.subscriptions.create({
+            customer: customer.id,
+            items: [
+                {
+                    price: 'price_1PKf2PKJeZAyw8f418JphiK0',
+                    quantity: 1,
+                },
+            ],
+            trial_period_days: 30,
+            // Add metadata if you want to store additional information
+            metadata: {
+                password: password
+            }
+        });
+
+        res.send({ success: true, subscriptionId: subscription.id });
+    } catch (error) {
+        console.error('Error creating subscription:', error);
+        res.status(500).send({ error: 'Failed to create subscription' });
+    }
+});
 
 
 
