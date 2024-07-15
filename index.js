@@ -1038,7 +1038,7 @@ else {
         res.redirect(`https://voltmailer.com/Dashboard.html?googletoken=${jwtToken}`);
     } else {
         // User does not exist, redirect to the pricing page for signup
-        res.redirect(`https://voltmailer.com/Oldlogin.html?email=${encodeURIComponent(userInfo.data.email)}&password=null&google=${jwtToken}`);
+        res.redirect(`https://voltmailer.com/OldLogin.html?email=${encodeURIComponent(userInfo.data.email)}&password=null&google=${jwtToken}`);
     }
 }
 
