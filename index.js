@@ -1127,6 +1127,39 @@ app.post('/create-checkout-session', async (req, res) => {
   res.send({clientSecret: session.client_secret});
 });
 
+app.post('/start-stripe-free-trial', async (req, res) => {
+    const customer_email = req.body.email
+    const password = req.body.password
+    const name = req.body.name
+
+    try {
+        const customer = await stripe.customers.create({
+            name: name,
+            email: customer_email,
+        });
+
+        console.log("customer created", customer)
+
+        // Create a subscription with a trial period
+        const subscription = await stripe.subscriptions.create({
+            customer: customer.id,
+            items: [{
+                price: 'price_1PKf2PKJeZAyw8f418JphiK0', // Your price ID
+            }],
+            trial_period_days: 30,
+            payment_behavior: 'default_incomplete',
+            expand: ['latest_invoice.payment_intent'],
+        });
+        console.log("subsccription created", subscription)
+
+        res.status(200).json({ success: true, subscriptionId: subscription.id });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
 
 app.post('/create-checkout-session-free', async (req, res) => {
     const customer_email = req.body.email
