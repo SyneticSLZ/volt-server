@@ -1152,7 +1152,7 @@ app.post('/start-stripe-free-trial', async (req, res) => {
         });
         console.log("subsccription created", subscription)
 
-        res.status(200).json({ success: true, subscriptionId: subscription.id });
+        res.status(200).json({ success: true, customerId: customer.id, subscriptionId: subscription.id });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, error: error.message });
