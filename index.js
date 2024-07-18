@@ -28,7 +28,7 @@ const ASSISTANT_ID = "asst_shvdCBA7snGDSENhmE5iugIm"
 let IsLogged_IN = false;
 
 // This is your test secret API key.
-const stripe = require('stripe')('sk_test_51MNx4UKJeZAyw8f48GWSXpvAEKCzEU5ISvITCblYwxBpKMhUF9yZcnaosy2ukX9I8iDhMkvctmBMZWBqygrDC08r00r0xpZvXa');
+const stripe = require('stripe')(process.env.STRIPE_API_KEY);
 
 
 const YOUR_DOMAIN = 'https://voltmailer.com';
@@ -1117,7 +1117,7 @@ app.post('/create-checkout-session', async (req, res) => {
     line_items: [
       {
         // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-        price: 'price_1PSlQ1KJeZAyw8f41gAgAb7o',
+        price: 'price_1Pdqx3KJeZAyw8f4T0AfWCIJ',
         quantity: 1,
       },
     ],
@@ -1146,7 +1146,7 @@ app.post('/start-stripe-free-trial', async (req, res) => {
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
             items: [{
-                price: 'price_1PKf2PKJeZAyw8f418JphiK0', // Your price ID
+                price: 'price_1PdqxCKJeZAyw8f44eTYC7Rw', // Your price ID
             }],
             trial_period_days: 30,
             payment_behavior: 'default_incomplete',
@@ -1175,7 +1175,7 @@ app.post('/create-checkout-session-free', async (req, res) => {
         return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
         line_items: [
           {
-            price: 'price_1PKf2PKJeZAyw8f418JphiK0',
+            price: 'price_1PdqxCKJeZAyw8f44eTYC7Rw',
             quantity: 1,
           },
         ],
@@ -1204,7 +1204,7 @@ app.post('/create-checkout-session-token', async (req, res) => {
     line_items: [
       {
         // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-        price: 'price_1PSlQ1KJeZAyw8f41gAgAb7o',
+        price: 'price_1Pdqx3KJeZAyw8f4T0AfWCIJ',
         quantity: 1,
       },
     ],
@@ -1231,7 +1231,7 @@ app.post('/create-checkout-session-free-token', async (req, res) => {
         return_url:  `${YOUR_DOMAIN}/return.html?session_id={CHECKOUT_SESSION_ID}&email={customer_email}`,
         line_items: [
           {
-            price: 'price_1PKf2PKJeZAyw8f418JphiK0',
+            price: 'price_1PdqxCKJeZAyw8f44eTYC7Rw',
             quantity: 1,
           },
         ],
@@ -1265,7 +1265,7 @@ app.post('/create-free-sub', async (req, res) => {
             customer: customer.id,
             items: [
                 {
-                    price: 'price_1PKf2PKJeZAyw8f418JphiK0',
+                    price: 'price_1PdqxCKJeZAyw8f44eTYC7Rw',
                     quantity: 1,
                 },
             ],
