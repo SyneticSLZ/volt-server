@@ -30,7 +30,7 @@ const ASSISTANT_ID = "asst_shvdCBA7snGDSENhmE5iugIm"
 let IsLogged_IN = false;
 
 // Hunter.io API key
-const hunter = new Hunter(process.env.HUNTER_API_KEY);
+const hunter = process.env.HUNTER_API_KEY
 
 // This is your test secret API key.
 const stripe = require('stripe')(process.env.STRIPE_API_KEY);
