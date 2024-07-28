@@ -16,6 +16,7 @@ const cheerio = require('cheerio');
 const nlp = require('compromise');
 // const fetch = require('node-fetch');
 const fs = require('fs');
+const Hunter = require('hunter.io');
 
 app.use(bodyParser.json());
 
@@ -23,9 +24,13 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
+
 const ASSISTANT_ID = "asst_shvdCBA7snGDSENhmE5iugIm"
 
 let IsLogged_IN = false;
+
+// Hunter.io API key
+const hunter = new Hunter(process.env.HUNTER_API_KEY);
 
 // This is your test secret API key.
 const stripe = require('stripe')(process.env.STRIPE_API_KEY);
@@ -399,6 +404,40 @@ const sendEmail = async (subject, message, to, token, myemail) => {
 
 
 // Routes
+// Endpoint to get emails by domain
+app.post('/get-emails', async (req, res) => {
+    const { domain } = req.body;
+
+    if (!domain) {
+        return res.status(400).json({ error: 'No domain provided.' });
+    }
+
+    try {
+        const result = await hunter.domainSearch({
+            domain: domain,
+            limit: 10  // Adjust as needed
+        });
+
+        if (result && result.data.emails) {
+            const emails = result.data.emails;
+            if (emails.length > 0) {
+                const submittedData = emails.map(emailInfo => ({
+                    email: emailInfo.value,
+                    website: domain,
+                    name: emailInfo.first_name
+                }));
+                res.json({ success: true, submittedData });
+            } else {
+                res.status(404).json({ error: `No emails found for ${domain}.` });
+            }
+        } else {
+            res.status(404).json({ error: `No results for ${domain}.` });
+        }
+    } catch (error) {
+        console.error('An error occurred:', error);
+        res.status(500).json({ error: 'An error occurred while fetching data.' });
+    }
+});
 
 // async function sendEmails(credentialsDict, submittedData, userPitch, Uname, token) {
     app.post('/send-emails', async (req, res) => {

@@ -19,6 +19,8 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "googleapis": "^140.0.0",
+    "hunter": "^0.0.1",
+    "hunter.io": "^0.2.7",
     "jsdom": "^24.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.4.3",
