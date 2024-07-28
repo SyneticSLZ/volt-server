@@ -405,37 +405,59 @@ const sendEmail = async (subject, message, to, token, myemail) => {
 
 // Routes
 // Endpoint to get emails by domain
-app.post('/get-emails', async (req, res) => {
-    const { domain } = req.body;
+// app.post('/get-emails', async (req, res) => {
+//     const { domain } = req.body;
+
+//     if (!domain) {
+//         return res.status(400).json({ error: 'No domain provided.' });
+//     }
+
+//     try {
+//         const result = await hunter.domainSearch({
+//             domain: domain,
+//             limit: 10  // Adjust as needed
+//         });
+//         console.log(result)
+//         if (result && result.data.emails) {
+//             const emails = result.data.emails;
+//             if (emails.length > 0) {
+//                 const submittedData = emails.map(emailInfo => ({
+//                     email: emailInfo.value,
+//                     website: domain,
+//                     name: emailInfo.first_name
+//                 }));
+//                 res.json({ success: true, submittedData });
+//             } else {
+//                 res.status(404).json({ error: `No emails found for ${domain}. x1` });
+//             }
+//         } else {
+//             res.status(404).json({ error: `No results for ${domain}. y2` });
+//         }
+//     } catch (error) {
+//         console.error('An error occurred:', error);
+//         res.status(500).json({ error: 'An error occurred while fetching data.' });
+//     }
+// });
+
+app.get('/get-emails', async (req, res) => {
+    const domain = req.query.domain;
 
     if (!domain) {
         return res.status(400).json({ error: 'No domain provided.' });
     }
 
     try {
-        const result = await hunter.domainSearch({
-            domain: domain,
-            limit: 10  // Adjust as needed
-        });
-        console.log(result)
-        if (result && result.data.emails) {
-            const emails = result.data.emails;
-            if (emails.length > 0) {
-                const submittedData = emails.map(emailInfo => ({
-                    email: emailInfo.value,
-                    website: domain,
-                    name: emailInfo.first_name
-                }));
-                res.json({ success: true, submittedData });
-            } else {
-                res.status(404).json({ error: `No emails found for ${domain}. x1` });
+        const response = await axios.get(`https://api.hunter.io/v2/domain-search`, {
+            params: {
+                domain: domain,
+                api_key: HUNTER_API_KEY,
             }
-        } else {
-            res.status(404).json({ error: `No results for ${domain}. y2` });
-        }
+        });
+        console.log(response)
+        res.json(response.data);
     } catch (error) {
-        console.error('An error occurred:', error);
-        res.status(500).json({ error: 'An error occurred while fetching data.' });
+        console.error('Error fetching data from Hunter API:', error);
+        res.status(500).json({ error: 'Error fetching data from Hunter API.' });
     }
 });
 
