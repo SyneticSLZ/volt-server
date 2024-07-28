@@ -439,7 +439,7 @@ const sendEmail = async (subject, message, to, token, myemail) => {
 //     }
 // });
 
-app.post('/get-emails', async (req, res) => {
+app.get('/get-emails', async (req, res) => {
     const domain = req.query.domain;
     console.log(domain)
 
