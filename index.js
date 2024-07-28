@@ -142,7 +142,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
             ThreadID,
             {
                 role: "user",
-                content: `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}.`
+                content: `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email`
             }
         );
         console.log("Message added");
