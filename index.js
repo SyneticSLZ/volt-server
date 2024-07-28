@@ -441,6 +441,7 @@ const sendEmail = async (subject, message, to, token, myemail) => {
 
 app.get('/get-emails', async (req, res) => {
     const domain = req.query.domain;
+    console.log(domain)
 
     if (!domain) {
         return res.status(400).json({ error: 'No domain provided.' });
