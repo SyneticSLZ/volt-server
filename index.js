@@ -451,7 +451,7 @@ app.get('/get-emails', async (req, res) => {
         const response = await axios.get(`https://api.hunter.io/v2/domain-search`, {
             params: {
                 domain: domain,
-                api_key: HUNTER_API_KEY,
+                api_key: hunter,
             }
         });
         console.log(response)
