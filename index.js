@@ -428,10 +428,10 @@ app.post('/get-emails', async (req, res) => {
                 }));
                 res.json({ success: true, submittedData });
             } else {
-                res.status(404).json({ error: `No emails found for ${domain}.` });
+                res.status(404).json({ error: `No emails found for ${domain}. x1` });
             }
         } else {
-            res.status(404).json({ error: `No results for ${domain}. xx` });
+            res.status(404).json({ error: `No results for ${domain}. y2` });
         }
     } catch (error) {
         console.error('An error occurred:', error);
