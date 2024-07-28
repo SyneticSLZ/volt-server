@@ -417,7 +417,7 @@ app.post('/get-emails', async (req, res) => {
             domain: domain,
             limit: 10  // Adjust as needed
         });
-
+        console.log(result)
         if (result && result.data.emails) {
             const emails = result.data.emails;
             if (emails.length > 0) {
@@ -431,7 +431,7 @@ app.post('/get-emails', async (req, res) => {
                 res.status(404).json({ error: `No emails found for ${domain}.` });
             }
         } else {
-            res.status(404).json({ error: `No results for ${domain}.` });
+            res.status(404).json({ error: `No results for ${domain}. xx` });
         }
     } catch (error) {
         console.error('An error occurred:', error);
