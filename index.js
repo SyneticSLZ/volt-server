@@ -368,7 +368,8 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         'MIME-Version: 1.0',
         `Subject: ${subject}`,
         '',
-        message,
+        <html><body>${message}</body></html>,
+    
     ].join('\n');
 
     const base64EncodedEmail = Buffer.from(emailContent).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
