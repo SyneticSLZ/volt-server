@@ -368,7 +368,7 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         'MIME-Version: 1.0',
         `Subject: ${subject}`,
         '',
-        <html><body>${message}</body></html>,
+        `<html><body>${message}</body></html>`,
     
     ].join('\n');
 
