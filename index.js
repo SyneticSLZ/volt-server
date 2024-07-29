@@ -69,6 +69,34 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 // Helper functions
+const fetchUserSignature = async (accessToken) => {
+    oauth2Client.setCredentials({ access_token: accessToken });
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    try {
+        const response = await gmail.users.settings.sendAs.list({
+            userId: 'me',
+        });
+
+        // Extract the default send-as address
+        const sendAsAddress = response.data.sendAs.find(sendAs => sendAs.isDefault).sendAsEmail;
+
+        // Fetch the signature for the default address
+        const sendAsResponse = await gmail.users.settings.sendAs.get({
+            userId: 'me',
+            sendAsEmail: sendAsAddress,
+        });
+
+        const signature = sendAsResponse.data.signature || '';
+        return signature;
+
+    } catch (error) {
+        console.error('Error fetching signature:', error);
+        return '';
+    }
+};
+
+
 async function summarsizeWebsite(url) {
     if (!url) {
         throw new Error('URL is required');
@@ -360,7 +388,10 @@ const sendEmail = async (subject, message, to, token, myemail) => {
     console.log('Tokens:', tokens);
 
     oauth2Client.setCredentials(tokens);
+    
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const signature = await fetchUserSignature(tokens.access_token);
 
     const emailContent = [
         `To: <${to}>`,
@@ -368,7 +399,13 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         'MIME-Version: 1.0',
         `Subject: ${subject}`,
         '',
-        `<html style="font-family: 'Helvetica', Arial, sans-serif;"><body><pre>${message}</pre></body></html>`,
+        `<html style="font-family: 'Helvetica', Arial, sans-serif;">
+            <body>
+                <pre>${message}</pre>
+                <br><br>
+                <pre>${signature}</pre>
+            </body>
+        </html>`,
     
     ].join('\n');
 
