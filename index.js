@@ -552,6 +552,23 @@ app.get('/get-emails', async (req, res) => {
 });
 });
 
+app.get('/fetch-profile-data', async (req, res) => {
+
+    const profileUrl = req.query.url;
+    if (!profileUrl) {
+        return res.status(400).send('Profile URL is required');
+    }
+
+    try {
+        const response = await fetch(profileUrl);
+        const body = await response.text();
+        res.send(body);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        res.status(500).send('Error fetching data');
+    }
+});
+
 
 // Route to send bulk emails manually
 app.post('/send-bulk-manual', async (req, res) => {
