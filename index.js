@@ -601,7 +601,7 @@ console.log("threadid :  ", threadID)
         res.json({ subject_line, body_content, To });
 
     } catch (error) {
-        res.status(500).json({ error: 'Failed to generate email content' });
+        res.status(500).json({ error: `Failed to generate email content ${error}` });
     }
 });
 
