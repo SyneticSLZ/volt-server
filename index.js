@@ -399,7 +399,10 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         'MIME-Version: 1.0',
         `Subject: ${subject}`,
         '',
-        `<html style="font-family: 'Helvetica', Arial, sans-serif;">
+        `<html style="font-family: 'Roboto', Arial, sans-serif;">
+        <head>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
             <body>
                 <pre>${message}</pre>
                 <br><br>
