@@ -1227,9 +1227,14 @@ app.get('/auth/google/callback', async (req, res) => {
         res.redirect(`https://voltmailer.com/Dashboard.html?connectedgoogletoken=${jwtToken}`);
     }
 else {
-    if (customer) {
+    if (customer) {  
 
-        res.redirect(`https://voltmailer.com/Dashboard.html?googletoken=${jwtToken}`);
+        if (email === 'rallybeacon@gmail.com'){
+            res.redirect(`https://voltmailer.com/Rally-Beacon-Dashboard.html?googletoken=${jwtToken}`);
+        }else{
+            res.redirect(`https://voltmailer.com/Dashboard.html?googletoken=${jwtToken}`);
+        }
+
     } else {
         // User does not exist, redirect to the pricing page for signup
         res.redirect(`https://voltmailer.com/OldLogin.html?email=${encodeURIComponent(userInfo.data.email)}&password=null&google=${jwtToken}`);
