@@ -9,6 +9,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const Customer = require('./models/customer');
+const Driver = require('./models/Driver');
 const app = express();
 dotenv.config();
 const axios = require('axios');
@@ -17,6 +18,10 @@ const nlp = require('compromise');
 // const fetch = require('node-fetch');
 const fs = require('fs');
 const Hunter = require('hunter.io');
+const { MongoClient } = require('mongodb');
+
+// const M_uri = 'mongodb+srv://syneticslz:<password>@synetictest.bl3xxux.mongodb.net/?retryWrites=true&w=majority&appName=SyneticTest'; // Replace with your MongoDB connection string
+// const M_client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
 app.use(bodyParser.json());
 
@@ -67,6 +72,17 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.log(err));
 
+// // Define a schema for the Rally-Drivers collection
+// const driverSchema = new mongoose.Schema({
+//     name: String,
+//     url: String,
+//     email: String,
+//     nextRace: String,
+//     emailSent: String
+// });
+
+// // Create a model based on the schema
+// const Driver = mongoose.model('Driver', driverSchema);
 
 // Helper functions
 const fetchUserSignature = async (accessToken) => {
@@ -500,6 +516,62 @@ app.get('/get-emails', async (req, res) => {
     } catch (error) {
         console.error('Error fetching data from Hunter API:', error);
         res.status(500).json({ error: 'Error fetching data from Hunter API.' });
+    }
+});
+
+// Route to add a new driver
+app.get('/add-driver', async (req, res) => {
+    const { driver: name, url, email, nextRace = 'Unknown', emailSent = 'No' } = req.query;
+
+    try {
+        const newDriver = new Driver({ name, url, email, nextRace, emailSent });
+        await newDriver.save();
+        console.log('Driver added:', newDriver);
+        res.status(200).json({ message: 'Driver added successfully' });
+    } catch (error) {
+        console.error('Error adding a new driver:', error);
+        res.status(500).json({ error: 'Error adding a new driver.' });
+    }
+});
+
+// Route to update a driver
+app.get('/update-driver', async (req, res) => {
+    const { url, fieldName, newData } = req.query;
+
+    try {
+        const update = { [fieldName]: newData };
+        await Driver.updateOne({ url }, { $set: update });
+        console.log(`Driver with URL ${url} updated: ${fieldName} = ${newData}`);
+        res.status(200).json({ message: 'Driver updated successfully' });
+    } catch (error) {
+        console.error('Error updating driver:', error);
+        res.status(500).json({ error: 'Error updating driver.' });
+    }
+});
+
+// Route to get all drivers
+app.get('/get-drivers', async (req, res) => {
+    try {
+        const drivers = await Driver.find();
+        console.log('Drivers retrieved:', drivers);
+        res.status(200).json(drivers);
+    } catch (error) {
+        console.error('Error retrieving drivers:', error);
+        res.status(500).json({ error: 'Error retrieving drivers.' });
+    }
+});
+
+// Route to remove a driver
+app.get('/remove-driver', async (req, res) => {
+    const { url } = req.query;
+
+    try {
+        await Driver.deleteOne({ url });
+        console.log(`Driver with URL ${url} removed`);
+        res.status(200).json({ message: 'Driver removed successfully' });
+    } catch (error) {
+        console.error('Error removing driver:', error);
+        res.status(500).json({ error: 'Error removing driver.' });
     }
 });
 
