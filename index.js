@@ -415,7 +415,8 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         'MIME-Version: 1.0',
         `Subject: ${subject}`,
         '',
-        `<html style="font-family: 'Roboto', Arial, sans-serif;">
+        `
+        <html style="font-family: 'Roboto', Arial, sans-serif;">
         <head>
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -548,6 +549,21 @@ app.get('/update-driver', async (req, res) => {
         res.status(500).json({ error: 'Error updating driver.' });
     }
 });
+
+app.get('/update-driver-email', async (req, res) => {
+    const { email, fieldName, newData } = req.query;
+
+    try {
+        const update = { [fieldName]: newData };
+        await Driver.updateOne({ email }, { $set: update });
+        console.log(`Driver with Email ${email} updated: ${fieldName} = ${newData}`);
+        res.status(200).json({ message: 'Driver updated successfully' });
+    } catch (error) {
+        console.error('Error updating driver:', error);
+        res.status(500).json({ error: 'Error updating driver.' });
+    }
+});
+
 
 // Route to get all drivers
 app.get('/get-drivers', async (req, res) => {
