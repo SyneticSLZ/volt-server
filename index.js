@@ -389,36 +389,35 @@ const updateCustomer = async (email, updateData, res) => {
 };
 
 
+// const sendEmail = async (subject, message, to, token, myemail) => {
+
+//     let transporter = nodemailer.createTransport({
+//         service: 'gmail',
+//         auth: {
+//             user: 'voltmailerhelp@gmail.com',
+//             pass: 'okwvawihfwmi'
+//         }
+//     });
+
+//     let mailOptions = {
+//         from: 'Voltmailer <voltmailerhelp@gmail.com>',
+//         to,
+//         subject,
+//         text: message
+//     };
+
+//     try {
+//         await transporter.sendMail(mailOptions);
+//         console.log('Email sent successfully');
+//     } catch (error) {
+//         console.error('Error sending email:', error);
+//     }
+// };
+
+
+
+
 const sendEmail = async (subject, message, to, token, myemail) => {
-    // const { to, subject, message } = req.body;
-
-    let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: 'voltmailerhelp@gmail.com',
-            pass: 'okwvawihfwmi'
-        }
-    });
-
-    let mailOptions = {
-        from: 'Voltmailer <voltmailerhelp@gmail.com>',
-        to,
-        subject,
-        text: message
-    };
-
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log('Email sent successfully');
-    } catch (error) {
-        console.error('Error sending email:', error);
-    }
-};
-
-
-
-
-const sendxEmail = async (subject, message, to, token, myemail) => {
     // const token = req.headers['authorization'].split(' ')[1];
     console.log("data is :" , to, message, subject )
     const userData = verifyJWT(token);
