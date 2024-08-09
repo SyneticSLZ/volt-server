@@ -441,7 +441,7 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         `To: <${to}>`,
         'Content-Type: text/html; charset=utf-8',
         'MIME-Version: 1.0',
-        `Subject: ${subject}`,
+        `Subject:  quick question`,
         '',
         `
         <html style="font-family: 'Open Sans', sans-serif;">
