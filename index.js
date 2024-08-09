@@ -444,12 +444,12 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         `Subject: ${subject}`,
         '',
         `
-        <html style="font-family: 'Roboto', Arial, sans-serif;">
+        <html style="font-family: 'Open Sans', sans-serif;">
         <head>
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
-            <body>
-                <pre>${message}</pre>
+            <body style="font-family: 'Open Sans', sans-serif;">
+                <pre style="font-family: 'Open Sans', sans-serif;">${message}</pre>
                 <br><br>
                 <pre>${signature}</pre>
             </body>
