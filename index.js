@@ -186,7 +186,19 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me)
             ThreadID,
             {
                 role: "user",
-                content: `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email`
+                content: `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template Hi ${To},
+
+I hope you're having a productive day. I've noticed that you may be seeking new opportunities to attract more clients within the crowded UK {{industry}} space. Traditional methods often prove to be challenging and time-consuming in such a competitive landscape.
+
+Have you explored the potential of cold emailing as part of your outreach strategy? I specialize in helping companies like {{company}} secure more qualified calls with their ideal prospects through finely-tuned cold email campaigns. Notably, we are currently assisting Optimax Software in enhancing their outreach efforts.
+
+I have prepared a brief video detailing our process, which could empower you to set up similar successful campaigns. Would you be open to viewing it?
+
+Best Regards,
+${me}
+
+P.S. If you are not the right person to connect with on this matter, I would appreciate it if you could kindly forward this to the appropriate individual.
+`
             }
         );
         console.log("Message added");
@@ -441,7 +453,7 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         `To: <${to}>`,
         'Content-Type: text/html; charset=utf-8',
         'MIME-Version: 1.0',
-        `Subject:  quick question`,
+        `Subject:  quick question `,
         '',
         `
         <html style="font-family: 'Open Sans', sans-serif;">
