@@ -195,7 +195,7 @@ Have you explored the potential of cold emailing as part of your outreach strate
 I have prepared a brief video detailing our process, which could empower you to set up similar successful campaigns. Would you be open to viewing it?
 
 Best Regards,
-${me}
+${Me}
 
 P.S. If you are not the right person to connect with on this matter, I would appreciate it if you could kindly forward this to the appropriate individual.
 `
