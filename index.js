@@ -179,25 +179,14 @@ async function CreateThread(){
 let subject_line = "";
 let body_content = "";
 
-async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me) {
+async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, template) {
     try {
         // Create the message
         const message = await openai.beta.threads.messages.create(
             ThreadID,
             {
                 role: "user",
-                content: `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template Hi ${To},
-
-I hope you're having a productive day. I've noticed that you may be seeking new opportunities to attract more clients within the crowded UK {{industry}} space. Traditional methods often prove to be challenging and time-consuming in such a competitive landscape.
-
-Have you explored the potential of cold emailing as part of your outreach strategy? I specialize in helping companies like {{company}} secure more qualified calls with their ideal prospects through finely-tuned cold email campaigns. Notably, we are currently assisting Optimax Software in enhancing their outreach efforts.
-
-I have prepared a brief video detailing our process, which could empower you to set up similar successful campaigns. Would you be open to viewing it?
-
-Best Regards,
-${Me}
-
-P.S. If you are not the right person to connect with on this matter, I would appreciate it if you could kindly forward this to the appropriate individual.
+                content: `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
 `
             }
         );
@@ -633,7 +622,7 @@ app.get('/remove-driver', async (req, res) => {
 
 // async function sendEmails(credentialsDict, submittedData, userPitch, Uname, token) {
     app.post('/send-emails', async (req, res) => {
-    const { submittedData, userPitch, Uname, token, myemail } = req.body;
+    const { submittedData, userPitch, Uname, token, myemail, Template } = req.body;
 
     res.status(200).send('Emails are being sent in the background. You can close the tab.');
 
@@ -652,7 +641,7 @@ app.get('/remove-driver', async (req, res) => {
             console.log(`Email: ${data.email}, Website Content: ${summary}, Uname: ${Uname}, To: ${To}`);
 
             // Generate the email content using AddMessageToThread
-            const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, token);
+            const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, token, Template);
             console.log("returned : ", emailContent)
             // const { s, b } = emailContent;
             // if (emailContent) {
@@ -716,14 +705,14 @@ app.post('/send-bulk-manual', async (req, res) => {
 // Route to generate email content
 app.post('/generate-email-content', async (req, res) => {
     console.log("personalizing email")
-    const { website, userPitch, Uname, To} = req.body;
+    const { website, userPitch, Uname, To, Template} = req.body;
     const threadID = await CreateThread();
 console.log("threadid :  ", threadID)
     try {
 
         const summary = await summarizeWebsite(website);
         console.log("summarized : ", summary)
-        const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname);
+        const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, Template);
         console.log("returned : ", emailContent)
 
         res.json({ subject_line, body_content, To });
