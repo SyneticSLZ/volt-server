@@ -470,7 +470,9 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         console.log('Email sent successfully');
 
         const customer = await Customer.findOne({ email: email });
-        if (customer && customer.total_emails >= emailsToUse) {
+
+        if (customer && customer.total_emails >= customer.
+            plan_emails) {
             const newTotalEmails = customer.total_emails + 1;
             await Customer.updateOne(
                 { email: email },
