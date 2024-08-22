@@ -596,17 +596,39 @@ app.get('/update-driver-email', async (req, res) => {
 });
 
 
-// Route to get all drivers
+// // Route to get all drivers
+// app.get('/get-drivers', async (req, res) => {
+//     try {
+//         const drivers = await Driver.find();
+//         console.log('Drivers retrieved:', drivers);
+//         const result = await Driver.updateMany(
+//             { nextRace: "null" },
+//             { $set: { nextRace: "no race found" } }
+//         );
+//         console.log('Drivers updated:', result.nModified);
+//         res.status(200).json(drivers);
+//     } catch (error) {
+//         console.error('Error retrieving drivers:', error);
+//         res.status(500).json({ error: 'Error retrieving drivers.' });
+//     }
+// });
+
 app.get('/get-drivers', async (req, res) => {
     try {
+        await Driver.updateMany(
+            { nextRace: "null" },
+            { $set: { nextRace: "no race found" } }
+        );
+
         const drivers = await Driver.find();
-        console.log('Drivers retrieved:', drivers);
+        console.log('Drivers retrieved and updated:', drivers);
         res.status(200).json(drivers);
     } catch (error) {
-        console.error('Error retrieving drivers:', error);
-        res.status(500).json({ error: 'Error retrieving drivers.' });
+        console.error('Error retrieving or updating drivers:', error);
+        res.status(500).json({ error: 'Error retrieving or updating drivers.' });
     }
 });
+
 
 // Route to remove a driver
 app.get('/remove-driver', async (req, res) => {
