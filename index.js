@@ -581,6 +581,21 @@ app.get('/update-driver', async (req, res) => {
     }
 });
 
+app.post('/update-driver-full', async (req, res) => {
+    const { url } = req.query;
+    const newDriverData = req.body;
+
+    try {
+        await Driver.updateOne({ url }, { $set: newDriverData });
+        console.log(`Driver with URL ${url} updated with new data:`, newDriverData);
+        res.status(200).json({ message: 'Driver updated successfully' });
+    } catch (error) {
+        console.error('Error updating driver:', error);
+        res.status(500).json({ error: 'Error updating driver.' });
+    }
+});
+
+
 app.get('/update-driver-email', async (req, res) => {
     const { email, fieldName, newData } = req.query;
 
