@@ -6,7 +6,8 @@ const driverSchema = new mongoose.Schema({
     url: String,
     email: String,
     nextRace: String,
-    emailSent: String
+    emailSent: String,
+    raceDone: String
 });
 
 // Create a model based on the schema
