@@ -19,6 +19,9 @@ const nlp = require('compromise');
 const fs = require('fs');
 const Hunter = require('hunter.io');
 const { MongoClient } = require('mongodb');
+const cron = require('node-cron');
+const moment = require('moment-timezone');
+const { JSDOM } = require('jsdom');
 
 // const M_uri = 'mongodb+srv://syneticslz:<password>@synetictest.bl3xxux.mongodb.net/?retryWrites=true&w=majority&appName=SyneticTest'; // Replace with your MongoDB connection string
 // const M_client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -1702,7 +1705,153 @@ app.post('/domain-search', async (req, res) => {
 
 
 
+// The function you want to run
+function myDailyTask() {
+    console.log('Running the daily task');
+// Example usage of the function
+updateAndRetrieveDrivers()
+.then(async (drivers) => {
+    console.log('Function executed successfully, updating drivers...');
+    
+    for (const driver of drivers) {
+        // Assuming each driver has a `profileUrl` field that you need to pass
+        if (driver.profileUrl) {
+            await updateDriverWithRaceData(driver);
+        } else {
+            console.warn(`Driver ${driver} does not have a profile URL.`);
+        }
+    }
 
+    console.log('All drivers processed.');
+})
+.catch(error => {
+    console.error('Function execution failed:', error);
+});
+}
+
+
+
+// Define the function
+async function updateAndRetrieveDrivers() {
+    try {
+        // Update drivers with nextRace as "null"
+        await Driver.updateMany(
+            { nextRace: "null" },
+            { $set: { nextRace: "no race found" } }
+        );
+
+        // Retrieve all drivers
+        const drivers = await Driver.find();
+        console.log('Drivers retrieved and updated:', drivers);
+
+        // Return the drivers
+        return drivers;
+    } catch (error) {
+        console.error('Error retrieving or updating drivers:', error);
+        // Handle the error appropriately, maybe throw it or return a specific value
+        throw new Error('Error retrieving or updating drivers.');
+    }
+}
+
+
+
+
+async function fetchNextRaceManual(url) {
+    try {
+        const response = await fetch(`https://server.voltmailer.com/fetch-profile-data?url=${encodeURIComponent(url)}`);
+        const html = await response.text();
+
+        const dom = new JSDOM(html);
+        const doc = dom.window.document;
+
+        const profileStartLine = doc.querySelector('.profile-start-line.d-flex.justify-content-start.w-100.lh-120.py-1.flex-wrap');
+
+        if (profileStartLine) {
+            const profileStartEvent = profileStartLine.querySelector('.profile-start-event.w-20');
+            if (profileStartEvent) {
+                const raceName = profileStartEvent.querySelector('a').textContent.trim();
+
+                const profileStartOa = profileStartLine.querySelector('.profile-start-oa.font-weight-bold.d-flex.justify-content-start.flex-wrap.flex-column');
+                if (profileStartOa) {
+                    const hasNotRaced = profileStartOa.querySelector('div span.text-primary');
+                    if (hasNotRaced) {
+                        return { raceName, status: 'not_done' };
+                    } else {
+                        return { raceName, status: 'done' };
+                    }
+                } else {
+                    return { raceName, status: 'not_done' };
+                }
+            } else {
+                return { error: 'Event data not found' };
+            }
+        } else {
+            return { error: 'Start line data not found' };
+        }
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        return { error: 'Error fetching data' };
+    }
+}
+
+async function updateDriverWithRaceData(driver) {
+    try {
+        const { url, email, nextRace, raceDone } = driver;
+        const raceData = await fetchNextRaceManual(url);
+
+        if (raceData.error) {
+            console.error(raceData.error);
+            return;
+        }
+
+        const { raceName, status } = raceData;
+
+        if (raceName !== nextRace) {
+            // New race found, update nextRace and reset emailSent to 'no'
+            const newDriverData = {
+                nextRace: raceName,
+                raceDone: 'F',
+                emailSent: 'NO'
+            };
+            updateDriverFunction(url, newDriverData)
+            console.log(`Driver with URL ${url} updated: nextRace = ${raceName}, emailSent = 'no'`);
+        } else if (raceName === nextRace && status === 'done' && raceDone !== 'done') {
+            // Race is completed, update raceDone to 'done' and emailSent to 'yes'
+            const newDriverData = {
+                nextRace: raceName,
+                raceDone: 'T',
+                emailSent: 'YES'
+            };
+            updateDriverFunction(url, newDriverData)
+            console.log(`Driver with Email ${email} updated: raceDone = 'done', emailSent = 'yes'`);
+        } else {
+            console.log('No updates needed.');
+        }
+    } catch (error) {
+        console.error('Error updating driver:', error);
+    }
+}
+
+async function updateDriverFunction(url, newDriverData){
+    try {
+        await Driver.updateOne({ url }, { $set: newDriverData });
+        console.log(`Driver with URL ${url} updated with new data:`, newDriverData);
+        res.status(200).json({ message: 'Driver updated successfully' });
+    } catch (error) {
+        console.error('Error updating driver:', error);
+        res.status(500).json({ error: 'Error updating driver.' });
+    }
+};
+
+
+
+// Schedule the task to run every day at 6:00 AM in a specific timezone
+cron.schedule('0 6 * * *', () => {
+    const now = moment().tz('America/New_York');
+    if (now.format('HH:mm') === '03:00') {
+        myDailyTask();
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
