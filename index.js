@@ -1824,6 +1824,21 @@ async function updateDriverWithRaceData(driver) {
             console.log(`Driver with Email ${email} updated: raceDone = 'done', emailSent = 'yes'`);
         } else {
             console.log('No updates needed.');
+            if (status === 'done'){
+                const newDriverData = {
+                    raceDone: 'T',
+                    emailSent: 'YES'
+                };
+                updateDriverFunction(url, newDriverData)
+                console.log(`Driver with Email ${email} updated: raceDone = 'done', emailSent = 'yes'`);
+            } else{
+                const newDriverData = {
+                    nextRace: raceName,
+                    raceDone: 'F',
+                };
+                updateDriverFunction(url, newDriverData)
+                console.log(`Driver with Email ${email} updated: raceDone = 'F'`);
+            }
         }
     } catch (error) {
         console.error('Error updating driver:', error);
