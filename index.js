@@ -1855,4 +1855,5 @@ cron.schedule('0 6 * * *', () => {
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+    myDailyTask();
 });
