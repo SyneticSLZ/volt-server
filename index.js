@@ -1715,11 +1715,11 @@ updateAndRetrieveDrivers()
     
     for (const driver of drivers) {
         // Assuming each driver has a `profileUrl` field that you need to pass
-        if (driver.profileUrl) {
+        // if (driver.profileUrl) {
             await updateDriverWithRaceData(driver);
-        } else {
-            console.warn(`Driver ${driver} does not have a profile URL.`);
-        }
+        // } else {
+        //     console.warn(`Driver ${driver} does not have a profile URL.`);
+        // }
     }
 
     console.log('All drivers processed.');
@@ -1754,12 +1754,10 @@ async function updateAndRetrieveDrivers() {
 }
 
 
-
-
 async function fetchNextRaceManual(url) {
     try {
-        const response = await fetch(`https://server.voltmailer.com/fetch-profile-data?url=${encodeURIComponent(url)}`);
-        const html = await response.text();
+        const response = await axios.get(url);  // Use axios to fetch the profile URL
+        const html = response.data;  // axios stores the response body in 'data'
 
         const dom = new JSDOM(html);
         const doc = dom.window.document;
@@ -1836,10 +1834,10 @@ async function updateDriverFunction(url, newDriverData){
     try {
         await Driver.updateOne({ url }, { $set: newDriverData });
         console.log(`Driver with URL ${url} updated with new data:`, newDriverData);
-        res.status(200).json({ message: 'Driver updated successfully' });
+        console.log('Driver updated successfully' );
     } catch (error) {
         console.error('Error updating driver:', error);
-        res.status(500).json({ error: 'Error updating driver.' });
+        console.log('Error updating driver.' );
     }
 };
 
