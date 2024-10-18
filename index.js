@@ -571,6 +571,88 @@ const sendEmail = async (subject, message, to, token, myemail) => {
 };
 
 
+
+async function checkForBounces(auth) {
+    const gmail = google.gmail({ version: 'v1', auth });
+
+    const result = await gmail.users.messages.list({
+        userId: 'me',
+        q: 'subject:"Delivery Status Notification (Failure)" OR subject:"Undelivered Mail Returned"',
+        labelIds: ['INBOX'],
+    });
+
+    const messages = result.data.messages || [];
+    for (const message of messages) {
+        const msgData = await gmail.users.messages.get({
+            userId: 'me',
+            id: message.id,
+        });
+
+        const bounceDetails = parseBounceMessage(msgData.data);
+        if (bounceDetails && bounceDetails.toEmail) {
+            await markEmailAsBounced(bounceDetails.toEmail);
+        }
+    }
+}
+
+async function markEmailAsBounced(recipientEmail) {
+    // Find the email in the customer campaigns and update the bounce status
+    await Customer.updateOne(
+        { "campaigns.sentEmails.recipientEmail": recipientEmail },
+        { $set: { "campaigns.$.sentEmails.$[email].bounces": true, "campaigns.$.sentEmails.$[email].status": 'bounced' } },
+        { arrayFilters: [{ "email.recipientEmail": recipientEmail }] }
+    );
+    console.log(`Marked email to ${recipientEmail} as bounced.`);
+}
+
+
+
+async function trackReplies(auth) {
+    const gmail = google.gmail({ version: 'v1', auth });
+
+    const customers = await Customer.find({ "campaigns.sentEmails": { $exists: true, $not: { $size: 0 } } });
+
+    for (const customer of customers) {
+        for (const campaign of customer.campaigns) {
+            for (const sentEmail of campaign.sentEmails) {
+                const result = await gmail.users.threads.get({
+                    userId: 'me',
+                    id: sentEmail.threadId,
+                });
+
+                // Calculate the number of responses
+                const responseCount = result.data.messages.length - 1; // Subtract the original message
+
+                // Update response count only if there are new responses
+                if (responseCount > sentEmail.responseCount) {
+                    await Customer.updateOne(
+                        { "campaigns.sentEmails.messageId": sentEmail.messageId },
+                        { $set: { "campaigns.$.sentEmails.$[email].responseCount": responseCount } },
+                        { arrayFilters: [{ "email.messageId": sentEmail.messageId }] }
+                    );
+                    console.log(`Updated email to ${sentEmail.recipientEmail} with ${responseCount} responses.`);
+                }
+            }
+        }
+    }
+}
+
+
+// const cron = require('node-cron');
+// const { oauth2Client } = require('./oauth'); // Ensure you have the OAuth client setup for Gmail API
+
+// // Schedule bounce tracking every hour
+// cron.schedule('0 * * * *', () => {
+//     checkForBounces(oauth2Client).catch(err => console.error("Error in bounce tracking:", err));
+// });
+
+// // Schedule reply tracking every hour
+// cron.schedule('0 * * * *', () => {
+//     trackReplies(oauth2Client).catch(err => console.error("Error in reply tracking:", err));
+// });
+
+
+
 // Helper function to extract emails from a page
 const extractEmails = (text) => {
     return text.match(/[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+/g);
