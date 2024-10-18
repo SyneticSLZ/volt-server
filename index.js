@@ -947,8 +947,20 @@ app.get('/remove-driver', async (req, res) => {
             console.log(`Email: ${data.email}, Website Content: ${summary}, Uname: ${Uname}, To: ${To}`);
 
             // Generate the email content using AddMessageToThread
-            const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, token, Template);
-            console.log("returned : ", emailContent)
+            attmpts = 0
+            maxTries = 3
+            while (attmpts < maxTries) {
+                attmpts += 1
+                console.log(attmpts , ": attempts so far")
+                const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, token, Template);
+                if (subject_c && body_c) {
+                    console.log("Subject:", subject_c);
+                    console.log("Body:", body_c);
+                    console.log("returned : ", emailContent)
+                    attmpts = 100
+                }
+            }
+            
             // const { s, b } = emailContent;
             // if (emailContent) {
                 // console.log("Subject:", s);
