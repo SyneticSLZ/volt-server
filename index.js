@@ -14,6 +14,8 @@ const app = express();
 dotenv.config();
 const axios = require('axios');
 const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
+const url = require('url');
 const nlp = require('compromise');
 // const fetch = require('node-fetch');
 const fs = require('fs');
@@ -421,7 +423,7 @@ const updateCustomer = async (email, updateData, res) => {
 
 
 
-const sendEmail = async (subject, message, to, token, myemail) => {
+const oldsendEmail = async (subject, message, to, token, myemail) => {
     // const token = req.headers['authorization'].split(' ')[1];
     console.log("data is :" , to, message, subject )
     const userData = verifyJWT(token);
@@ -495,7 +497,160 @@ const sendEmail = async (subject, message, to, token, myemail) => {
 };
 
 
-// Routes
+const sendEmail = async (subject, message, to, token, myemail) => {
+    console.log("data is:", to, message, subject);
+    const userData = verifyJWT(token);
+
+    if (!userData) {
+        return;
+    }
+
+    console.log('User Data:', userData);
+    const { email, tokens } = userData;
+
+    console.log('Tokens:', tokens);
+
+    oauth2Client.setCredentials(tokens);
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const signature = await fetchUserSignature(tokens.access_token);
+
+    const emailContent = [
+        `To: <${to}>`,
+        'Content-Type: text/html; charset=utf-8',
+        'MIME-Version: 1.0',
+        `Subject: ${subject}`,
+        '',
+        `
+        <html style="font-family: 'Open Sans', sans-serif;">
+        <head>
+            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+        </head>
+        <body style="font-family: 'Open Sans', sans-serif;">
+            <pre style="font-family: 'Open Sans', sans-serif;">${message}</pre>
+            <br><br>
+            <pre>${signature}</pre>
+        </body>
+        </html>`
+    ].join('\n');
+
+    const base64EncodedEmail = Buffer.from(emailContent).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
+
+    try {
+        const result = await gmail.users.messages.send({
+            userId: 'me',
+            requestBody: {
+                raw: base64EncodedEmail,
+            },
+        });
+
+        console.log('Email sent successfully');
+
+        const { id: messageId, threadId } = result.data;
+        console.log(`Message ID: ${messageId}, Thread ID: ${threadId}`);
+
+        const customer = await Customer.findOne({ email: email });
+
+        if (customer && customer.total_emails >= customer.plan_emails) {
+            const newTotalEmails = customer.total_emails + 1;
+            await Customer.updateOne(
+                { email: email },
+                { $set: { total_emails: newTotalEmails } }
+            );
+            console.log(`Emails used! ${newTotalEmails} emails used.`);
+        }
+
+        // Return messageId and threadId for further tracking
+        return { messageId, threadId };
+
+    } catch (error) {
+        console.error('Error sending email:', error);
+        throw new Error(`Error sending email: ${error.message}`);
+    }
+};
+
+
+// Helper function to extract emails from a page
+const extractEmails = (text) => {
+    return text.match(/[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+/g);
+  };
+  
+  // Helper function to get all internal links from a page
+  const extractInternalLinks = (currentUrl, $) => {
+    const links = [];
+    $('a').each((i, el) => {
+      const href = $(el).attr('href');
+      if (href && href.startsWith('/') || href.includes(currentUrl)) {
+        // Make sure to handle relative and absolute links
+        const fullUrl = url.resolve(currentUrl, href);
+        links.push(fullUrl);
+      }
+    });
+    return links;
+  };
+  
+  // Recursive crawler and email scraper
+  const crawlAndScrapeEmails = async (startUrl, visitedUrls = new Set(), emails = new Set()) => {
+    if (visitedUrls.has(startUrl)) return; // Prevent revisiting pages
+    visitedUrls.add(startUrl);
+  
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+  
+    try {
+      console.log(`Visiting: ${startUrl}`);
+      await page.goto(startUrl, { waitUntil: 'networkidle2' });
+      const pageContent = await page.content();
+  
+      // Load page content with cheerio
+      const $ = cheerio.load(pageContent);
+  
+      // Extract emails from the page
+      const pageEmails = extractEmails($.text());
+      pageEmails && pageEmails.forEach(email => emails.add(email));
+  
+      // Extract internal links
+      const internalLinks = extractInternalLinks(startUrl, $);
+  
+      await browser.close();
+  
+      // Crawl the links recursively
+      for (const link of internalLinks) {
+        if (!visitedUrls.has(link) && link.includes(url.parse(startUrl).hostname)) {
+          await crawlAndScrapeEmails(link, visitedUrls, emails);
+        }
+      }
+  
+    } catch (error) {
+      console.error(`Error scraping ${startUrl}:`, error);
+      await browser.close();
+    }
+  
+    return Array.from(emails);
+  };
+  
+
+  ///////////////////////////////////// Routes  //////////////////////////////////////////////////
+
+
+  // API route to scrape emails from the whole website
+  app.get('/scrape-emails', async (req, res) => {
+    const domain = req.query.domain;
+  
+    if (!domain) {
+      return res.status(400).json({ error: 'Domain is required' });
+    }
+  
+    const startUrl = `https://${domain}`;
+    const emails = await crawlAndScrapeEmails(startUrl);
+  
+    res.json({ domain, emails });
+  });
+
+
+
+
 // Endpoint to get emails by domain
 // app.post('/get-emails', async (req, res) => {
 //     const { domain } = req.body;
@@ -670,6 +825,33 @@ app.get('/remove-driver', async (req, res) => {
 
     let SENT_EMAILS = 0;
     const threadID = await CreateThread();
+
+    // Retrieve customer details based on their email from the token
+    const userData = verifyJWT(token);
+
+    if (!userData) {
+        return 
+    }
+
+    console.log('User Data:', userData);
+    const { email, tokens } = userData;
+    const customer = await Customer.findOne({ email: email });
+
+
+    // Create a new campaign and save it in the customer's campaigns
+    const newCampaign = {
+        campaignName: campaignName || `Campaign ${new Date().toLocaleString()}`,
+        sentEmails: [],
+        createdTime: new Date(),
+        SENT_EMAILS: 0
+    };
+
+    const campaign = customer.campaigns.create(newCampaign);
+    customer.campaigns.push(campaign);
+    await customer.save();
+
+
+
     setImmediate(async () => {
     for (const data of submittedData) {
         try {
@@ -691,8 +873,33 @@ app.get('/remove-driver', async (req, res) => {
                 // console.log("Body:", b);
                 
             // Send the email
-            await sendEmail(subject_line, body_content, data.email, token, myemail);
-            SENT_EMAILS += 1;
+            // await sendEmail(subject_line, body_content, data.email, token, myemail);
+            // SENT_EMAILS += 1;
+
+            // Send the email
+            const result = await sendEmail(subject_line, body_content, data.email, token, myemail);
+
+            if (result) {
+                    // Log sent email details to the campaign
+                    const { id: messageId, threadId } = result.data;
+
+                    const sentEmail = {
+                        recipientEmail: data.email,
+                        subject: subject_line,
+                        messageId: messageId,
+                        threadId: threadId,
+                        sentTime: new Date(),
+                        status: 'sent'
+                    };
+
+                    // Add email details to the campaign
+                    campaign.sentEmails.push(sentEmail);
+                    campaign.SENT_EMAILS += 1;
+                    await customer.save();
+                    SENT_EMAILS += 1;
+
+                    console.log(`Email successfully sent to ${data.email}`);
+            }            
 
             // } else {
                 // console.log("Failed to retrieve email content.");
@@ -1859,14 +2066,14 @@ async function updateDriverFunction(url, newDriverData){
 
 
 // Schedule the task to run every day at 6:00 AM in a specific timezone
-cron.schedule('0 6 * * *', () => {
-    const now = moment().tz('America/New_York');
-    if (now.format('HH:mm') === '03:00') {
-        myDailyTask();
-    }
-});
+// cron.schedule('0 6 * * *', () => {
+//     const now = moment().tz('America/New_York');
+//     if (now.format('HH:mm') === '03:00') {
+//         myDailyTask();
+//     }
+// });
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
-    myDailyTask();
+    // myDailyTask();
 });
