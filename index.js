@@ -35,8 +35,8 @@ const openai = new OpenAI({
   });
 
 
-const ASSISTANT_ID = "asst_shvdCBA7snGDSENhmE5iugIm"
-
+const ASSISTANT_ID ="asst_GEWAZTa3FphKwL5Whu7SblQE"
+// "asst_shvdCBA7snGDSENhmE5iugIm" 
 let IsLogged_IN = false;
 
 // Hunter.io API key
