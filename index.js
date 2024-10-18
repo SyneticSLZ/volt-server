@@ -552,7 +552,7 @@ const sendEmail = async (subject, message, to, token, myemail) => {
 
         const customer = await Customer.findOne({ email: email });
 
-        if (customer && customer.total_emails >= customer.plan_emails) {
+        if (customer) {
             const newTotalEmails = customer.total_emails + 1;
             await Customer.updateOne(
                 { email: email },
@@ -972,8 +972,9 @@ app.get('/remove-driver', async (req, res) => {
 
             // Send the email
             const result = await sendEmail(subject_line, body_content, data.email, token, myemail);
-
+console.log(result)
             if (result) {
+                console.log("working")
                     // Log sent email details to the campaign
                     const { id: messageId, threadId } = result.data;
 
