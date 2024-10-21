@@ -1703,7 +1703,9 @@ app.post('/create-checkout-session', async (req, res) => {
     line_items: [
       {
         // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-        price: 'price_1QCRxKKJeZAyw8f463h2NoER',
+        // price: 'price_1QCRxKKJeZAyw8f463h2NoER',
+	      
+	 price: 'price_1QCSNQKJeZAyw8f4b6HRnYaw',
         quantity: 1,
       },
     ],
@@ -1726,7 +1728,8 @@ app.post('/create-checkout-session-pro', async (req, res) => {
     line_items: [
       {
         // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-        price: 'price_1QCRwyKJeZAyw8f4ciROi1PZ',
+        // price: 'price_1QCRwyKJeZAyw8f4ciROi1PZ',
+	      price: 'price_1PJsseKJeZAyw8f4UVbMQfRa',
         quantity: 1,
       },
     ],
