@@ -1715,6 +1715,29 @@ app.post('/create-checkout-session', async (req, res) => {
   res.send({clientSecret: session.client_secret});
 });
 
+
+app.post('/create-checkout-session-pro', async (req, res) => {
+    const customer_email = req.body.email
+    const name = req.body.name 
+    const password = req.body.password
+
+  const session = await stripe.checkout.sessions.create({
+    ui_mode: 'embedded',
+    line_items: [
+      {
+        // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+        price: 'price_1Pdqx3KJeZAyw8f4T0AfWCIJ',
+        quantity: 1,
+      },
+    ],
+    customer_email: customer_email,
+    mode: 'subscription',
+    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
+  });
+
+  res.send({clientSecret: session.client_secret});
+});
+
 app.post('/start-stripe-free-trial', async (req, res) => {
     const customer_email = req.body.email
     const password = req.body.password
