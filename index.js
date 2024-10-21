@@ -1711,7 +1711,7 @@ app.post('/create-checkout-session', async (req, res) => {
     ],
     customer_email: customer_email,
     mode: 'subscription',
-    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}&plan=p`,
+    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}&newplan=p`,
   });
 
   res.send({clientSecret: session.client_secret});
@@ -1735,7 +1735,7 @@ app.post('/create-checkout-session-pro', async (req, res) => {
     ],
     customer_email: customer_email,
     mode: 'subscription',
-    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}&plan=pro`,
+    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}&newplan=pro`,
   });
 
   res.send({clientSecret: session.client_secret});
