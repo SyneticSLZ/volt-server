@@ -1142,7 +1142,7 @@ app.post('/login-customer', async (req, res) => {
 
 
 app.post('/signup-customer', async (req, res) => {
-    const { email, password, userName } = req.body;
+    const { email, password, userName, plan } = req.body;
     const customer = await findCustomer(email);
 
     if (customer) {
@@ -1155,7 +1155,7 @@ app.post('/signup-customer', async (req, res) => {
         // Redirect to the pricing page with email and password
         res.json({ 
             success: true, 
-            redirectUrl: `https://voltmailer.com/pricing.html?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&username=${encodeURIComponent(userName)}` 
+            redirectUrl: `https://voltmailer.com/pricing.html?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&username=${encodeURIComponent(userName)}&plan=${plan}` 
         });
     }
 });
