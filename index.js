@@ -1703,13 +1703,13 @@ app.post('/create-checkout-session', async (req, res) => {
     line_items: [
       {
         // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-        price: 'price_1Pdqx3KJeZAyw8f4T0AfWCIJ',
+        price: 'price_1QCRxKKJeZAyw8f463h2NoER',
         quantity: 1,
       },
     ],
     customer_email: customer_email,
     mode: 'subscription',
-    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
+    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}&plan=p`,
   });
 
   res.send({clientSecret: session.client_secret});
@@ -1726,13 +1726,13 @@ app.post('/create-checkout-session-pro', async (req, res) => {
     line_items: [
       {
         // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-        price: 'price_1Pdqx3KJeZAyw8f4T0AfWCIJ',
+        price: 'price_1QCRwyKJeZAyw8f4ciROi1PZ',
         quantity: 1,
       },
     ],
     customer_email: customer_email,
     mode: 'subscription',
-    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}`,
+    return_url: `${YOUR_DOMAIN}/payment.html?session_id={CHECKOUT_SESSION_ID}&email=${customer_email}&password=${encodeURIComponent(password)}&name=${name}&plan=pro`,
   });
 
   res.send({clientSecret: session.client_secret});
