@@ -240,14 +240,14 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
                         // Split the content to get the subject and body
                         const lines = content.split('\n');
 
-			const subjectMatch = content.match(/^Subject:\s*(.+)$/m);
-			const bodyMatch = content.match(/Body:\s*\n([\s\S]*)/);
+			// const subjectMatch = content.match(/^Subject:\s*(.+)$/m);
+			// const bodyMatch = content.match(/Body:\s*\n([\s\S]*)/);
 			
-                        // const subject_c = lines[0];
-                        // const body_c = lines.slice(1).join('\n');
-			
-                        const subject_c = subjectMatch ? subjectMatch[1].trim() : " no subj found ";
-                        const body_c = bodyMatch ? bodyMatch[1].trim() : " no body found ";
+                        const subject_c = lines[0];
+                        const body_c = lines.slice(1).join('\n');
+			// 
+                        // const subject_c = subjectMatch ? subjectMatch[1].trim() : " no subj found ";
+                        // const body_c = bodyMatch ? bodyMatch[1].trim() : " no body found ";
                          // const s = subject
                         //  const b = body
                         body_content = body_c
