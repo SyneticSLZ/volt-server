@@ -52,6 +52,8 @@ const customerSchema = new mongoose.Schema({
     affiliate: String,
     totalBounces: { type: Number, default: 0 },
     totalReplies: { type: Number, default: 0 },
+    bounceRate: { type: Number, default: 0 },
+    replyRate: { type: Number, default: 0 },
     campaigns: [campaignSchema] // Array of campaigns
 });
 
