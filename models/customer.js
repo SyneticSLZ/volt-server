@@ -35,7 +35,9 @@ const campaignSchema = new mongoose.Schema({
     campaignName: String,
     sentEmails: [emailSchema], // Array of sent emails
     createdTime: Date,
-    SENT_EMAILS: { type: Number, default: 0 }
+    SENT_EMAILS: { type: Number, default: 0 },
+    bounceRate: { type: Number, default: 0 },
+    replyRate: { type: Number, default: 0 }
 });
 
 const customerSchema = new mongoose.Schema({
@@ -48,6 +50,8 @@ const customerSchema = new mongoose.Schema({
     name: String,
     plan_emails: Number,
     affiliate: String,
+    totalBounces: { type: Number, default: 0 },
+    totalReplies: { type: Number, default: 0 },
     campaigns: [campaignSchema] // Array of campaigns
 });
 
