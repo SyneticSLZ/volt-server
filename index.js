@@ -598,7 +598,7 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
 
         // Return messageId and threadId for further tracking
         return { messageId, threadId };
-
+    }
     } catch (error) {
         console.error('Error sending email:', error);
         throw new Error(`Error sending email: ${error.message}`);
