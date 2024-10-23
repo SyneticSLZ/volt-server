@@ -957,6 +957,7 @@ app.get('/remove-driver', async (req, res) => {
 
     // Create a new campaign and save it in the customer's campaigns
     const newCampaign = {
+        _id: new mongoose.Types.ObjectId(),
         campaignName: campaignName || `Campaign ${new Date().toLocaleString()}`,
         sentEmails: [],
         createdTime: new Date(),
@@ -969,6 +970,8 @@ app.get('/remove-driver', async (req, res) => {
 		{ email : email },
 		{ $set : {campaigns: customer.campaigns ? [...customer.campaigns, newCampaign] : [newCampaign ] } } 
 	);
+    
+    const CampaignId = newCampaign._id
     // const campaign = customer.campaigns.create(newCampaign);
     // customer.campaigns.push(campaign);
     // await customer.save();
@@ -1012,7 +1015,7 @@ app.get('/remove-driver', async (req, res) => {
             // SENT_EMAILS += 1;
 
             // Send the email
-            const result = await sendEmail(subject_line, body_content, data.email, token, myemail);
+            const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId);
 console.log(result)
             if (result) {
                 console.log("working")
