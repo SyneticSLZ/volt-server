@@ -605,7 +605,7 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
     }
 };
 
-
+async function sendCampaignSummary(){}
 
 async function checkForBounces(auth) {
     const gmail = google.gmail({ version: 'v1', auth });
@@ -1053,6 +1053,7 @@ console.log(result)
     }
 
     // res.json({ status: 'completed', sent_emails: SENT_EMAILS });
+	    await sendCampaignSummary(customer._id, campaign._id);
     console.log("completed")
 });
 });
