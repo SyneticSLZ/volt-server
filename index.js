@@ -560,6 +560,22 @@ const sendEmail = async (subject, message, to, token, myemail) => {
         const customer = await Customer.findOne({ email: email });
 
         if (customer) {
+		const sentEmail = {
+                        recipientEmail: data.email,
+                        subject: subject_line,
+                        messageId: messageId,
+                        threadId: threadId,
+                        sentTime: new Date(),
+                        status: 'sent'
+                    };
+		const campaign = customer.campaigns.find(camp => camp._id.toString() === campaignId);
+		 if (campaign) {
+			 campaign.sentEmails.push(sentEmail);
+			 campaign.SENT_EMAILS += 1;
+			 await customer.save();
+		 }
+
+		
             const newTotalEmails = customer.total_emails + 1;
             await Customer.updateOne(
                 { email: email },
@@ -932,12 +948,18 @@ app.get('/remove-driver', async (req, res) => {
         campaignName: campaignName || `Campaign ${new Date().toLocaleString()}`,
         sentEmails: [],
         createdTime: new Date(),
-        SENT_EMAILS: 0
+        SENT_EMAILS: 0,
+	bounceRate: { type: Number, default: 0 },
+        replyRate: { type: Number, default: 0 }
     };
 
-    const campaign = customer.campaigns.create(newCampaign);
-    customer.campaigns.push(campaign);
-    await customer.save();
+	await Customer.updateOne(
+		{ email : email },
+		{ $set : {campaigns: customer.campaigns ? [...customer.campaigns, newCampaign] : [newCampaign ] } } 
+	);
+    // const campaign = customer.campaigns.create(newCampaign);
+    // customer.campaigns.push(campaign);
+    // await customer.save();
 
 
 
