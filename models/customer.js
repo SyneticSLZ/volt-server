@@ -37,8 +37,9 @@ const campaignSchema = new mongoose.Schema({
     createdTime: Date,
     SENT_EMAILS: { type: Number, default: 0 },
     bounceRate: { type: Number, default: 0 },
-    replyRate: { type: Number, default: 0 }
-});
+    replyRate: { type: Number, default: 0 },
+    
+},{ _id: true });
 
 const customerSchema = new mongoose.Schema({
     stripeID: String,
