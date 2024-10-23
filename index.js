@@ -718,7 +718,7 @@ async function sendcampsummaryEmail({ to,subject, body }) {
     console.log('Message sent: %s');
     res.send('Password reset email sent.');
 
-  });
+  };
   
 
 async function checkForBounces(auth) {
