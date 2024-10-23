@@ -504,7 +504,7 @@ const oldsendEmail = async (subject, message, to, token, myemail) => {
 };
 
 
-const sendEmail = async (subject, message, to, token, myemail) => {
+const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
     console.log("data is:", to, message, subject);
     const userData = verifyJWT(token);
 
@@ -568,12 +568,24 @@ const sendEmail = async (subject, message, to, token, myemail) => {
                         sentTime: new Date(),
                         status: 'sent'
                     };
-		const campaign = customer.campaigns.find(camp => camp._id.toString() === campaignId);
-		 if (campaign) {
-			 campaign.sentEmails.push(sentEmail);
-			 campaign.SENT_EMAILS += 1;
-			 await customer.save();
-		 }
+		// Find the campaign by campaignId
+  const campaignIndex = customer.campaigns.findIndex(camp => camp._id.toString() === campaignId);
+
+  if (campaignIndex !== -1) {
+    // Push the email details to the campaign's sentEmails array and increment SENT_EMAILS
+    customer.campaigns[campaignIndex].sentEmails.push(sentEmail);
+    customer.campaigns[campaignIndex].SENT_EMAILS += 1;
+
+    // Use updateOne to update the specific campaign
+    await Customer.updateOne(
+      { email: email, 'campaigns._id': campaignId },
+      {
+        $set: {
+          'campaigns.$.sentEmails': customer.campaigns[campaignIndex].sentEmails,
+          'campaigns.$.SENT_EMAILS': customer.campaigns[campaignIndex].SENT_EMAILS
+        }
+      }
+    );
 
 		
             const newTotalEmails = customer.total_emails + 1;
