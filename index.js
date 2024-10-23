@@ -605,7 +605,94 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
     }
 };
 
-async function sendCampaignSummary(){}
+// Function to calculate overall metrics for a customer
+async function calculateCustomerMetrics(customerId) {
+  const customer = await Customer.findById(customerId);
+  let totalSentEmails = 0;
+  let totalBounces = 0;
+  let totalReplies = 0;
+
+  customer.campaigns.forEach(campaign => {
+    totalSentEmails += campaign.sentEmails.length;
+    totalBounces += campaign.sentEmails.filter(email => email.status === 'bounced').length;
+    totalReplies += campaign.sentEmails.filter(email => email.responseCount > 0).length;
+  });
+
+  const bounceRate = (totalBounces / totalSentEmails) * 100;
+  const replyRate = (totalReplies / totalSentEmails) * 100;
+
+  // Update overall metrics for the customer
+  await Customer.updateOne(
+    { _id: customerId },
+    {
+      $set: {
+        'metrics.totalEmailsSent': totalSentEmails,
+        'metrics.bounceRate': bounceRate,
+        'metrics.replyRate': replyRate
+      }
+    }
+  );
+
+  return { totalSentEmails, bounceRate, replyRate };
+}
+
+// Function to track campaign metrics when the campaign finishes
+async function trackCampaignMetrics(campaignId) {
+  const customer = await Customer.findOne({ 'campaigns._id': campaignId });
+  const campaign = customer.campaigns.id(campaignId);
+  
+  let totalEmails = campaign.sentEmails.length;
+  let bounces = campaign.sentEmails.filter(email => email.status === 'bounced').length;
+  let replies = campaign.sentEmails.filter(email => email.responseCount > 0).length;
+  
+  const bounceRate = (bounces / totalEmails) * 100;
+  const replyRate = (replies / totalEmails) * 100;
+
+  // Update campaign with the new metrics
+  await Customer.updateOne(
+    { 'campaigns._id': campaignId },
+    {
+      $set: {
+        'campaigns.$.bounceRate': bounceRate,
+        'campaigns.$.replyRate': replyRate,
+        'campaigns.$.totalEmails': totalEmails
+      }
+    }
+  );
+
+  return { totalEmails, bounceRate, replyRate };
+}
+
+// Function to generate and send a summary email
+async function sendCampaignSummary(customerId, campaignId) {
+  const customer = await Customer.findById(customerId);
+  const campaign = customer.campaigns.id(campaignId);
+  
+  const campaignMetrics = await trackCampaignMetrics(campaignId);
+  const overallMetrics = await calculateCustomerMetrics(customerId);
+
+  const emailBody = `
+    Campaign Summary:
+    - Campaign Name: ${campaign.campaignName}
+    - Total Emails Sent: ${campaignMetrics.totalEmails}
+    - Bounce Rate: ${campaignMetrics.bounceRate}%
+    - Reply Rate: ${campaignMetrics.replyRate}%
+
+    Customer Overall Metrics:
+    - Total Emails Sent: ${overallMetrics.totalSentEmails}
+    - Overall Bounce Rate: ${overallMetrics.bounceRate}%
+    - Overall Reply Rate: ${overallMetrics.replyRate}%
+  `;
+
+  // Send summary email (assuming you have a sendEmail function)
+  await sendcampsummaryEmail({
+    to: customer.email,
+    subject: `Campaign Summary: ${campaign.campaignName}`,
+    body: emailBody
+  });
+
+  console.log(`Summary email sent to ${customer.email}`);
+}
 
 async function checkForBounces(auth) {
     const gmail = google.gmail({ version: 'v1', auth });
