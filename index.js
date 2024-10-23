@@ -694,6 +694,33 @@ async function sendCampaignSummary(customerId, campaignId) {
   console.log(`Summary email sent to ${customer.email}`);
 }
 
+async function sendcampsummaryEmail({ to,subject, body }) {
+   const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'voltmailerhelp@gmail.com',
+          pass: 'chys ltjh yxlo isbu', // App password if 2FA is enabled
+        },
+      });
+    
+      // Define email options
+      const mailOptions = {
+        from: 'voltmailerhelp@gmail.com',
+        to: to,
+        subject: subject,
+        text: body,
+        // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
+        html: `<p>${body.replace(/\n/g, '<br>')} </p>`,
+      };
+
+  
+    await transporter.sendMail(mailOptions);
+    console.log('Message sent: %s');
+    res.send('Password reset email sent.');
+
+  });
+  
+
 async function checkForBounces(auth) {
     const gmail = google.gmail({ version: 'v1', auth });
 
