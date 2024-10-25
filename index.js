@@ -560,14 +560,14 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
         const customer = await Customer.findOne({ email: email });
 
         if (customer) {
-		const sentEmail = {
-                        recipientEmail: data.email,
-                        subject: subject_line,
-                        messageId: messageId,
-                        threadId: threadId,
-                        sentTime: new Date(),
-                        status: 'sent'
-                    };
+            const sentEmail = {
+                recipientEmail: to,
+                subject,
+                messageId,
+                threadId,
+                sentTime: new Date(),
+                status: 'sent'
+            };
 		// Find the campaign by campaignId
   const campaignIndex = customer.campaigns.findIndex(camp => camp._id.toString() === campaignId);
 
@@ -575,6 +575,7 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
     // Push the email details to the campaign's sentEmails array and increment SENT_EMAILS
     customer.campaigns[campaignIndex].sentEmails.push(sentEmail);
     customer.campaigns[campaignIndex].SENT_EMAILS += 1;
+    await customer.save();
 
     // Use updateOne to update the specific campaign
     await Customer.updateOne(
@@ -607,60 +608,59 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
 
 // Function to calculate overall metrics for a customer
 async function calculateCustomerMetrics(customerId) {
-  const customer = await Customer.findById(customerId);
-  let totalSentEmails = 0;
-  let totalBounces = 0;
-  let totalReplies = 0;
+    const customer = await Customer.findById(customerId);
+    let totalSentEmails = 0;
+    let totalBounces = 0;
+    let totalReplies = 0;
 
-  customer.campaigns.forEach(campaign => {
-    totalSentEmails += campaign.sentEmails.length;
-    totalBounces += campaign.sentEmails.filter(email => email.status === 'bounced').length;
-    totalReplies += campaign.sentEmails.filter(email => email.responseCount > 0).length;
-  });
+    customer.campaigns.forEach(campaign => {
+        totalSentEmails += campaign.SENT_EMAILS;
+        totalBounces += campaign.sentEmails.filter(email => email.status === 'bounced').length;
+        totalReplies += campaign.sentEmails.filter(email => email.responseCount > 0).length;
+    });
 
-  const bounceRate = (totalBounces / totalSentEmails) * 100;
-  const replyRate = (totalReplies / totalSentEmails) * 100;
+    const bounceRate = (totalBounces / totalSentEmails) * 100;
+    const replyRate = (totalReplies / totalSentEmails) * 100;
 
-  // Update overall metrics for the customer
-  await Customer.updateOne(
-    { _id: customerId },
-    {
-      $set: {
-        'metrics.totalEmailsSent': totalSentEmails,
-        'metrics.bounceRate': bounceRate,
-        'metrics.replyRate': replyRate
-      }
-    }
-  );
+    await Customer.updateOne(
+        { _id: customerId },
+        {
+            $set: {
+                total_emails: totalSentEmails,
+                bounceRate: bounceRate,
+                replyRate: replyRate
+            }
+        }
+    );
 
-  return { totalSentEmails, bounceRate, replyRate };
+    return { totalSentEmails, bounceRate, replyRate };
 }
+
 
 // Function to track campaign metrics when the campaign finishes
 async function trackCampaignMetrics(campaignId) {
-  const customer = await Customer.findOne({ 'campaigns._id': campaignId });
-  const campaign = customer.campaigns.id(campaignId);
+    const customer = await Customer.findOne({ 'campaigns._id': campaignId });
+    const campaign = customer.campaigns.id(campaignId);
   
-  let totalEmails = campaign.sentEmails.length;
-  let bounces = campaign.sentEmails.filter(email => email.status === 'bounced').length;
-  let replies = campaign.sentEmails.filter(email => email.responseCount > 0).length;
+    let totalEmails = campaign.sentEmails.length;
+    let bounces = campaign.sentEmails.filter(email => email.status === 'bounced').length;
+    let replies = campaign.sentEmails.filter(email => email.responseCount > 0).length;
   
-  const bounceRate = (bounces / totalEmails) * 100;
-  const replyRate = (replies / totalEmails) * 100;
+    const bounceRate = (bounces / totalEmails) * 100;
+    const replyRate = (replies / totalEmails) * 100;
 
-  // Update campaign with the new metrics
-  await Customer.updateOne(
-    { 'campaigns._id': campaignId },
-    {
-      $set: {
-        'campaigns.$.bounceRate': bounceRate,
-        'campaigns.$.replyRate': replyRate,
-        'campaigns.$.totalEmails': totalEmails
-      }
-    }
-  );
+    await Customer.updateOne(
+        { 'campaigns._id': campaignId },
+        {
+            $set: {
+                'campaigns.$.bounceRate': bounceRate,
+                'campaigns.$.replyRate': replyRate,
+                'campaigns.$.totalEmails': totalEmails
+            }
+        }
+    );
 
-  return { totalEmails, bounceRate, replyRate };
+    return { totalEmails, bounceRate, replyRate };
 }
 
 // Function to generate and send a summary email
@@ -1069,21 +1069,22 @@ app.get('/remove-driver', async (req, res) => {
     const customer = await Customer.findOne({ email: email });
 
 
-    // Create a new campaign and save it in the customer's campaigns
+    // Create a new campaign
+    const campaignName = `Campaign ${new Date().toLocaleString()}`;
     const newCampaign = {
         _id: new mongoose.Types.ObjectId(),
-        campaignName: campaignName || `Campaign ${new Date().toLocaleString()}`,
+        campaignName: campaignName,
         sentEmails: [],
         createdTime: new Date(),
         SENT_EMAILS: 0,
-	bounceRate: { type: Number, default: 0 },
-        replyRate: { type: Number, default: 0 }
+        bounceRate: 0,
+        replyRate: 0
     };
 
-	await Customer.updateOne(
-		{ email : email },
-		{ $set : {campaigns: customer.campaigns ? [...customer.campaigns, newCampaign] : [newCampaign ] } } 
-	);
+    await Customer.updateOne(
+        { email: email },
+        { $push: { campaigns: newCampaign } }
+    );
     
     const CampaignId = newCampaign._id
     // const campaign = customer.campaigns.create(newCampaign);
@@ -1139,18 +1140,21 @@ app.get('/remove-driver', async (req, res) => {
 
                     const sentEmail = {
                         recipientEmail: data.email,
-                        subject: subject_line,  
+                        subject: emailContent.subject,
                         messageId: messageId,
                         threadId: threadId,
                         sentTime: new Date(),
                         status: 'sent'
                     };
 
-                    // Add email details to the campaign
-                    campaign.sentEmails.push(sentEmail);
-                    campaign.SENT_EMAILS += 1;
-                    await customer.save();
-                    SENT_EMAILS += 1;
+                    await Customer.updateOne(
+                        { email: email, 'campaigns._id': CampaignId },
+                        { 
+                            $push: { 'campaigns.$.sentEmails': sentEmail },
+                            $inc: { 'campaigns.$.SENT_EMAILS': 1 }
+                        }
+                    );
+                    SENT_EMAILS++;
 
                     console.log(`Email successfully sent to ${data.email}`);
             }            
@@ -1168,7 +1172,7 @@ app.get('/remove-driver', async (req, res) => {
     }
 
     // res.json({ status: 'completed', sent_emails: SENT_EMAILS });
-	    await sendCampaignSummary(customer._id, campaign._id);
+	await sendCampaignSummary(customer._id, campaign._id);
     console.log("completed")
 });
 });
@@ -1263,12 +1267,15 @@ app.post('/add-customer-to-db', async (req, res) => {
             stripeID: data.stripeID,
             email: data.email,
             plan: data.plan,
-            total_emails: data.total_emails,
+            total_emails: data.total_emails || 0, // Initialize with 0 if not provided
             priceID: data.priceID,
             password: data.password,
             name: data.name,
             plan_emails: data.plan_emails,
-            affiliate: data.affiliate
+            affiliate: data.affiliate,
+            bounceRate: 0, // Default value
+            replyRate: 0, // Default value
+            campaigns: [] // Initialize with an empty array for campaigns
         });
 
         await customer.save()
