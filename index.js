@@ -1130,7 +1130,8 @@ app.get('/remove-driver', async (req, res) => {
 
             // Send the email
             const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId);
-console.log(result)
+
+            console.log(result)
             if (result) {
                 console.log("working")
                     // Log sent email details to the campaign
@@ -1138,7 +1139,7 @@ console.log(result)
 
                     const sentEmail = {
                         recipientEmail: data.email,
-                        subject: subject_line,
+                        subject: subject_line,  
                         messageId: messageId,
                         threadId: threadId,
                         sentTime: new Date(),
