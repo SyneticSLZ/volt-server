@@ -2199,44 +2199,52 @@ app.post('/domain-search', async (req, res) => {
 });
 
 
-// Endpoint to get bounce and reply rates for a specific user's email
 app.get('/api/metrics/:email', async (req, res) => {
-  const { email } = req.params;
-
-  try {
-    // Find the customer by email
-    const customer = await Customer.findOne({ email: email });
-
-    if (!customer) {
-      return res.status(404).json({ message: 'Customer not found' });
+    const { email } = req.params;
+  
+    try {
+      // Find the customer by email
+      const customer = await Customer.findOne({ email: email });
+  
+      if (!customer) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+  
+      // Initialize total counters
+      let totalEmailsSent = 0;
+      let totalBounces = 0;
+      let totalReplies = 0;
+  
+      // Aggregate metrics across all campaigns
+      customer.campaigns.forEach(campaign => {
+        totalEmailsSent += campaign.sentEmails.length;
+  
+        // Count bounces and replies
+        campaign.sentEmails.forEach(emailRecord => {
+          if (emailRecord.bounces) totalBounces += 1;
+          if (emailRecord.replies) totalReplies += 1;
+        });
+      });
+  
+      // Calculate rates
+      const bounceRate = totalEmailsSent > 0 ? (totalBounces / totalEmailsSent) * 100 : 0;
+      const replyRate = totalEmailsSent > 0 ? (totalReplies / totalEmailsSent) * 100 : 0;
+  
+      // Send the response back to the client
+      res.json({
+        email: customer.email,
+        totalEmailsSent,
+        totalBounces,
+        totalReplies,
+        bounceRate: bounceRate.toFixed(2),
+        replyRate: replyRate.toFixed(2),
+      });
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-
-    // Aggregate bounce and reply rates across all campaigns
-    let totalEmailsSent = 0;
-    let totalBounces = 0;
-    let totalReplies = 0;
-
-    customer.campaigns.forEach(campaign => {
-      totalEmailsSent += campaign.SENT_EMAILS;
-      totalBounces += campaign.sentEmails.filter(email => email.bounces).length;
-      totalReplies += campaign.sentEmails.filter(email => email.replies).length;
-    });
-
-    const bounceRate = totalEmailsSent > 0 ? (totalBounces / totalEmailsSent) * 100 : 0;
-    const replyRate = totalEmailsSent > 0 ? (totalReplies / totalEmailsSent) * 100 : 0;
-
-    // Send the response back to the client
-    res.json({
-      email: customer.email,
-      totalEmailsSent,
-      bounceRate: bounceRate.toFixed(2),
-      replyRate: replyRate.toFixed(2),
-    });
-  } catch (error) {
-    console.error('Error fetching metrics:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  });
+  
 
 
 // The function you want to run
