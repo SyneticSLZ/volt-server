@@ -1085,6 +1085,8 @@ app.get('/remove-driver', async (req, res) => {
         { email: email },
         { $push: { campaigns: newCampaign } }
     );
+
+    console.log("new campaign added", newCampaign._id, newCampaign)
     
     const CampaignId = newCampaign._id
     // const campaign = customer.campaigns.create(newCampaign);
@@ -1133,7 +1135,7 @@ app.get('/remove-driver', async (req, res) => {
             const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId);
 
             console.log(result)
-            if (result) {
+            // if (result) {
                 console.log("working")
                     // Log sent email details to the campaign
                     const { id: messageId, threadId } = result.data;
@@ -1157,7 +1159,7 @@ app.get('/remove-driver', async (req, res) => {
                     SENT_EMAILS++;
 
                     console.log(`Email successfully sent to ${data.email}`);
-            }            
+            // }            
 
             // } else {
                 // console.log("Failed to retrieve email content.");
