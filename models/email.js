@@ -45,6 +45,6 @@ const customerSchema = new mongoose.Schema({
     campaigns: [campaignSchema]
 });
 
-const Email = mongoose.model('Customer', emailSchema);
+const Email = mongoose.model.Email || mongoose.model('Customer', emailSchema);
 
 module.exports = Email;

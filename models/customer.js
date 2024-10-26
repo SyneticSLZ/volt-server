@@ -61,7 +61,7 @@ const customerSchema = new mongoose.Schema({
     replyRate: { type: Number, default: 0 },
     campaigns: [campaignSchema]
 });
+const Customer = mongoose.models.Customer || mongoose.model('Customer', customerSchema);
 
-const Customer = mongoose.model('Customer', customerSchema);
 
 module.exports = Customer;

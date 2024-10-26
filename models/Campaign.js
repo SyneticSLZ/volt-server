@@ -45,6 +45,6 @@ const customerSchema = new mongoose.Schema({
     campaigns: [campaignSchema]
 });
 
-const Campaign = mongoose.model('Customer', campaignSchema);
+const Campaign = mongoose.models.Campaign || mongoose.model('Campaign', campaignSchema);
 
 module.exports = Campaign;
