@@ -509,6 +509,46 @@ const oldsendEmail = async (subject, message, to, token, myemail) => {
     }
 };
 
+const addEmailToCampaign = async (campaignId, emailDetails) => {
+    try {
+        // Find the campaign by ID
+        const campaign = await Campaign.findById(campaignId);
+
+        if (!campaign) {
+            console.log('Campaign not found');
+            return;
+        }
+
+        // Create a new email object
+        const newEmail = {
+            recipientEmail: emailDetails.recipientEmail,
+            subject: emailDetails.subject,
+            messageId: emailDetails.messageId,
+            threadId: emailDetails.threadId,
+            sentTime: new Date(),
+            status: emailDetails.status || 'sent',
+            bounces: emailDetails.bounces || false,
+            responseCount: emailDetails.responseCount || 0
+        };
+
+        // Add the new email to the campaign's `sentEmails` array
+        campaign.sentEmails.push(newEmail);
+        campaign.SENT_EMAILS += 1; // Increment the sent emails counter
+
+        // Save the campaign with the new email record
+        await campaign.save();
+
+        console.log('Email added to campaign successfully');
+    } catch (error) {
+        console.error('Error adding email to campaign:', error);
+    }
+};
+
+
+
+
+
+
 
 const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
     console.log("data is:", to, message, subject);
@@ -570,6 +610,20 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
                 { $set: { total_emails: newTotalEmails } }
             );
             console.log(`Emails used! ${newTotalEmails} emails used.`);
+
+            // Example usage inside your server code:
+const exampleEmailDetails = {
+    recipientEmail: to,
+    subject: subject,
+    messageId: messageId,
+    threadId: threadId,
+    status: 'sent',
+    bounces: false,
+    responseCount: 0
+};
+
+    await addEmailToCampaign(campaignId, exampleEmailDetails);
+
         
 
         // Return messageId and threadId for further tracking
@@ -1114,7 +1168,7 @@ app.get('/remove-driver', async (req, res) => {
 
 // async function sendEmails(credentialsDict, submittedData, userPitch, Uname, token) {
     app.post('/send-emails', async (req, res) => {
-    const { submittedData, userPitch, Uname, token, myemail, Template } = req.body;
+    const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId } = req.body;
 
     res.status(200).send('Emails are being sent in the background. You can close the tab.');
 
@@ -1263,11 +1317,11 @@ app.get('/fetch-profile-data', async (req, res) => {
 
 // Route to send bulk emails manually
 app.post('/send-bulk-manual', async (req, res) => {
-    const { token, subject, content, email, myemail } = req.body;
+    const { token, subject, content, email, myemail, campaignId } = req.body;
 
     try {
         // await sendBulkEmails(generatedData, token);
-        await sendEmail(subject, content, email, token, myemail);
+        await sendEmail(subject, content, email, token, myemail, campaignId);
         res.json({ message: 'Bulk emails sent successfully' });
     } catch (error) {
         console.log(`Error sending bulk emails manually: ${error}`);
