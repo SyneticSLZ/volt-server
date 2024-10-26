@@ -538,7 +538,7 @@ const addEmailToCampaign = async (campaignId, emailDetails) => {
         // Save the campaign with the new email record
         await campaign.save();
 
-        console.log('Email added to campaign successfully');
+        console.log('Email added to campaign successfully', campaign, newEmail);
     } catch (error) {
         console.error('Error adding email to campaign:', error);
     }
