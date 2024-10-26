@@ -49,7 +49,7 @@ let IsLogged_IN = false;
 const hunter = process.env.HUNTER_API_KEY
 
 // This is your test secret API key.
-const stripe = require('stripe')(process.env.STRIPE_API_KEY_TEST);
+const stripe = require('stripe')(process.env.STRIPE_API_KEY);
 
 
 const YOUR_DOMAIN = 'https://voltmailer.com';
