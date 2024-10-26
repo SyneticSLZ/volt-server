@@ -558,49 +558,18 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
         console.log(`Message ID: ${messageId}, Thread ID: ${threadId}`);
 
         const customer = await Customer.findOne({ email: email });
-
-        if (customer) {
-            const sentEmail = {
-                recipientEmail: to,
-                subject,
-                messageId,
-                threadId,
-                sentTime: new Date(),
-                status: 'sent'
-            };
-		// Find the campaign by campaignId
-  const campaignIndex = customer.campaigns.findIndex(camp => camp._id.toString() === campaignId);
-
-  if (campaignIndex !== -1) {
-    // Push the email details to the campaign's sentEmails array and increment SENT_EMAILS
-    customer.campaigns[campaignIndex].sentEmails.push(sentEmail);
-    customer.campaigns[campaignIndex].SENT_EMAILS += 1;
-    await customer.save();
-
-    // Use updateOne to update the specific campaign
-    await Customer.updateOne(
-      { email: email, 'campaigns._id': campaignId },
-      {
-        $set: {
-          'campaigns.$.sentEmails': customer.campaigns[campaignIndex].sentEmails,
-          'campaigns.$.SENT_EMAILS': customer.campaigns[campaignIndex].SENT_EMAILS
-        }
-      }
-    );
-
-		
-            const newTotalEmails = customer.total_emails + 1;
-            await Customer.updateOne(
+        const newTotalEmails = customer.total_emails + 1;    
+        await Customer.updateOne(
                 { email: email },
                 { $set: { total_emails: newTotalEmails } }
             );
             console.log(`Emails used! ${newTotalEmails} emails used.`);
-        }
+        
 
         // Return messageId and threadId for further tracking
         return { messageId, threadId };
     }
-    } catch (error) {
+    catch (error) {
         console.error('Error sending email:', error);
         throw new Error(`Error sending email: ${error.message}`);
     }
@@ -785,6 +754,76 @@ async function trackReplies(auth) {
         }
     }
 }
+
+
+// Add a new email record to a specific campaign
+app.post('/api/campaigns/:campaignId/add-email', async (req, res) => {
+    const { campaignId } = req.params;
+    const { recipientEmail, subject, messageId, threadId, sentTime, status } = req.body;
+
+    try {
+        // Find the campaign by ID
+        const campaign = await Campaign.findById(campaignId);
+
+        if (!campaign) {
+            return res.status(404).json({ message: 'Campaign not found' });
+        }
+
+        // Create a new email object
+        const newEmail = {
+            recipientEmail,
+            subject,
+            messageId,
+            threadId,
+            sentTime: sentTime ? new Date(sentTime) : new Date(),
+            status,
+            bounces: status === 'bounced',
+            responseCount: 0
+        };
+
+        // Add the email to the campaign
+        campaign.sentEmails.push(newEmail);
+        campaign.SENT_EMAILS += 1; // Update the count of sent emails
+
+        // Save the updated campaign
+        await campaign.save();
+
+        res.json({ message: 'Email added to campaign successfully' });
+    } catch (error) {
+        console.error('Error adding email:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+// Endpoint to create a new campaign
+app.post('/api/campaigns/create', async (req, res) => {
+    const { campaignName, subject, template, pitch } = req.body;
+
+    try {
+        // Create a new campaign object
+        const newCampaign = new Campaign({
+            campaignName,
+            template,
+            pitch,
+            sentEmails: [],
+            createdTime: new Date(),
+            SENT_EMAILS: 0,
+            bounceRate: 0,
+            replyRate: 0
+        });
+
+        // Save the campaign to the database
+        await newCampaign.save();
+
+        res.json({ message: 'Campaign created successfully', campaignId: newCampaign._id });
+    } catch (error) {
+        console.error('Error creating campaign:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+  
 
 
 // const cron = require('node-cron');
@@ -1070,25 +1109,25 @@ app.get('/remove-driver', async (req, res) => {
 
 
     // Create a new campaign
-    const campaignName = `Campaign ${new Date().toLocaleString()}`;
-    const newCampaign = {
-        _id: new mongoose.Types.ObjectId(),
-        campaignName: campaignName,
-        sentEmails: [],
-        createdTime: new Date(),
-        SENT_EMAILS: 0,
-        bounceRate: 0,
-        replyRate: 0
-    };
+    // const campaignName = `Campaign ${new Date().toLocaleString()}`;
+    // const newCampaign = {
+    //     _id: new mongoose.Types.ObjectId(),
+    //     campaignName: campaignName,
+    //     sentEmails: [],
+    //     createdTime: new Date(),
+    //     SENT_EMAILS: 0,
+    //     bounceRate: 0,
+    //     replyRate: 0
+    // };
 
-    await Customer.updateOne(
-        { email: email },
-        { $push: { campaigns: newCampaign } }
-    );
+    // await Customer.updateOne(
+    //     { email: email },
+    //     { $push: { campaigns: newCampaign } }
+    // );
 
-    console.log("new campaign added", newCampaign._id, newCampaign)
+    // console.log("new campaign added", newCampaign._id, newCampaign)
     
-    const CampaignId = newCampaign._id
+    // const CampaignId = newCampaign._id
     // const campaign = customer.campaigns.create(newCampaign);
     // customer.campaigns.push(campaign);
     // await customer.save();
@@ -1136,29 +1175,29 @@ app.get('/remove-driver', async (req, res) => {
 
             console.log(result)
             // if (result) {
-                console.log("working")
-                    // Log sent email details to the campaign
-                    const { id: messageId, threadId } = result.data;
+                // console.log("working")
+                //     // Log sent email details to the campaign
+                //     const { id: messageId, threadId } = result.data;
 
-                    const sentEmail = {
-                        recipientEmail: data.email,
-                        subject: emailContent.subject,
-                        messageId: messageId,
-                        threadId: threadId,
-                        sentTime: new Date(),
-                        status: 'sent'
-                    };
+                //     const sentEmail = {
+                //         recipientEmail: data.email,
+                //         subject: emailContent.subject,
+                //         messageId: messageId,
+                //         threadId: threadId,
+                //         sentTime: new Date(),
+                //         status: 'sent'
+                //     };
 
-                    await Customer.updateOne(
-                        { email: email, 'campaigns._id': CampaignId },
-                        { 
-                            $push: { 'campaigns.$.sentEmails': sentEmail },
-                            $inc: { 'campaigns.$.SENT_EMAILS': 1 }
-                        }
-                    );
-                    SENT_EMAILS++;
+                //     await Customer.updateOne(
+                //         { email: email, 'campaigns._id': CampaignId },
+                //         { 
+                //             $push: { 'campaigns.$.sentEmails': sentEmail },
+                //             $inc: { 'campaigns.$.SENT_EMAILS': 1 }
+                //         }
+                //     );
+                //     SENT_EMAILS++;
 
-                    console.log(`Email successfully sent to ${data.email}`);
+                //     console.log(`Email successfully sent to ${data.email}`);
             // }            
 
             // } else {
