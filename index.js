@@ -799,6 +799,7 @@ app.post('/api/campaigns/:campaignId/add-email', async (req, res) => {
 
 app.post('/api/campaigns/create', async (req, res) => {
     const { email, campaignName, template, pitch } = req.body;
+    console.log("creating a campaign with: ", req.body)
 
     try {
         // Generate a unique campaign name if one is not provided
@@ -823,7 +824,9 @@ app.post('/api/campaigns/create', async (req, res) => {
         const customer = await Customer.findOne({ email: email });
 
         if (!customer) {
+            console.log("customer not found")
             return res.status(404).json({ message: 'Customer not found' });
+            
         }
 
         // Add the new campaign to the customer's campaigns array
@@ -831,7 +834,7 @@ app.post('/api/campaigns/create', async (req, res) => {
         
         // Save the updated customer to the database
         await customer.save();
-
+        console.log("successfuly created campaign")
         res.json({ message: 'Campaign created successfully', campaignId: newCampaign._id });
     } catch (error) {
         console.error('Error creating campaign:', error);
