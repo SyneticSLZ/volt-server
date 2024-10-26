@@ -59,7 +59,22 @@ const customerSchema = new mongoose.Schema({
     replyRate: { type: Number, default: 0 },
     campaigns: [campaignSchema]
 });
+// const Customer = mongoose.models.Customer || mongoose.model('Customer', customerSchema);
+
+
+// module.exports = Customer;
+
+// Create Models
+const Email = mongoose.models.Email || mongoose.model('Email', emailSchema);
+const Campaign = mongoose.models.Campaign || mongoose.model('Campaign', campaignSchema);
 const Customer = mongoose.models.Customer || mongoose.model('Customer', customerSchema);
 
-
-module.exports = Customer;
+// Export the models and schemas
+module.exports = {
+    Email,
+    Campaign,
+    Customer,
+    emailSchema,
+    campaignSchema,
+    customerSchema
+};

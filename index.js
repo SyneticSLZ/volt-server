@@ -8,9 +8,12 @@ const session = require('express-session');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const Customer = require('./models/customer');
-const Campaign = require('./models/Campaign');
-const Email = require('./models/email');
+
+
+const { Email, Campaign, Customer } = require('./models/customer');
+
+
+
 const Driver = require('./models/Driver');
 const app = express();
 dotenv.config();
