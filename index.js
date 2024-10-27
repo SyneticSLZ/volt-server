@@ -514,8 +514,10 @@ app.post('/campaigns/:campaignId/add-email', async (req, res) => {
     const { campaignId } = req.params;
     const emailDetails = req.body;
 
+
     try {
         await addEmailToCampaign(campaignId, emailDetails, "rohanmehmi72@gmail.com");
+        console.log("added email")
         res.json({ message: 'Email added to campaign successfully' });
     } catch (error) {
         console.error('Error adding email to campaign:', error);
@@ -533,6 +535,7 @@ const addEmailToCampaign = async (campaignId, emailDetails, email) => {
             console.log('Campaign not found');
             return;
         }
+        console.log("campaign found")
 
         // Create a new email object
         const newEmail = {
@@ -550,14 +553,26 @@ const addEmailToCampaign = async (campaignId, emailDetails, email) => {
         campaign.sentEmails.push(newEmail);
         campaign.SENT_EMAILS += 1; // Increment the sent emails counter
 
-        // Save the campaign with the new email record
-        await campaign.save();
 
-        // Update customer's campaigns automatically if it’s part of customer schema
-        const customer = await Customer.findOne({ email: email });
-        if (customer) {
-            await customer.save(); // Ensure the updated campaign is saved under the customer
-        }
+
+
+        await Customer.findOneAndUpdate(
+            { 'campaigns._id': campaignId },
+            {
+                $set: { 'campaigns.$': campaign }
+            },
+            { new: true }
+        );
+
+        // // Save the campaign with the new email record
+        // await campaign.save();
+        // console.log("aved campaign")
+
+        // // Update customer's campaigns automatically if it’s part of customer schema
+        // const customer = await Customer.findOne({ email: email });
+        // if (customer) {
+        //     await customer.save(); // Ensure the updated campaign is saved under the customer
+        // }
 
         console.log('Email added to campaign successfully');
     } catch (error) {
