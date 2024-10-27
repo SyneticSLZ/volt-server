@@ -509,7 +509,22 @@ const oldsendEmail = async (subject, message, to, token, myemail) => {
     }
 };
 
-const addEmailToCampaign = async (campaignId, emailDetails) => {
+// Expose an endpoint to add an email to a campaign
+app.post('/campaigns/:campaignId/add-email', async (req, res) => {
+    const { campaignId } = req.params;
+    const emailDetails = req.body;
+
+    try {
+        await addEmailToCampaign(campaignId, emailDetails);
+        res.json({ message: 'Email added to campaign successfully' });
+    } catch (error) {
+        console.error('Error adding email to campaign:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+const addEmailToCampaign = async (campaignId, emailDetails, email) => {
     try {
         // Find the campaign by ID
         const campaign = await Campaign.findById(campaignId);
@@ -538,7 +553,13 @@ const addEmailToCampaign = async (campaignId, emailDetails) => {
         // Save the campaign with the new email record
         await campaign.save();
 
-        console.log('Email added to campaign successfully', campaign, newEmail);
+        // Update customer's campaigns automatically if it’s part of customer schema
+        const customer = await Customer.findOne({ email: email });
+        if (customer) {
+            await customer.save(); // Ensure the updated campaign is saved under the customer
+        }
+
+        console.log('Email added to campaign successfully');
     } catch (error) {
         console.error('Error adding email to campaign:', error);
     }
@@ -622,7 +643,7 @@ const exampleEmailDetails = {
     responseCount: 0
 };
 
-    await addEmailToCampaign(campaignId, exampleEmailDetails);
+    await addEmailToCampaign(campaignId, exampleEmailDetails, email);
 
         
 
