@@ -515,7 +515,7 @@ app.post('/campaigns/:campaignId/add-email', async (req, res) => {
     const emailDetails = req.body;
 
     try {
-        await addEmailToCampaign(campaignId, emailDetails);
+        await addEmailToCampaign(campaignId, emailDetails, "rohanmehmi72@gmail.com");
         res.json({ message: 'Email added to campaign successfully' });
     } catch (error) {
         console.error('Error adding email to campaign:', error);
