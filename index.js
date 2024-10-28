@@ -2371,6 +2371,8 @@ app.get('/api/metrics/:email', async (req, res) => {
       let totalBounces = 0;
       let totalReplies = 0;
   
+      // Get the number of campaigns
+      const numberOfCampaigns = customer.campaigns.length;
       // Aggregate metrics across all campaigns
       customer.campaigns.forEach(campaign => {
         totalEmailsSent += campaign.sentEmails.length;
@@ -2394,6 +2396,7 @@ app.get('/api/metrics/:email', async (req, res) => {
         totalReplies,
         bounceRate: bounceRate.toFixed(2),
         replyRate: replyRate.toFixed(2),
+        numberOfCampaigns: numberOfCampaigns
       });
     } catch (error) {
       console.error('Error fetching metrics:', error);
