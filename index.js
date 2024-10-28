@@ -852,41 +852,91 @@ async function trackReplies(auth) {
 }
 
 
-// Add a new email record to a specific campaign
-app.post('/api/campaigns/:campaignId/add-email', async (req, res) => {
-    const { campaignId } = req.params;
-    const { recipientEmail, subject, messageId, threadId, sentTime, status } = req.body;
+// // Add a new email record to a specific campaign
+// app.post('/api/campaigns/:campaignId/add-email', async (req, res) => {
+//     const { campaignId } = req.params;
+//     const { recipientEmail, subject, messageId, threadId, sentTime, status } = req.body;
+
+//     try {
+//         // Find the campaign by ID
+//         const campaign = await Campaign.findById(campaignId);
+
+//         if (!campaign) {
+//             return res.status(404).json({ message: 'Campaign not found' });
+//         }
+
+//         // Create a new email object
+//         const newEmail = {
+//             recipientEmail,
+//             subject,
+//             messageId,
+//             threadId,
+//             sentTime: sentTime ? new Date(sentTime) : new Date(),
+//             status,
+//             bounces: status === 'bounced',
+//             responseCount: 0
+//         };
+
+//         // Add the email to the campaign
+//         campaign.sentEmails.push(newEmail);
+//         campaign.SENT_EMAILS += 1; // Update the count of sent emails
+
+//         // Save the updated campaign
+//         await campaign.save();
+
+//         res.json({ message: 'Email added to campaign successfully' });
+//     } catch (error) {
+//         console.error('Error adding email:', error);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// });
+
+app.post('/api/campaigns/addEmail', async (req, res) => {
+    const { email, campaignId, newEmail } = req.body; // newEmail will contain details like recipientEmail, subject, etc.
+    console.log("Adding email to campaign:", req.body);
 
     try {
-        // Find the campaign by ID
-        const campaign = await Campaign.findById(campaignId);
+        // Find the customer by their email address
+        const customer = await Customer.findOne({ email: email });
+
+        if (!customer) {
+            console.log("Customer not found");
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        // Find the specific campaign within the customer's campaigns array
+        const campaign = customer.campaigns.id(campaignId);
 
         if (!campaign) {
+            console.log("Campaign not found");
             return res.status(404).json({ message: 'Campaign not found' });
         }
 
-        // Create a new email object
-        const newEmail = {
-            recipientEmail,
-            subject,
-            messageId,
-            threadId,
-            sentTime: sentTime ? new Date(sentTime) : new Date(),
-            status,
-            bounces: status === 'bounced',
-            responseCount: 0
+        // Create the new email object
+        const emailToAdd = {
+            recipientEmail: newEmail.recipientEmail,
+            subject: newEmail.subject,
+            messageId: newEmail.messageId,
+            threadId: newEmail.threadId,
+            sentTime: new Date(), // or use newEmail.sentTime if provided
+            status: newEmail.status || 'sent',
+            bounces: newEmail.bounces || false,
+            responseCount: newEmail.responseCount || 0
         };
 
-        // Add the email to the campaign
-        campaign.sentEmails.push(newEmail);
-        campaign.SENT_EMAILS += 1; // Update the count of sent emails
+        // Add the new email to the campaign's sentEmails array
+        campaign.sentEmails.push(emailToAdd);
 
-        // Save the updated campaign
-        await campaign.save();
+        // Update sent emails count for the campaign
+        campaign.SENT_EMAILS += 1;
 
-        res.json({ message: 'Email added to campaign successfully' });
+        // Save the updated customer data to the database
+        await customer.save();
+
+        console.log("Successfully added email to campaign");
+        res.json({ message: 'Email added to campaign successfully', campaignId: campaign._id });
     } catch (error) {
-        console.error('Error adding email:', error);
+        console.error('Error adding email to campaign:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
