@@ -526,59 +526,59 @@ app.post('/campaigns/:campaignId/add-email', async (req, res) => {
 });
 
 
-const addEmailToCampaign = async (campaignId, emailDetails, email) => {
-    try {
-        // Find the campaign by ID
-        const campaign = await Campaign.findById(campaignId);
+// const addEmailToCampaign = async (campaignId, emailDetails, email) => {
+//     try {
+//         // Find the campaign by ID
+//         const campaign = await Campaign.findById(campaignId);
 
-        if (!campaign) {
-            console.log('Campaign not found');
-            return;
-        }
-        console.log("campaign found")
+//         if (!campaign) {
+//             console.log('Campaign not found');
+//             return;
+//         }
+//         console.log("campaign found")
 
-        // Create a new email object
-        const newEmail = {
-            recipientEmail: emailDetails.recipientEmail,
-            subject: emailDetails.subject,
-            messageId: emailDetails.messageId,
-            threadId: emailDetails.threadId,
-            sentTime: new Date(),
-            status: emailDetails.status || 'sent',
-            bounces: emailDetails.bounces || false,
-            responseCount: emailDetails.responseCount || 0
-        };
+//         // Create a new email object
+//         const newEmail = {
+//             recipientEmail: emailDetails.recipientEmail,
+//             subject: emailDetails.subject,
+//             messageId: emailDetails.messageId,
+//             threadId: emailDetails.threadId,
+//             sentTime: new Date(),
+//             status: emailDetails.status || 'sent',
+//             bounces: emailDetails.bounces || false,
+//             responseCount: emailDetails.responseCount || 0
+//         };
 
-        // Add the new email to the campaign's `sentEmails` array
-        campaign.sentEmails.push(newEmail);
-        campaign.SENT_EMAILS += 1; // Increment the sent emails counter
-
-
+//         // Add the new email to the campaign's `sentEmails` array
+//         campaign.sentEmails.push(newEmail);
+//         campaign.SENT_EMAILS += 1; // Increment the sent emails counter
 
 
-        await Customer.findOneAndUpdate(
-            { 'campaigns._id': campaignId },
-            {
-                $set: { 'campaigns.$': campaign }
-            },
-            { new: true }
-        );
 
-        // // Save the campaign with the new email record
-        // await campaign.save();
-        // console.log("aved campaign")
 
-        // // Update customer's campaigns automatically if it’s part of customer schema
-        // const customer = await Customer.findOne({ email: email });
-        // if (customer) {
-        //     await customer.save(); // Ensure the updated campaign is saved under the customer
-        // }
+//         await Customer.findOneAndUpdate(
+//             { 'campaigns._id': campaignId },
+//             {
+//                 $set: { 'campaigns.$': campaign }
+//             },
+//             { new: true }
+//         );
 
-        console.log('Email added to campaign successfully');
-    } catch (error) {
-        console.error('Error adding email to campaign:', error);
-    }
-};
+//         // // Save the campaign with the new email record
+//         // await campaign.save();
+//         // console.log("aved campaign")
+
+//         // // Update customer's campaigns automatically if it’s part of customer schema
+//         // const customer = await Customer.findOne({ email: email });
+//         // if (customer) {
+//         //     await customer.save(); // Ensure the updated campaign is saved under the customer
+//         // }
+
+//         console.log('Email added to campaign successfully');
+//     } catch (error) {
+//         console.error('Error adding email to campaign:', error);
+//     }
+// };
 
 
 
@@ -647,18 +647,26 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
             );
             console.log(`Emails used! ${newTotalEmails} emails used.`);
 
-            // Example usage inside your server code:
-const exampleEmailDetails = {
-    recipientEmail: to,
-    subject: subject,
-    messageId: messageId,
-    threadId: threadId,
-    status: 'sent',
-    bounces: false,
-    responseCount: 0
-};
-
-    await addEmailToCampaign(campaignId, exampleEmailDetails, email);
+            const newEmail = {
+                recipientEmail: to,
+                subject: subject,
+                messageId: messageId,
+                threadId: threadId,
+                sentTime: new Date(),
+                status: 'sent',           // Default status
+                bounces: false,           // Assume no bounce initially
+                responseCount: 0          // Initial response count
+            };
+        
+            // Call addEmailToCampaign function with necessary parameters
+            const Emailresult = await addEmailToCampaign(email, campaignId, newEmail);
+        
+            // Check the result and handle any additional logic or error handling as needed
+            if (Emailresult.success) {
+                console.log(`Email successfully added to campaign: ${Emailresult.message}`);
+            } else {
+                console.error(`Failed to add email to campaign: ${Emailresult.message}`);
+            }
 
         
 
@@ -940,6 +948,72 @@ app.post('/api/campaigns/addEmail', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+
+// Internal function to add an email to a specific campaign
+async function addEmailToCampaign(email, campaignId, newEmail) {
+    try {
+        // Find the customer by their email address
+        const customer = await Customer.findOne({ email: email });
+
+        if (!customer) {
+            console.log("Customer not found");
+            return { success: false, message: 'Customer not found' };
+        }
+
+        // Find the specific campaign within the customer's campaigns array
+        const campaign = customer.campaigns.id(campaignId);
+
+        if (!campaign) {
+            console.log("Campaign not found");
+            return { success: false, message: 'Campaign not found' };
+        }
+
+        // Create the new email object
+        const emailToAdd = {
+            recipientEmail: newEmail.recipientEmail,
+            subject: newEmail.subject,
+            messageId: newEmail.messageId,
+            threadId: newEmail.threadId,
+            sentTime: new Date(), // or use newEmail.sentTime if provided
+            status: newEmail.status || 'sent',
+            bounces: newEmail.bounces || false,
+            responseCount: newEmail.responseCount || 0
+        };
+
+        // Add the new email to the campaign's sentEmails array
+        campaign.sentEmails.push(emailToAdd);
+
+        // Update sent emails count for the campaign
+        campaign.SENT_EMAILS += 1;
+
+        // Save the updated customer data to the database
+        await customer.save();
+
+        console.log("Successfully added email to campaign");
+        return { success: true, message: 'Email added to campaign successfully', campaignId: campaign._id };
+    } catch (error) {
+        console.error('Error adding email to campaign:', error);
+        return { success: false, message: 'Server error', error };
+    }
+}
+
+// // Express route that uses the internal function
+// app.post('/api/campaigns/addEmail', async (req, res) => {
+//     const { email, campaignId, newEmail } = req.body;
+//     console.log("Adding email to campaign:", req.body);
+
+//     // Call the internal function
+//     const result = await addEmailToCampaign(email, campaignId, newEmail);
+
+//     // Send response based on the result of the internal function
+//     if (result.success) {
+//         res.json(result);
+//     } else {
+//         res.status(404).json(result);
+//     }
+// });
+
 
 
 app.post('/api/campaigns/create', async (req, res) => {
@@ -1974,6 +2048,176 @@ app.get('/auth/google', (req, res) => {
 
 
 
+async function checkForBounces(oauth2Client) {
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    try {
+        // Step 1: Fetch messages that could be bounce notifications
+        const response = await gmail.users.messages.list({
+            userId: 'me',
+            q: 'from:mailer-daemon@googlemail.com OR from:postmaster OR from:mailer-daemon OR from:mail-daemon OR subject:(Delivery Status Notification) OR subject:(Undelivered Mail Returned to Sender) OR subject:(Mail Delivery Failure) OR subject:(Mail delivery failed) OR subject:(failure notice) OR subject:(Returned mail) OR subject:(Unable to deliver)',
+        });
+
+        const messages = response.data.messages || [];
+        console.log(`Found ${messages.length} possible bounce messages.`);
+
+        let bounces = 0;
+
+        // Step 2: Retrieve and check each message to confirm if it's a bounce
+        for (const message of messages) {
+            const messageId = message.id;
+            const details = await gmail.users.messages.get({
+                userId: 'me',
+                id: messageId,
+            });
+
+            const headers = details.data.payload.headers;
+            const subject = headers.find(header => header.name === 'Subject')?.value || '';
+            const from = headers.find(header => header.name === 'From')?.value || '';
+
+            // Define keywords that typically indicate a bounce
+            const bounceIndicators = [
+                "Mail Delivery Subsystem",
+                "Undelivered Mail Returned to Sender",
+                "mailer-daemon",
+                "Delivery Status Notification",
+                "failure notice",
+                "Mail delivery failed",
+                "postmaster",
+                "Returned mail",
+                "Unable to deliver"
+            ];
+
+            // Check if the subject or the sender matches known bounce indicators
+            const isBounce = bounceIndicators.some(keyword =>
+                subject.includes(keyword) || from.includes(keyword)
+            );
+
+            if (isBounce) {
+                console.log(`Bounce detected: Subject - "${subject}", From - "${from}"`);
+                bounces++;
+
+                // Extract the recipient email (original recipient)
+                const originalRecipient = headers.find(header => header.name === 'To')?.value;
+
+                if (originalRecipient) {
+                    // Find the customer associated with the bounced email
+                    const customer = await Customer.findOne({ "campaigns.sentEmails.recipientEmail": originalRecipient });
+
+                    if (customer) {
+                        let campaignUpdated = false;
+
+                        // Initialize customer-level bounce counter
+                        customer.totalBounces = customer.totalBounces || 0;
+
+                        // Locate the specific campaign and email
+                        customer.campaigns.forEach(campaign => {
+                            const emailRecord = campaign.sentEmails.find(email => email.recipientEmail === originalRecipient);
+                            if (emailRecord) {
+                                // Update the `bounces` field
+                                emailRecord.bounces = true;
+                                emailRecord.status = 'bounced';
+
+                                // Increment campaign-level bounce counter
+                                campaign.bounceRate = campaign.bounceRate || 0;
+                                campaign.SENT_EMAILS = campaign.SENT_EMAILS || 0;
+
+                                // Increment the total bounces for the campaign
+                                campaign.bounceRate = (campaign.sentEmails.filter(email => email.bounces).length / campaign.SENT_EMAILS) * 100;
+
+                                // Ensure the overall customer's bounces are updated
+                                customer.totalBounces += 1;
+                                campaignUpdated = true;
+                            }
+                        });
+
+                        if (campaignUpdated) {
+                            // Update the overall bounce rate for the customer
+                            customer.bounceRate = customer.campaigns.reduce((totalBounces, campaign) => {
+                                return totalBounces + campaign.sentEmails.filter(email => email.bounces).length;
+                            }, 0) / customer.total_emails * 100;
+
+                            // Save the updated customer record
+                            await customer.save();
+                            console.log(`Updated bounce status for ${originalRecipient}`);
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log(`Total bounces detected: ${bounces}`);
+        return bounces;
+    } catch (error) {
+        console.error('Error checking for bounces:', error);
+    }
+}
+
+
+
+
+// Function to check for replies on a particular customer's campaigns
+async function checkRepliesAndUpdate(customerEmail, oauth2Client) {
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    try {
+        // Fetch the customer
+        const customer = await Customer.findOne({ email: customerEmail });
+
+        if (!customer) {
+            console.log("Customer not found");
+            return;
+        }
+
+        // Initialize counters
+        let totalReplies = 0;
+        let totalSentEmails = 0;
+
+        // Loop through all campaigns and emails to check for replies
+        for (const campaign of customer.campaigns) {
+            for (const email of campaign.sentEmails) {
+                const threadId = email.threadId;
+
+                try {
+                    // Fetch the thread using Gmail API
+                    const thread = await gmail.users.threads.get({
+                        userId: 'me', // 'me' represents the authenticated user
+                        id: threadId,
+                    });
+
+                    // Check if there are more than one message in the thread (indicating a reply)
+                    const messages = thread.data.messages || [];
+                    const isReplied = messages.length > 1;
+
+                    if (isReplied && email.responseCount === 0) {
+                        // Update the reply status if a reply is found
+                        email.responseCount += 1;
+                        totalReplies += 1;
+                    }
+
+                    // totalSentEmails += 1;
+
+                } catch (gmailError) {
+                    console.error(`Error fetching thread ${threadId}:`, gmailError);
+                }
+            }
+
+            // Update campaign-level reply rate
+            campaign.replyRate = totalSentEmails ? (totalReplies / totalSentEmails) * 100 : 0;
+        }
+
+        // Update overall reply rate for the customer
+        customer.totalReplies = totalReplies;
+        customer.replyRate = totalSentEmails ? (totalReplies / totalSentEmails) * 100 : 0;
+
+        // Save the updated customer data
+        await customer.save();
+        console.log("Successfully updated reply statuses and reply rate.");
+    } catch (error) {
+        console.error("Error checking replies and updating data:", error);
+    }
+}
+
+
 app.get('/auth/google/callback', async (req, res) => {
     const { code } = req.query;
     const { tokens } = await oauth2Client.getToken(code);
@@ -1984,6 +2228,9 @@ app.get('/auth/google/callback', async (req, res) => {
     const jwtToken = generateJWT(userInfo.data.email, tokens);
     console.log('User email set in session(JWT):', userInfo.data.email);
     const customer = await findCustomer(email);
+     checkRepliesAndUpdate(email, oauth2Client);
+    // Call the function (example usage)
+     checkForBounces(oauth2Client);
 
     if (IsLogged_IN){
         res.redirect(`https://voltmailer.com/Dashboard.html?connectedgoogletoken=${jwtToken}`);
