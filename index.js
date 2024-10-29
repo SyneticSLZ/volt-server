@@ -2349,7 +2349,7 @@ app.post('/create-checkout-session-pro', async (req, res) => {
       {
         // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
         // price: 'price_1PJsseKJeZAyw8f4UVbMQfRa',
-	      price: ' price_1QCRwyKJeZAyw8f4ciROi1PZ',
+	      price: 'price_1QCRwyKJeZAyw8f4ciROi1PZ',
         quantity: 1,
       },
     ],
