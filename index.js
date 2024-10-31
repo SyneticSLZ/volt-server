@@ -1722,10 +1722,10 @@ app.get('/remove-driver', async (req, res) => {
         try {
             console.log(`Starting send to ${data.email}`);
 
-            // const summary = await summarizeWebsite(data.website);
+            const summary = await summarizeWebsite(data.website);
             // try {
-                const summary = await extractCompanyInsights(data.website);
-                console.log('AI-Friendly Summary:', summary);
+                // const summary = await extractCompanyInsights(data.website);
+                // console.log('AI-Friendly Summary:', summary);
             //     // Full analysis is logged to: ./company_analysis_logs/company_analysis_example.com_2024-...json
             // } catch (error) {
             //     console.error('Analysis failed:', error);
@@ -1850,8 +1850,9 @@ app.post('/generate-email-content', async (req, res) => {
 console.log("threadid :  ", threadID)
     try {
 
-        // const summary = await summarizeWebsite(website);
-        const summary = await extractCompanyInsights(website);
+        const summary = await summarizeWebsite(website);
+        // const summary = await extractCompanyInsights(website);
+        // const summary = await extractCompanyInsights(data.website);
         console.log('AI-Friendly Summary:', summary);
         console.log("summarized : ", summary)
         const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, Template);
