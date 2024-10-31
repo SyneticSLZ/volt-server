@@ -244,7 +244,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
                 content: `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
  Guidelines:
 Generate a subject line with this format: "Subject: <subject line>" and keep it brief and tailored.
-Start with "Hi ${to}," and use a personalized intro based on ${website_content}.
+Start with "Hi ${To}," and use a personalized intro based on ${website_content}.
 Focus the pitch on how the solution helps solve a specific problem the prospect faces.
 Make it clear and concise—avoid sounding too sales-focused or verbose.
 End with a call to action that shows your understanding of the prospect's needs.
