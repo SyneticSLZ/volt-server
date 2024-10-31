@@ -19,7 +19,8 @@ const url = require('url');
 const nlp = require('compromise');
 // const fetch = require('node-fetch');
 const fs = require('fs');
-
+// const fs = require('fs').promises;
+const path = require('path');
 const Hunter = require('hunter.io');
 const { MongoClient } = require('mongodb');
 const cron = require('node-cron');
@@ -182,7 +183,6 @@ async function summarsizeWebsite(url) {
 
 
 
-
 async function extractCompanyInsights(url, maxRetries = 3, retryDelay = 1000) {
     if (!url) {
         throw new Error('URL is required');
@@ -196,7 +196,122 @@ async function extractCompanyInsights(url, maxRetries = 3, retryDelay = 1000) {
 
     while (attempts < maxRetries) {
         try {
-            // ... [Previous extraction code remains the same until the cleanup section] ...
+            const { data } = await axios.get(url, { timeout: 10000 });
+            const $ = cheerio.load(data);
+
+            // Initialize comprehensive company analysis object
+            const companyAnalysis = {
+                basicInfo: {
+                    description: '',
+                    mission: '',
+                    vision: '',
+                    about: ''
+                },
+                businessModel: {
+                    products: [],
+                    services: [],
+                    targetMarket: [],
+                    valueProposition: '',
+                    painPoints: [],
+                    solutions: []
+                },
+                opportunities: {
+                    collaborationAreas: [],
+                    currentChallenges: [],
+                    growthAreas: [],
+                    techStack: [],
+                    contactChannels: []
+                },
+                marketPresence: {
+                    industries: [],
+                    locations: [],
+                    partnerships: [],
+                    clientTypes: []
+                }
+            };
+
+            // Helper functions
+            const cleanText = (text) => {
+                return text.replace(/\s+/g, ' ')
+                    .replace(/[\n\r\t]/g, ' ')
+                    .trim();
+            };
+
+            const extractKeywordsFromText = (text) => {
+                const techKeywords = [
+                    'API', 'cloud', 'AI', 'automation', 'platform', 'software',
+                    'integration', 'analytics', 'data', 'mobile', 'web', 'IoT',
+                    'blockchain', 'security', 'infrastructure'
+                ];
+
+                const industryKeywords = [
+                    'healthcare', 'finance', 'retail', 'education', 'manufacturing',
+                    'technology', 'enterprise', 'SMB', 'startup', 'government'
+                ];
+
+                return {
+                    tech: techKeywords.filter(keyword => 
+                        text.toLowerCase().includes(keyword.toLowerCase())
+                    ),
+                    industry: industryKeywords.filter(keyword =>
+                        text.toLowerCase().includes(keyword.toLowerCase())
+                    )
+                };
+            };
+
+            // Extract main content
+            $('[class*="about"], [class*="company"], [class*="mission"], main').each((_, element) => {
+                const section = $(element);
+                const sectionText = section.text();
+                const keywords = extractKeywordsFromText(sectionText);
+                
+                companyAnalysis.opportunities.techStack.push(...keywords.tech);
+                companyAnalysis.marketPresence.industries.push(...keywords.industry);
+
+                section.find('h1, h2, h3, h4').each((_, heading) => {
+                    const headingText = $(heading).text().toLowerCase();
+                    const contentText = cleanText($(heading).next().text());
+
+                    if (headingText.includes('about')) {
+                        companyAnalysis.basicInfo.about += ' ' + contentText;
+                    } else if (headingText.includes('mission')) {
+                        companyAnalysis.basicInfo.mission += ' ' + contentText;
+                    } else if (headingText.includes('product')) {
+                        companyAnalysis.businessModel.products.push(contentText);
+                    } else if (headingText.includes('service')) {
+                        companyAnalysis.businessModel.services.push(contentText);
+                    } else if (headingText.includes('challenge') || headingText.includes('problem')) {
+                        companyAnalysis.businessModel.painPoints.push(contentText);
+                    }
+                });
+            });
+
+            // Extract contact information
+            $('[class*="contact"], [class*="footer"]').each((_, element) => {
+                const contactText = $(element).text();
+                const emails = contactText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+                const phones = contactText.match(/[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}/g) || [];
+                
+                companyAnalysis.opportunities.contactChannels.push(
+                    ...emails,
+                    ...phones
+                );
+            });
+
+            // Clean up data
+            Object.keys(companyAnalysis).forEach(category => {
+                Object.keys(companyAnalysis[category]).forEach(key => {
+                    if (typeof companyAnalysis[category][key] === 'string') {
+                        companyAnalysis[category][key] = cleanText(companyAnalysis[category][key]);
+                    } else if (Array.isArray(companyAnalysis[category][key])) {
+                        companyAnalysis[category][key] = [...new Set(
+                            companyAnalysis[category][key]
+                                .filter(item => item && item.length > 0)
+                                .map(item => cleanText(item))
+                        )];
+                    }
+                });
+            });
 
             // Generate AI-friendly summary
             const aiSummary = {
@@ -234,27 +349,7 @@ async function extractCompanyInsights(url, maxRetries = 3, retryDelay = 1000) {
     }
 }
 
-// Helper function to log analysis to file
-async function logAnalysisToFile(analysis, fileName) {
-    try {
-        const logsDir = path.join(process.cwd(), 'company_analysis_logs');
-        await fs.mkdir(logsDir, { recursive: true });
-        
-        const filePath = path.join(logsDir, fileName);
-        await fs.writeFile(
-            filePath,
-            JSON.stringify(analysis, null, 2),
-            'utf8'
-        );
-        
-        console.log(`Detailed analysis logged to: ${filePath}`);
-    } catch (error) {
-        console.error('Error logging analysis:', error);
-        // Continue execution even if logging fails
-    }
-}
-
-// Helper function to summarize business core
+// Helper functions remain the same as in the previous version
 function summarizeBusinessCore(analysis) {
     const core = {
         description: truncateText(analysis.basicInfo.description, 150),
@@ -266,23 +361,20 @@ function summarizeBusinessCore(analysis) {
     return removeEmptyValues(core);
 }
 
-// Helper function to summarize opportunities
 function summarizeOpportunities(analysis) {
-    const opportunities = analysis.potentialOpportunities
+    // Create a default opportunities array if potentialOpportunities is undefined
+    const opportunities = analysis.potentialOpportunities || [];
+    return opportunities
         .slice(0, 3)
         .map(opp => ({
             area: opp.area,
             summary: truncateText(opp.opportunities, 100)
         }));
-
-    return opportunities;
 }
 
-// Helper function to identify top collaboration areas
 function identifyTopCollaborationAreas(analysis) {
     const areas = [];
 
-    // Add technology collaboration if tech stack exists
     if (analysis.opportunities.techStack.length > 0) {
         areas.push({
             type: 'technology',
@@ -290,7 +382,6 @@ function identifyTopCollaborationAreas(analysis) {
         });
     }
 
-    // Add business collaboration from explicit areas
     if (analysis.opportunities.collaborationAreas.length > 0) {
         areas.push({
             type: 'business',
@@ -300,7 +391,6 @@ function identifyTopCollaborationAreas(analysis) {
         });
     }
 
-    // Add solution-based collaboration from pain points
     if (analysis.businessModel.painPoints.length > 0) {
         areas.push({
             type: 'solution',
@@ -313,7 +403,6 @@ function identifyTopCollaborationAreas(analysis) {
     return areas.slice(0, 3);
 }
 
-// Helper function to summarize contact information
 function summarizeContactInfo(analysis) {
     const contacts = analysis.opportunities.contactChannels;
     return {
@@ -323,7 +412,6 @@ function summarizeContactInfo(analysis) {
     };
 }
 
-// Helper function to identify main offering
 function identifyMainOffering(analysis) {
     const products = analysis.businessModel.products;
     const services = analysis.businessModel.services;
@@ -343,14 +431,12 @@ function identifyMainOffering(analysis) {
     return null;
 }
 
-// Helper function to truncate text
 function truncateText(text, maxLength) {
     if (!text) return '';
     if (text.length <= maxLength) return text;
     return text.substr(0, maxLength - 3) + '...';
 }
 
-// Helper function to remove empty values from objects
 function removeEmptyValues(obj) {
     return Object.fromEntries(
         Object.entries(obj)
@@ -363,6 +449,25 @@ function removeEmptyValues(obj) {
             })
     );
 }
+
+async function logAnalysisToFile(analysis, fileName) {
+    try {
+        const logsDir = path.join(process.cwd(), 'company_analysis_logs');
+        await fs.mkdir(logsDir, { recursive: true });
+        
+        const filePath = path.join(logsDir, fileName);
+        await fs.writeFile(
+            filePath,
+            JSON.stringify(analysis, null, 2),
+            'utf8'
+        );
+        
+        console.log(`Detailed analysis logged to: ${filePath}`);
+    } catch (error) {
+        console.error('Error logging analysis:', error);
+    }
+}
+
 
 
 
