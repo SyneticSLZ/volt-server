@@ -19,6 +19,7 @@ const url = require('url');
 const nlp = require('compromise');
 // const fetch = require('node-fetch');
 const fs = require('fs');
+
 const Hunter = require('hunter.io');
 const { MongoClient } = require('mongodb');
 const cron = require('node-cron');
@@ -177,6 +178,193 @@ async function summarsizeWebsite(url) {
 
 // const axios = require('axios');
 // const cheerio = require('cheerio');
+
+
+
+
+
+async function extractCompanyInsights(url, maxRetries = 3, retryDelay = 1000) {
+    if (!url) {
+        throw new Error('URL is required');
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const domain = new URL(url).hostname;
+    const logFileName = `company_analysis_${domain}_${timestamp}.json`;
+    
+    let attempts = 0;
+
+    while (attempts < maxRetries) {
+        try {
+            // ... [Previous extraction code remains the same until the cleanup section] ...
+
+            // Generate AI-friendly summary
+            const aiSummary = {
+                company_url: url,
+                analysis_date: new Date().toISOString(),
+                key_points: {
+                    business_core: summarizeBusinessCore(companyAnalysis),
+                    opportunities: summarizeOpportunities(companyAnalysis),
+                    tech_stack: companyAnalysis.opportunities.techStack.slice(0, 5),
+                    main_challenges: companyAnalysis.businessModel.painPoints.slice(0, 3),
+                    potential_collaboration: identifyTopCollaborationAreas(companyAnalysis)
+                },
+                contact_info: summarizeContactInfo(companyAnalysis)
+            };
+
+            // Log detailed analysis to file
+            await logAnalysisToFile(companyAnalysis, logFileName);
+
+            // Return concise summary
+            return aiSummary;
+
+        } catch (error) {
+            attempts++;
+            console.error(`Attempt ${attempts} failed: ${error.code} - ${error.message}`);
+
+            if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
+                if (attempts >= maxRetries) {
+                    throw new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
+                }
+                await new Promise(res => setTimeout(res, retryDelay * Math.pow(2, attempts - 1)));
+            } else {
+                throw new Error(`Failed to analyze the website: ${error.message}`);
+            }
+        }
+    }
+}
+
+// Helper function to log analysis to file
+async function logAnalysisToFile(analysis, fileName) {
+    try {
+        const logsDir = path.join(process.cwd(), 'company_analysis_logs');
+        await fs.mkdir(logsDir, { recursive: true });
+        
+        const filePath = path.join(logsDir, fileName);
+        await fs.writeFile(
+            filePath,
+            JSON.stringify(analysis, null, 2),
+            'utf8'
+        );
+        
+        console.log(`Detailed analysis logged to: ${filePath}`);
+    } catch (error) {
+        console.error('Error logging analysis:', error);
+        // Continue execution even if logging fails
+    }
+}
+
+// Helper function to summarize business core
+function summarizeBusinessCore(analysis) {
+    const core = {
+        description: truncateText(analysis.basicInfo.description, 150),
+        main_offering: identifyMainOffering(analysis),
+        target_market: analysis.businessModel.targetMarket.slice(0, 2),
+        industry_focus: analysis.marketPresence.industries.slice(0, 3)
+    };
+
+    return removeEmptyValues(core);
+}
+
+// Helper function to summarize opportunities
+function summarizeOpportunities(analysis) {
+    const opportunities = analysis.potentialOpportunities
+        .slice(0, 3)
+        .map(opp => ({
+            area: opp.area,
+            summary: truncateText(opp.opportunities, 100)
+        }));
+
+    return opportunities;
+}
+
+// Helper function to identify top collaboration areas
+function identifyTopCollaborationAreas(analysis) {
+    const areas = [];
+
+    // Add technology collaboration if tech stack exists
+    if (analysis.opportunities.techStack.length > 0) {
+        areas.push({
+            type: 'technology',
+            details: analysis.opportunities.techStack.slice(0, 3)
+        });
+    }
+
+    // Add business collaboration from explicit areas
+    if (analysis.opportunities.collaborationAreas.length > 0) {
+        areas.push({
+            type: 'business',
+            details: analysis.opportunities.collaborationAreas
+                .slice(0, 2)
+                .map(area => truncateText(area, 80))
+        });
+    }
+
+    // Add solution-based collaboration from pain points
+    if (analysis.businessModel.painPoints.length > 0) {
+        areas.push({
+            type: 'solution',
+            details: analysis.businessModel.painPoints
+                .slice(0, 2)
+                .map(point => truncateText(point, 80))
+        });
+    }
+
+    return areas.slice(0, 3);
+}
+
+// Helper function to summarize contact information
+function summarizeContactInfo(analysis) {
+    const contacts = analysis.opportunities.contactChannels;
+    return {
+        email: contacts.find(c => c.includes('@')),
+        social: contacts.filter(c => c.includes('linkedin.com') || c.includes('twitter.com')).slice(0, 2),
+        location: analysis.marketPresence.locations[0]
+    };
+}
+
+// Helper function to identify main offering
+function identifyMainOffering(analysis) {
+    const products = analysis.businessModel.products;
+    const services = analysis.businessModel.services;
+    
+    if (products.length > 0) {
+        return {
+            type: 'product',
+            offerings: products.slice(0, 2).map(p => truncateText(p, 80))
+        };
+    } else if (services.length > 0) {
+        return {
+            type: 'service',
+            offerings: services.slice(0, 2).map(s => truncateText(s, 80))
+        };
+    }
+    
+    return null;
+}
+
+// Helper function to truncate text
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substr(0, maxLength - 3) + '...';
+}
+
+// Helper function to remove empty values from objects
+function removeEmptyValues(obj) {
+    return Object.fromEntries(
+        Object.entries(obj)
+            .filter(([_, value]) => {
+                if (Array.isArray(value)) return value.length > 0;
+                if (typeof value === 'object' && value !== null) {
+                    return Object.keys(removeEmptyValues(value)).length > 0;
+                }
+                return value !== null && value !== undefined && value !== '';
+            })
+    );
+}
+
+
 
 async function summarizeWebsite(url, maxRetries = 3, retryDelay = 1000) {
     if (!url) {
@@ -1429,7 +1617,15 @@ app.get('/remove-driver', async (req, res) => {
         try {
             console.log(`Starting send to ${data.email}`);
 
-            const summary = await summarizeWebsite(data.website);
+            // const summary = await summarizeWebsite(data.website);
+            // try {
+                const summary = await extractCompanyInsights(data.website);
+                console.log('AI-Friendly Summary:', summary);
+            //     // Full analysis is logged to: ./company_analysis_logs/company_analysis_example.com_2024-...json
+            // } catch (error) {
+            //     console.error('Analysis failed:', error);
+            // }
+
             // console.log(summary);
 
             const To = data.name;
@@ -1549,7 +1745,9 @@ app.post('/generate-email-content', async (req, res) => {
 console.log("threadid :  ", threadID)
     try {
 
-        const summary = await summarizeWebsite(website);
+        // const summary = await summarizeWebsite(website);
+        const summary = await extractCompanyInsights(website);
+        console.log('AI-Friendly Summary:', summary);
         console.log("summarized : ", summary)
         const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, Template);
         console.log("returned : ", emailContent)
