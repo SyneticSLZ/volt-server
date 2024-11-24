@@ -1647,18 +1647,25 @@ app.post('/verify-smtp', async (req, res) => {
     const { host, port, secure, user, pass } = req.body;
 
     const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure, // true for 465, false for other ports
+        host: host,
+        port: port,
+        secure: secure,
         auth: {
-            user: user, // SMTP username
-            pass: pass, // SMTP password
-        },
+            user: user, // Your email address
+            pass: pass // Your email password
+        }
     });
+    
 
     try {
         // Verify SMTP connection
-        await transporter.verify();
+        await transporter.verify((error, success) => {
+            if (error) {
+                console.error('SMTP verification failed:', error);
+            } else {
+                console.log('SMTP is ready to send emails:', success);
+            }
+        });
         console.log('SMTP details are correct!');
         res.status(200).json({ success: true, message: 'SMTP verified successfully!' });
     } catch (error) {
@@ -1666,6 +1673,9 @@ app.post('/verify-smtp', async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 });
+
+
+
   
 
 
