@@ -1456,6 +1456,7 @@ app.post('/api/mailboxes/create', async (req, res) => {
         // Find the customer by email
         const customer = await Customer.findOne({ email });
         if (!customer) {
+            console.log(email)
             return res.status(404).json({ message: 'Customer not found' });
         }
 
