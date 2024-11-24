@@ -1575,22 +1575,28 @@ app.get('/api/mailboxes/active', async (req, res) => {
     const { email } = req.query;
 
     try {
+        // Find the customer by email
         const customer = await Customer.findOne({ email });
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
 
+        // Find the active mailbox
         const activeMailbox = customer.mailboxes.find(mailbox => mailbox.isActive);
+
+        // If no active mailbox exists, return null
         if (!activeMailbox) {
-            return res.json({ message: 'No active mailbox found' });
+            return res.json(null); // Respond with null
         }
 
-        res.json(activeMailbox);
+        // Return only the email address of the active mailbox
+        res.json(activeMailbox.smtp.user);
     } catch (error) {
         console.error('Error retrieving active mailbox:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 
 app.post('/api/mailboxes/send', async (req, res) => {
