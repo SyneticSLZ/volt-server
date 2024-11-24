@@ -1644,15 +1644,15 @@ app.post('/api/mailboxes/send', async (req, res) => {
 
 
 app.post('/verify-smtp', async (req, res) => {
-    const { host, port, secure, auth } = req.body;
+    const { host, port, secure, user, pass } = req.body;
 
     const transporter = nodemailer.createTransport({
         host,
         port,
         secure, // true for 465, false for other ports
         auth: {
-            user: auth.user, // SMTP username
-            pass: auth.pass, // SMTP password
+            user: user, // SMTP username
+            pass: pass, // SMTP password
         },
     });
 
