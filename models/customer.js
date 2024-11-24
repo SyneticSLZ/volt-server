@@ -40,6 +40,16 @@ const campaignSchema = new mongoose.Schema({
     replyRate: { type: Number, default: 0 }
 });
 
+const mailboxSchema = new mongoose.Schema({
+    smtp: {
+        host: { type: String, required: true },
+        port: { type: Number, required: true },
+        secure: { type: Boolean, required: true }, // true for 465, false for other ports
+        user: { type: String, required: true },   // SMTP username
+        pass: { type: String, required: true }    // SMTP password
+    },
+    isActive: { type: Boolean, default: false }
+});
 
 
 // Define Customer Schema
@@ -57,7 +67,8 @@ const customerSchema = new mongoose.Schema({
     totalReplies: { type: Number, default: 0 },
     bounceRate: { type: Number, default: 0 },
     replyRate: { type: Number, default: 0 },
-    campaigns: [campaignSchema]
+    campaigns: [campaignSchema],
+    mailboxes: [mailboxSchema]
 });
 // const Customer = mongoose.models.Customer || mongoose.model('Customer', customerSchema);
 
@@ -68,13 +79,16 @@ const customerSchema = new mongoose.Schema({
 const Email = mongoose.models.Email || mongoose.model('Email', emailSchema);
 const Campaign = mongoose.models.Campaign || mongoose.model('Campaign', campaignSchema);
 const Customer = mongoose.models.Customer || mongoose.model('Customer', customerSchema);
+const Mailbox = mongoose.models.Mailbox || mongoose.model('Mailbox', mailboxSchema);
 
 // Export the models and schemas
 module.exports = {
     Email,
     Campaign,
     Customer,
+    Mailbox,
     emailSchema,
     campaignSchema,
-    customerSchema
+    customerSchema,
+    mailboxSchema
 };

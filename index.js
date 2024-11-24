@@ -8,7 +8,7 @@ const session = require('express-session');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const { Email, Campaign, Customer } = require('./models/customer');
+const { Email, Campaign, Customer, Mailbox } = require('./models/customer');
 const Driver = require('./models/Driver');
 const app = express();
 dotenv.config();
@@ -60,7 +60,7 @@ const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_U
 app.use(bodyParser.json());
 app.use(express.static('public'));
 app.use(cors({
-    origin: 'https://voltmailer.com', // Frontend server origin
+    origin: ['http://127.0.0.1:5501', 'https://voltmailer.com'],
     credentials: true // Allow credentials to be sent
 }));
 
@@ -984,7 +984,8 @@ const sendEmail = async (subject, message, to, token, myemail,campaignId) => {
         console.log(`Message ID: ${messageId}, Thread ID: ${threadId}`);
 
         const customer = await Customer.findOne({ email: email });
-        const newTotalEmails = customer.total_emails + 1;    
+        const newTotalEmails = customer.total_emails + 1;   
+
         await Customer.updateOne(
                 { email: email },
                 { $set: { total_emails: newTotalEmails } }
@@ -1123,17 +1124,17 @@ async function sendcampsummaryEmail({ to,subject, body }) {
       // Define email options
       const mailOptions = {
         from: 'voltmailerhelp@gmail.com',
-        to: to,
+        to: "rohanmehmi72@gmail.com",
         subject: subject,
         text: body,
         // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
-        html: `<p>${body.replace(/\n/g, '<br>')} </p>`,
+        // html: `<p>${body.replace(/\n/g, '<br>')} </p>`,
       };
 
   
     await transporter.sendMail(mailOptions);
     console.log('Message sent: %s');
-    res.send('Password reset email sent.');
+    // res.send('Password reset email sent.');
 
   };
   
@@ -1401,6 +1402,220 @@ app.post('/api/campaigns/create', async (req, res) => {
         res.json({ message: 'Campaign created successfully', campaignId: newCampaign._id });
     } catch (error) {
         console.error('Error creating campaign:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+    
+});
+
+
+// app.post('/api/Mailboxes/create', async (req, res) => {
+//     const { email, smtp } = req.body;
+//     console.log("creating a mailbox with: ", req.body)
+
+//     try {
+//         // Generate a unique campaign name if one is not provided
+//         // const uniqueCampaignName = campaignName || `Campaign-${Math.random().toString(36).substring(2, 10)}`;
+
+//         // Create a new campaign object
+//         const newMailbox = new Campaign({
+//             smtp
+//         });
+
+//         // Save the campaign to the database
+//         await newMailbox.save();
+
+//         // Find the customer by email
+//         const customer = await Customer.findOne({ email: email });
+
+//         if (!customer) {
+//             console.log("customer not found")
+//             return res.status(404).json({ message: 'Customer not found' });
+            
+//         }
+
+//         // Add the new campaign to the customer's campaigns array
+//         customer.mailboxes.push(newMailbox);
+        
+//         // Save the updated customer to the database
+//         await customer.save();
+//         console.log("successfuly created Mailbox")
+//         res.json({ message: 'Mailbox created successfully' });
+//     } catch (error) {
+//         console.error('Error creating Mailbox:', error);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// });
+
+
+app.post('/api/mailboxes/create', async (req, res) => {
+    const { email, smtp } = req.body;
+
+    try {
+        console.log("Creating a mailbox with:", req.body);
+
+        const customer = await Customer.findOne({ email });
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        const newMailbox = {
+            smtp,
+            isActive: customer.mailboxes.length === 0 // Automatically set active if it's the first mailbox
+        };
+
+        customer.mailboxes.push(newMailbox);
+        await customer.save();
+
+        console.log("Successfully created mailbox");
+        res.json({ message: 'Mailbox created successfully' });
+    } catch (error) {
+        console.error('Error creating mailbox:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+
+// Delete a specific mailbox
+app.delete('/api/mailboxes/:id', async (req, res) => {
+    const { id } = req.params;
+    const { email } = req.body;
+
+    try {
+        // Find the user by email
+        const customer = await Customer.findOne({ email });
+
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        // Remove the mailbox from the user's list
+        customer.mailboxes = customer.mailboxes.filter(
+            (mailboxId) => mailboxId.toString() !== id
+        );
+
+        // Save the updated user
+        await customer.save();
+
+        // Remove the mailbox from the database
+        await Campaign.findByIdAndDelete(id);
+
+        res.json({ message: 'Mailbox deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting mailbox:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/mailboxes/switch', async (req, res) => {
+    const { email, mailboxId } = req.body;
+
+    try {
+        const customer = await Customer.findOne({ email });
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        // Reset all mailboxes to inactive
+        customer.mailboxes.forEach(mailbox => mailbox.isActive = false);
+
+        // Set the specified mailbox as active
+        const mailbox = customer.mailboxes.id(mailboxId);
+        if (!mailbox) {
+            return res.status(404).json({ message: 'Mailbox not found' });
+        }
+        mailbox.isActive = true;
+
+        await customer.save();
+        res.json({ message: 'Active mailbox updated successfully' });
+    } catch (error) {
+        console.error('Error switching mailbox:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+// Fetch all mailboxes for a user
+app.get('/api/mailboxes', async (req, res) => {
+    const { email } = req.query;
+
+    try {
+        // Find the user by email
+        const customer = await Customer.findOne({ email }).populate('mailboxes');
+
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        // Send back the mailboxes
+        res.json(customer.mailboxes);
+    } catch (error) {
+        console.error('Error fetching mailboxes:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.get('/api/mailboxes/active', async (req, res) => {
+    const { email } = req.query;
+
+    try {
+        const customer = await Customer.findOne({ email });
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        const activeMailbox = customer.mailboxes.find(mailbox => mailbox.isActive);
+        if (!activeMailbox) {
+            return res.status(404).json({ message: 'No active mailbox found' });
+        }
+
+        res.json(activeMailbox);
+    } catch (error) {
+        console.error('Error retrieving active mailbox:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+app.post('/api/mailboxes/send', async (req, res) => {
+    const { email, to, subject, text } = req.body;
+
+    try {
+        const customer = await Customer.findOne({ email });
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        const activeMailbox = customer.mailboxes.find(mailbox => mailbox.isActive);
+        if (!activeMailbox) {
+            return res.status(404).json({ message: 'No active mailbox found' });
+        }
+
+        const { host, port, secure, user, pass } = activeMailbox.smtp;
+
+        // Create a transporter object using the SMTP details
+        const transporter = nodemailer.createTransport({
+            host,
+            port,
+            secure,
+            auth: {
+                user,
+                pass
+            }
+        });
+
+        // Send the email
+        const info = await transporter.sendMail({
+            from: user, // Sender address
+            to,         // Receiver address
+            subject,    // Subject line
+            text        // Plain text body
+        });
+
+        console.log("Email sent:", info.messageId);
+        res.json({ message: 'Email sent successfully', info });
+    } catch (error) {
+        console.error('Error sending email:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -3221,5 +3436,6 @@ async function updateDriverFunction(url, newDriverData){
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
-    // myDailyTask();
+    // sendcampsummaryEmail("rohanmehmi72@gmail.com", "subject", "body" )
 });
+
