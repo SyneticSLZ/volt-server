@@ -1453,26 +1453,42 @@ app.post('/api/mailboxes/create', async (req, res) => {
     try {
         console.log("Creating a mailbox with:", req.body);
 
+        // Find the customer by email
         const customer = await Customer.findOne({ email });
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
 
+        // Create the new mailbox object
         const newMailbox = {
             smtp,
             isActive: customer.mailboxes.length === 0 // Automatically set active if it's the first mailbox
         };
 
+        // Add the new mailbox to the customer's mailboxes array
         customer.mailboxes.push(newMailbox);
+
+        // Save the updated customer to the database
         await customer.save();
 
+        // Retrieve the newly added mailbox (last in the array)
+        const addedMailbox = customer.mailboxes[customer.mailboxes.length - 1];
+
         console.log("Successfully created mailbox");
-        res.json({ message: 'Mailbox created successfully' });
+        res.json({
+            message: 'Mailbox created successfully',
+            mailbox: {
+                id: addedMailbox._id,
+                smtp: addedMailbox.smtp,
+                isActive: addedMailbox.isActive
+            }
+        });
     } catch (error) {
         console.error('Error creating mailbox:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 
 
