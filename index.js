@@ -1660,22 +1660,22 @@ app.post('/verify-smtp', async (req, res) => {
 
     try {
         // Verify SMTP connection
-        await transporter.verify((error, success) => {
-            if (error) {
-                console.error('SMTP verification failed:', error);
-            } else {
-                console.log('SMTP is ready to send emails:', success);
-            }
-        });
-        console.log('SMTP details are correct!');
-        // const info = await transporter.sendMail({
-        //     from: user, // Sender address
-        //     to: "rohanmehmi72@gmail.com",         // Receiver address
-        //     subject :"subject",    // Subject line
-        //     text:  "text  "      // Plain text body
+        // await transporter.verify((error, success) => {
+        //     if (error) {
+        //         console.error('SMTP verification failed:', error);
+        //     } else {
+        //         console.log('SMTP is ready to send emails:', success);
+        //     }
         // });
+        // console.log('SMTP details are correct!');
+        const info = await transporter.sendMail({
+            from: user, // Sender address
+            to: "rohanmehmi72@gmail.com",         // Receiver address
+            subject :"subject",    // Subject line
+            text:  "text  "      // Plain text body
+        });
 
-        // console.log("Email sent:", info.messageId);
+        console.log("Email sent:", info.messageId);
         // res.json({ message: 'Email sent successfully', info });
 
         res.status(200).json({ success: true, message: 'SMTP verified successfully!' });
