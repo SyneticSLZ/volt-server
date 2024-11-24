@@ -1582,7 +1582,7 @@ app.get('/api/mailboxes/active', async (req, res) => {
 
         const activeMailbox = customer.mailboxes.find(mailbox => mailbox.isActive);
         if (!activeMailbox) {
-            return res.status(404).json({ message: 'No active mailbox found' });
+            return res.json({ message: 'No active mailbox found' });
         }
 
         res.json(activeMailbox);
@@ -1637,6 +1637,29 @@ app.post('/api/mailboxes/send', async (req, res) => {
 });
 
 
+async function verifySMTP(smtpDetails) {
+    const { host, port, secure, auth } = smtpDetails;
+
+    const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure, // true for 465, false for other ports
+        auth: {
+            user: auth.user, // SMTP username
+            pass: auth.pass, // SMTP password
+        },
+    });
+
+    try {
+        // Verify the SMTP connection
+        await transporter.verify();
+        console.log('SMTP details are correct!');
+        return { success: true, message: 'SMTP verified successfully!' };
+    } catch (error) {
+        console.error('Error verifying SMTP:', error.message);
+        return { success: false, message: error.message };
+    }
+}
   
 
 
