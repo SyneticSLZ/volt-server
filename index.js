@@ -1643,8 +1643,8 @@ app.post('/api/mailboxes/send', async (req, res) => {
 });
 
 
-async function verifySMTP(smtpDetails) {
-    const { host, port, secure, auth } = smtpDetails;
+app.post('/verify-smtp', async (req, res) => {
+    const { host, port, secure, auth } = req.body;
 
     const transporter = nodemailer.createTransport({
         host,
@@ -1657,15 +1657,15 @@ async function verifySMTP(smtpDetails) {
     });
 
     try {
-        // Verify the SMTP connection
+        // Verify SMTP connection
         await transporter.verify();
         console.log('SMTP details are correct!');
-        return { success: true, message: 'SMTP verified successfully!' };
+        res.status(200).json({ success: true, message: 'SMTP verified successfully!' });
     } catch (error) {
         console.error('Error verifying SMTP:', error.message);
-        return { success: false, message: error.message };
+        res.status(400).json({ success: false, message: error.message });
     }
-}
+});
   
 
 
