@@ -1122,7 +1122,7 @@ async function sendcampsummaryEmail({ to,subject, body }) {
       });
     
       // Define email options
-      const mailOptions = {
+      const mailOptions = {  
         from: 'voltmailerhelp@gmail.com',
         to: "rohanmehmi72@gmail.com",
         subject: subject,
@@ -1646,16 +1646,36 @@ app.post('/api/mailboxes/send', async (req, res) => {
 
 app.post('/verify-smtp', async (req, res) => {
     const { host, port, secure, user, pass } = req.body;
-
+console.log(pass)
+    // const transporter = nodemailer.createTransport({
+    //     host: host,
+    //     port: port,
+    //     secure: secure,
+    //     auth: {
+    //         user: user, // Your email address
+    //         pass: pass // Your email password
+    //     }
+    // });
     const transporter = nodemailer.createTransport({
-        host: host,
-        port: port,
-        secure: secure,
+        service: 'gmail',
         auth: {
-            user: user, // Your email address
-            pass: pass // Your email password
-        }
-    });
+          user: user,
+          pass: 'chys ltjh yxlo isbu', // App password if 2FA is enabled
+        },
+      });
+    
+      // Define email options
+      const mailOptions = {  
+        from: user,
+        to: "rohanmehmi72@gmail.com",
+        subject: "subject",
+        text: "body",
+        // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
+        // html: `<p>${body.replace(/\n/g, '<br>')} </p>`,
+      };
+
+  
+    await transporter.sendMail(mailOptions);
     
 
     try {
