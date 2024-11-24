@@ -1668,14 +1668,14 @@ app.post('/verify-smtp', async (req, res) => {
             }
         });
         console.log('SMTP details are correct!');
-        const info = await transporter.sendMail({
-            from: user, // Sender address
-            to: "rohanmehmi72@gmail.com",         // Receiver address
-            subject :"subject",    // Subject line
-            text:  "text  "      // Plain text body
-        });
+        // const info = await transporter.sendMail({
+        //     from: user, // Sender address
+        //     to: "rohanmehmi72@gmail.com",         // Receiver address
+        //     subject :"subject",    // Subject line
+        //     text:  "text  "      // Plain text body
+        // });
 
-        console.log("Email sent:", info.messageId);
+        // console.log("Email sent:", info.messageId);
         // res.json({ message: 'Email sent successfully', info });
 
         res.status(200).json({ success: true, message: 'SMTP verified successfully!' });
