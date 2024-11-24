@@ -2837,9 +2837,9 @@ app.get('/auth/google/callback', async (req, res) => {
     const jwtToken = generateJWT(userInfo.data.email, tokens);
     console.log('User email set in session(JWT):', userInfo.data.email);
     const customer = await findCustomer(email);
-     checkRepliesAndUpdate(email, oauth2Client);
+    //  checkRepliesAndUpdate(email, oauth2Client);
     // Call the function (example usage)
-     checkForBounces(oauth2Client);
+    //  checkForBounces(oauth2Client);
 
     if (IsLogged_IN){
         res.redirect(`https://voltmailer.com/Dashboard.html?connectedgoogletoken=${jwtToken}`);
