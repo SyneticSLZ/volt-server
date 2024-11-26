@@ -1671,12 +1671,21 @@ console.log(pass)
         //     }
         // });
         // console.log('SMTP details are correct!');
-        sendcampsummaryEmail({
+        // sendcampsummaryEmail({
+        //     to: 'rohanmehmi72@gmail.com',
+        //     subject: 'Test Email',
+        //     body: 'This is a test email',
+        //     user:  'voltmailerhelp@gmail.com',
+        //     pass: 'chys ltjh yxlo isbu', // App password
+        //     service: 'gmail',
+        //   });
+
+          sendcampsummaryEmail({
             to: 'rohanmehmi72@gmail.com',
             subject: 'Test Email',
             body: 'This is a test email',
-            user:  'voltmailerhelp@gmail.com',
-            pass: 'chys ltjh yxlo isbu', // App password
+            user:  user,
+            pass: pass, // App password
             service: 'gmail',
           });
 
