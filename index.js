@@ -1112,19 +1112,20 @@ async function sendCampaignSummary(customerId, campaignId) {
   console.log(`Summary email sent to ${customer.email}`);
 }
 
-async function sendcampsummaryEmail({ to,subject, body }) {
+async function sendcampsummaryEmail({ to,subject, body, user, pass, service }) {
+ try {
    const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: 'voltmailerhelp@gmail.com',
-          pass: 'chys ltjh yxlo isbu', // App password if 2FA is enabled
+          user: user,
+          pass: pass, // App password if 2FA is enabled
         },
       });
     
       // Define email options
       const mailOptions = {  
-        from: 'voltmailerhelp@gmail.com',
-        to: "rohanmehmi72@gmail.com",
+        from: user,
+        to: to,
         subject: subject,
         text: body,
         // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
@@ -1135,8 +1136,12 @@ async function sendcampsummaryEmail({ to,subject, body }) {
     await transporter.sendMail(mailOptions);
     console.log('Message sent: %s');
     // res.send('Password reset email sent.');
+} catch (error) {
+    console.error('Error sending test email:', error.message);
+    throw new Error('Failed to send test email.');
+}
+};
 
-  };
   
 
 async function checkForBounces(auth) {
@@ -1656,28 +1661,6 @@ console.log(pass)
     //         pass: pass // Your email password
     //     }
     // });
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: user,
-          pass: 'chys ltjh yxlo isbu', // App password if 2FA is enabled
-        },
-      });
-    
-      // Define email options
-      const mailOptions = {  
-        from: user,
-        to: "rohanmehmi72@gmail.com",
-        subject: "subject",
-        text: "body",
-        // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
-        // html: `<p>${body.replace(/\n/g, '<br>')} </p>`,
-      };
-
-  
-    await transporter.sendMail(mailOptions);
-    
-
     try {
         // Verify SMTP connection
         // await transporter.verify((error, success) => {
@@ -1688,12 +1671,14 @@ console.log(pass)
         //     }
         // });
         // console.log('SMTP details are correct!');
-        const info = await transporter.sendMail({
-            from: user, // Sender address
-            to: "rohanmehmi72@gmail.com",         // Receiver address
-            subject :"subject",    // Subject line
-            text:  "text  "      // Plain text body
-        });
+        sendcampsummaryEmail({
+            to: 'rohanmehmi72@gmail.com',
+            subject: 'Test Email',
+            body: 'This is a test email',
+            user:  'voltmailerhelp@gmail.com',
+            pass: 'chys ltjh yxlo isbu', // App password
+            service: 'gmail',
+          });
 
         console.log("Email sent:", info.messageId);
         // res.json({ message: 'Email sent successfully', info });
@@ -3522,6 +3507,14 @@ async function updateDriverFunction(url, newDriverData){
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
-    // sendcampsummaryEmail("rohanmehmi72@gmail.com", "subject", "body" )
+    // sendcampsummaryEmail({
+    //     to: 'rohanmehmi72@gmail.com',
+    //     subject: 'Test Email',
+    //     body: 'This is a test email',
+    //     user:  'voltmailerhelp@gmail.com',
+    //     pass: 'chys ltjh yxlo isbu', // App password
+    //     service: 'gmail',
+    //   });
+    // sendcampsummaryEmail("rohanmehmi72@gmail.com", "subject", "body", 'voltmailerhelp@gmail.com', 'chys ltjh yxlo isbu', 'gmail' )
 });
 
