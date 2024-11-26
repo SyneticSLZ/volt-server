@@ -1680,7 +1680,7 @@ console.log(pass)
             service: 'gmail',
           });
 
-        console.log("Email sent:", info.messageId);
+        console.log("Email sent:");
         // res.json({ message: 'Email sent successfully', info });
 
         res.status(200).json({ success: true, message: 'SMTP verified successfully!' });
