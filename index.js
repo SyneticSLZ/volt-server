@@ -1133,9 +1133,8 @@ async function sendcampsummaryEmail({ to,subject, body, user, pass, service }) {
       };
 
   
-    await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions)
     console.log('Message sent: %s');
-    // res.send('Password reset email sent.');
 } catch (error) {
     console.error('Error sending test email:', error.message);
     throw new Error('Failed to send test email.');
@@ -1766,7 +1765,7 @@ console.log(smtp)
         //     service: 'gmail',
         //   });
 
-          sendcampsummaryEmail({
+       await   sendcampsummaryEmail({
             to: 'rohanmehmi72@gmail.com',
             subject: 'Test Email',
             body: 'This is a test email',
@@ -1778,10 +1777,10 @@ console.log(smtp)
         console.log("Email sent:");
         // res.json({ message: 'Email sent successfully', info });
 
-        res.status(200).json({ success: true, message: 'SMTP verified successfully!' });
+        return res.status(200).json({ success: true, message: 'SMTP verified successfully!' });
     } catch (error) {
         console.error('Error verifying SMTP:', error.message);
-        res.status(400).json({ success: false, message: error.message });
+        return res.status(400).json({ success: false, message: error.message });
     }
 });
 
