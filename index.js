@@ -1663,15 +1663,21 @@ app.get('/api/mailboxes/active', async (req, res) => {
         }
 
         // Find the active mailbox
-        const activeMailbox = customer.mailboxes.find(mailbox => mailbox.isActive);
+        
+        // Filter all active mailboxes and extract their smtp.user
+        const activeMailboxUsers = customer.mailboxes
+            .filter(mailbox => mailbox.isActive) // Get active mailboxes
+            .map(mailbox => mailbox.smtp.user); // Extract smtp.user
+
+        
 
         // If no active mailbox exists, return null
-        if (!activeMailbox) {
+        if (!activeMailboxUsers) {
             return res.json(null); // Respond with null
         }
 
-        // Return only the email address of the active mailbox
-        res.json(activeMailbox.smtp.user);
+        // Return the list of smtp.user values
+        res.json(activeMailboxUsers);
     } catch (error) {
         console.error('Error retrieving active mailbox:', error);
         res.status(500).json({ message: 'Server error' });
