@@ -1650,9 +1650,18 @@ app.post('/api/mailboxes/send', async (req, res) => {
 
 
 app.post('/verify-smtp', async (req, res) => {
-    const { host, port, secure, user, pass } = req.body;
-    console.log(req.body, req.body.smtp.pass, req.body.smtp.user)
-console.log(pass)
+    // const { host, port, secure, user, pass } = req.body;
+
+
+const { smtp } = req.body;
+
+    if (!smtp) {
+        return res.status(400).json({ success: false, message: 'SMTP details are missing!' });
+    }
+
+    const { host, port, secure, user, pass } = smtp; 
+    console.log(host, port, secure, user, pass)
+console.log(smtp)
     // const transporter = nodemailer.createTransport({
     //     host: host,
     //     port: port,
