@@ -1530,7 +1530,7 @@ app.delete('/api/mailboxes/:id', async (req, res) => {
 });
 
 app.post('/api/mailboxes/switch', async (req, res) => {
-    const { email, mailboxId } = req.body;
+    const { email, mailboxUser } = req.body;
 
     try {
         const customer = await Customer.findOne({ email });
@@ -1542,7 +1542,12 @@ app.post('/api/mailboxes/switch', async (req, res) => {
         // customer.mailboxes.forEach(mailbox => mailbox.isActive = false);
 
         // Set the specified mailbox as active
-        const mailbox = customer.mailboxes.id(mailboxId);
+                // Find the mailbox with the matching smtp.user
+                const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
+                if (!mailbox) {
+                    return res.status(404).json({ message: 'Mailbox not found' });
+                }
+        
         if (!mailbox) {
             return res.status(404).json({ message: 'Mailbox not found' });
         }
