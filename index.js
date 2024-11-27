@@ -1496,10 +1496,10 @@ app.post('/api/mailboxes/create', async (req, res) => {
 });
 
 
-
+// https://server.voltmailer.com/api/mailboxes/delete
 
 // Delete a specific mailbox
-app.delete('/api/mailboxes/:id', async (req, res) => {
+app.delete('/api/mailboxes/:email', async (req, res) => {
     const { id } = req.params;
     const { email } = req.body;
 
@@ -1561,8 +1561,8 @@ app.post('/api/mailboxes/switch', async (req, res) => {
     }
 });
 
-app.post('/api/mailboxes/inactive', async (req, res) => {
-    const { email, mailboxId } = req.body;
+app.post('/api/mailboxes/delete', async (req, res) => {
+    const { email, mailboxUser } = req.body;
 
     try {
         const customer = await Customer.findOne({ email });
@@ -1574,7 +1574,38 @@ app.post('/api/mailboxes/inactive', async (req, res) => {
         // customer.mailboxes.forEach(mailbox => mailbox.isActive = false);
 
         // Set the specified mailbox as active
-        const mailbox = customer.mailboxes.id(mailboxId);
+        const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
+        if (!mailbox) {
+            return res.status(404).json({ message: 'Mailbox not found' });
+        }
+        customer.mailboxes = customer.mailboxes.filter(
+            (mailbox) => mailbox.smtp.user !== mailboxUser
+        );
+        
+
+        await customer.save();
+        res.json({ message: 'Active mailbox updated successfully' });
+    } catch (error) {
+        console.error('Error switching mailbox:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+app.post('/api/mailboxes/inactive', async (req, res) => {
+    const { email, mailboxUser } = req.body;
+
+    try {
+        const customer = await Customer.findOne({ email });
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        // Reset all mailboxes to inactive
+        // customer.mailboxes.forEach(mailbox => mailbox.isActive = false);
+
+        // Set the specified mailbox as active
+        const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
         if (!mailbox) {
             return res.status(404).json({ message: 'Mailbox not found' });
         }
