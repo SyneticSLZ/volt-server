@@ -1561,7 +1561,7 @@ app.post('/api/mailboxes/switch', async (req, res) => {
     }
 });
 
-app.post('/api/mailboxes/delete', async (req, res) => {
+app.delete('/api/mailboxes/delete', async (req, res) => {
     const { email, mailboxUser } = req.body;
 
     try {
@@ -1574,13 +1574,26 @@ app.post('/api/mailboxes/delete', async (req, res) => {
         // customer.mailboxes.forEach(mailbox => mailbox.isActive = false);
 
         // Set the specified mailbox as active
-        const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
-        if (!mailbox) {
-            return res.status(404).json({ message: 'Mailbox not found' });
-        }
-        customer.mailboxes = customer.mailboxes.filter(
-            (mailbox) => mailbox.smtp.user !== mailboxUser
-        );
+        console.log('Mailbox User:', mailboxUser);
+        console.log('Customer Mailboxes:', customer.mailboxes);
+
+
+        // const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
+        // if (!mailbox) {
+        //     return res.status(404).json({ message: 'Mailbox not found' });
+        // }
+        // customer.mailboxes = customer.mailboxes.filter(
+        //     (mailbox) => mailbox.smtp.user !== mailboxUser
+        // );
+
+                // Find the index of the mailbox to be deleted
+                const mailboxIndex = customer.mailboxes.findIndex(mailbox => mailbox.smtp.user === mailboxUser);
+                if (mailboxIndex === -1) {
+                    return res.status(404).json({ message: 'Mailbox not found' });
+                }
+        
+                // Remove the mailbox from the mailboxes array
+                customer.mailboxes.splice(mailboxIndex, 1);
         
 
         await customer.save();
