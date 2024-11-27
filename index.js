@@ -1539,7 +1539,7 @@ app.post('/api/mailboxes/switch', async (req, res) => {
         }
 
         // Reset all mailboxes to inactive
-        customer.mailboxes.forEach(mailbox => mailbox.isActive = false);
+        // customer.mailboxes.forEach(mailbox => mailbox.isActive = false);
 
         // Set the specified mailbox as active
         const mailbox = customer.mailboxes.id(mailboxId);
@@ -1547,6 +1547,33 @@ app.post('/api/mailboxes/switch', async (req, res) => {
             return res.status(404).json({ message: 'Mailbox not found' });
         }
         mailbox.isActive = true;
+
+        await customer.save();
+        res.json({ message: 'Active mailbox updated successfully' });
+    } catch (error) {
+        console.error('Error switching mailbox:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/mailboxes/inactive', async (req, res) => {
+    const { email, mailboxId } = req.body;
+
+    try {
+        const customer = await Customer.findOne({ email });
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        // Reset all mailboxes to inactive
+        // customer.mailboxes.forEach(mailbox => mailbox.isActive = false);
+
+        // Set the specified mailbox as active
+        const mailbox = customer.mailboxes.id(mailboxId);
+        if (!mailbox) {
+            return res.status(404).json({ message: 'Mailbox not found' });
+        }
+        mailbox.isActive = false;
 
         await customer.save();
         res.json({ message: 'Active mailbox updated successfully' });
