@@ -1690,14 +1690,14 @@ async function mailboxessend(email, to, subject, text, mailbox){
         const customer = await Customer.findOne({ email });
         if (!customer) {
 		console.log("no customer found")
-            return res.status(403).json({ message: 'Customer not found' });
+            return 'Customer not found' 
         }
 	    console.log("found customer", customer.mailboxes )
 
         const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === mailbox);
         if (!mailboxFound) {
 		console.log("none found")
-            return res.status(403).json({ message: 'Mailbox not found' });
+            return  'Mailbox not found'
         }
 	    console.log("active mailbox", mailboxFound.smtp)
 	    
@@ -1714,10 +1714,10 @@ console.log("activeMailbox.smtp : ", mailboxFound.smtp)
           });
 
         console.log("Email sent:");
-        res.json({ message: 'Email sent successfully'});
+       return  'Email sent successfully'
     } catch (error) {
         console.error('Error sending email:', error);
-        res.status(500).json({ message: 'Server error' });
+        return 'Server error' 
     }
 };
 
@@ -2188,7 +2188,7 @@ app.post('/send-emails', async (req, res) => {
             // SENT_EMAILS += 1;
 
             // Send the email
-            const result = await mailboxessend(myemail, data.email, subject_line, body_content, currentSender)
+            const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
             // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
             senderIndex = (senderIndex + 1) % senders.length;
             console.log(result)
@@ -2231,7 +2231,7 @@ app.post('/send-emails', async (req, res) => {
     }
 
     // res.json({ status: 'completed', sent_emails: SENT_EMAILS });
-	await sendCampaignSummary(customer._id, campaign._id);
+	// await sendCampaignSummary(customer._id, campaign._id);
     console.log("completed")
 });
 });
