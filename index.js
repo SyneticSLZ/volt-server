@@ -1,4 +1,4 @@
-	const { Configuration, OpenAI } = require('openai');
+const { Configuration, OpenAI } = require('openai');
 const express = require('express');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
@@ -1692,18 +1692,21 @@ app.post('/api/mailboxes/send', async (req, res) => {
     try {
         const customer = await Customer.findOne({ email });
         if (!customer) {
-            return res.status(404).json({ message: 'Customer not found' });
+		console.log("no customer found")
+            return res.status(403).json({ message: 'Customer not found' });
         }
-	    console.log("found customer")
+	    console.log("found customer", customer,customer.mailboxes, customer.mailboxes.find(mailbox => mailbox.smtp.user === mailbox) )
 
         const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailbox);
         if (!mailbox) {
-            return res.status(404).json({ message: 'Mailbox not found' });
+		console.log("none found")
+            return res.status(403).json({ message: 'Mailbox not found' });
         }
+	    console.log("active mailbox", mailbox.smtp")
 	    
 
-        const { host, port, secure, user, pass } = activeMailbox.smtp;
-console.log("activeMailbox.smtp : ", activeMailbox.smtp)
+        const { host, port, secure, user, pass } = mailbox.smtp;
+console.log("activeMailbox.smtp : ", mailbox.smtp)
        await   sendcampsummaryEmail({
             to: to,
             subject: subject,
