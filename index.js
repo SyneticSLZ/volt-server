@@ -2061,15 +2061,15 @@ app.get('/remove-driver', async (req, res) => {
     const threadID = await CreateThread();
 
     // Retrieve customer details based on their email from the token
-    const userData = verifyJWT(token);
+    //const userData = verifyJWT(token);
 
-    if (!userData) {
-        return 
-    }
+//    if (!userData) {
+  //      return 
+    //}
 
-    console.log('User Data:', userData);
-    const { email, tokens } = userData;
-    const customer = await Customer.findOne({ email: email });
+    //console.log('User Data:', userData);
+    //const { email, tokens } = userData;
+    const customer = await Customer.findOne({ email: myemail });
 
 
     // Create a new campaign
@@ -2096,10 +2096,11 @@ app.get('/remove-driver', async (req, res) => {
     // customer.campaigns.push(campaign);
     // await customer.save();
 
-
-
+    const senders = ["email1@gmail.com", "email2@gmail.com", "email3@gmail.com"];
+    let senderIndex = 0;
     setImmediate(async () => {
     for (const data of submittedData) {
+	    const currentSender = senders[senderIndex];
         try {
             console.log(`Starting send to ${data.email}`);
 
@@ -2143,8 +2144,8 @@ app.get('/remove-driver', async (req, res) => {
             // SENT_EMAILS += 1;
 
             // Send the email
-            const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId);
-
+            const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
+            senderIndex = (senderIndex + 1) % senders.length;
             console.log(result)
             // if (result) {
                 // console.log("working")
