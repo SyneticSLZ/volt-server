@@ -1702,7 +1702,7 @@ app.post('/api/mailboxes/send', async (req, res) => {
 		console.log("none found")
             return res.status(403).json({ message: 'Mailbox not found' });
         }
-	    console.log("active mailbox", mailbox.smtp")
+	    console.log("active mailbox", mailbox.smtp)
 	    
 
         const { host, port, secure, user, pass } = mailbox.smtp;
