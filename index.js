@@ -1687,7 +1687,7 @@ app.get('/api/mailboxes/active', async (req, res) => {
 
 
 app.post('/api/mailboxes/send', async (req, res) => {
-    const { email, to, subject, text } = req.body;
+    const { email, to, subject, text, mailbox } = req.body;
 
     try {
         const customer = await Customer.findOne({ email });
@@ -1695,31 +1695,21 @@ app.post('/api/mailboxes/send', async (req, res) => {
             return res.status(404).json({ message: 'Customer not found' });
         }
 
-        const activeMailbox = customer.mailboxes.find(mailbox => mailbox.isActive);
-        if (!activeMailbox) {
-            return res.status(404).json({ message: 'No active mailbox found' });
+        const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
+        if (!mailbox) {
+            return res.status(404).json({ message: 'Mailbox not found' });
         }
 
         const { host, port, secure, user, pass } = activeMailbox.smtp;
 
-        // Create a transporter object using the SMTP details
-        const transporter = nodemailer.createTransport({
-            host,
-            port,
-            secure,
-            auth: {
-                user,
-                pass
-            }
-        });
-
-        // Send the email
-        const info = await transporter.sendMail({
-            from: user, // Sender address
-            to,         // Receiver address
-            subject,    // Subject line
-            text        // Plain text body
-        });
+       await   sendcampsummaryEmail({
+            to: to,
+            subject: subject,
+            body: text,
+            user:  user,
+            pass: pass, // App password
+            service: 'gmail',
+          });
 
         console.log("Email sent:", info.messageId);
         res.json({ message: 'Email sent successfully', info });
