@@ -2051,8 +2051,9 @@ app.get('/remove-driver', async (req, res) => {
     }
 });
 
+app.post('/send-emails', async (req, res) => {
 // async function sendEmails(credentialsDict, submittedData, userPitch, Uname, token) {
-    app.post('/send-emails', async (req, res) => {
+    
     const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId } = req.body;
 
     res.status(200).send('Emails are being sent in the background. You can close the tab.');
@@ -2096,6 +2097,14 @@ app.get('/remove-driver', async (req, res) => {
     // customer.campaigns.push(campaign);
     // await customer.save();
 
+
+        // Find the active mailbox
+        
+        // Filter all active mailboxes and extract their smtp.user
+  const activeMailboxUsers = customer.mailboxes
+            .filter(mailbox => mailbox.isActive) // Get active mailboxes
+            .map(mailbox => mailbox.smtp.user); // Extract smtp.user
+	
     const senders = ["email1@gmail.com", "email2@gmail.com", "email3@gmail.com"];
     let senderIndex = 0;
     setImmediate(async () => {
