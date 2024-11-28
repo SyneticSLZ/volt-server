@@ -2215,8 +2215,8 @@ app.get('/fetch-profile-data', async (req, res) => {
 
 // Route to send bulk emails manually
 app.post('/send-bulk-manual', async (req, res) => {
-    const { selectedMailbox, subject, content, email, myemail, campaignId } = req.body;
-   console.log(req.body, selectedMailbox, subject, content, email, myemail, campaignId)
+    const { to, subject, content, email, myemail, campaignId, selectedMailbox } = req.body;
+   console.log(req.body, selectedMailbox, subject, content, email, myemail, campaignId, to)
     try {
         // await sendBulkEmails(generatedData, token);
         const customer = await Customer.findOne({ myemail });
