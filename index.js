@@ -1695,7 +1695,7 @@ app.post('/api/mailboxes/send', async (req, res) => {
 		console.log("no customer found")
             return res.status(403).json({ message: 'Customer not found' });
         }
-	    console.log("found customer", customer,customer.mailboxes, customer.mailboxes.find(mailbox => mailbox.smtp.user === mailbox) )
+	    console.log("found customer", customer.mailboxes )
 
         const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailbox);
         if (!mailbox) {
