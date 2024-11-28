@@ -1697,16 +1697,16 @@ app.post('/api/mailboxes/send', async (req, res) => {
         }
 	    console.log("found customer", customer.mailboxes )
 
-        const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailbox);
-        if (!mailbox) {
+        const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === mailbox);
+        if (!mailboxFound) {
 		console.log("none found")
             return res.status(403).json({ message: 'Mailbox not found' });
         }
-	    console.log("active mailbox", mailbox.smtp)
+	    console.log("active mailbox", mailboxFound.smtp)
 	    
 
-        const { host, port, secure, user, pass } = mailbox.smtp;
-console.log("activeMailbox.smtp : ", mailbox.smtp)
+        const { host, port, secure, user, pass } = mailboxFound.smtp;
+console.log("activeMailbox.smtp : ", mailboxFound.smtp)
        await   sendcampsummaryEmail({
             to: to,
             subject: subject,
