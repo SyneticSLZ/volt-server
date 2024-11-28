@@ -2215,9 +2215,9 @@ app.get('/fetch-profile-data', async (req, res) => {
 
 // Route to send bulk emails manually
 app.post('/send-bulk-manual', async (req, res) => {
-    const { to, subject, content, email, myemail, campaignId, selectedMailbox } = req.body;
-   console.log("selected mailbox : ", selectedMailbox, "myemail : ", myemail, "to : ", to, "email : ", email)
-    try {
+    const { subject, content, email, myemail, campaignId, selectedMailbox } = req.body;
+   console.log("selected mailbox : ", selectedMailbox, "myemail : ", myemail,  "email : ", email)
+    // try {
         // await sendBulkEmails(generatedData, token);
         const customer = await Customer.findOne({ myemail });
         if (!customer) {
@@ -2248,10 +2248,10 @@ app.post('/send-bulk-manual', async (req, res) => {
         // return res.status(200).json({ success: true, message: 'SMTP verified successfully!' });
         // await sendEmail(subject, content, email, token, myemail, campaignId);
         res.json({ message: 'Bulk emails sent successfully' });
-    } catch (error) {
-        console.log(`Error sending bulk emails manually: ${error}`);
-        res.status(500).json({ error: 'Failed to send bulk emails' });
-    }
+    // } catch (error) {
+    //     console.log(`Error sending bulk emails manually: ${error}`);
+    //     res.status(500).json({ error: 'Failed to send bulk emails' });
+    // }
 });
 
 
