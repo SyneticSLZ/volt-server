@@ -2216,13 +2216,14 @@ app.get('/fetch-profile-data', async (req, res) => {
 // Route to send bulk emails manually
 app.post('/send-bulk-manual', async (req, res) => {
     const { to, subject, content, email, myemail, campaignId, selectedMailbox } = req.body;
-   console.log(req.body, selectedMailbox, subject, content, email, myemail, campaignId, to)
+   console.log("selected mailbox : ", selectedMailbox, "myemail : ", myemail, "to : ", to, "email : ", email)
     try {
         // await sendBulkEmails(generatedData, token);
         const customer = await Customer.findOne({ myemail });
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
+	    console.log("customer found")
 
         const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === selectedMailbox);
 	    console.log("mailbox found:", mailbox)
