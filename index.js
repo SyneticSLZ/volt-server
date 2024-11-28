@@ -1684,7 +1684,42 @@ app.get('/api/mailboxes/active', async (req, res) => {
     }
 });
 
+async function mailboxessend(email, to, subject, text, mailbox){
+    console.log("body : ", req.body)
+    try {
+        const customer = await Customer.findOne({ email });
+        if (!customer) {
+		console.log("no customer found")
+            return res.status(403).json({ message: 'Customer not found' });
+        }
+	    console.log("found customer", customer.mailboxes )
 
+        const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === mailbox);
+        if (!mailboxFound) {
+		console.log("none found")
+            return res.status(403).json({ message: 'Mailbox not found' });
+        }
+	    console.log("active mailbox", mailboxFound.smtp)
+	    
+
+        const { host, port, secure, user, pass } = mailboxFound.smtp;
+console.log("activeMailbox.smtp : ", mailboxFound.smtp)
+       await   sendcampsummaryEmail({
+            to: to,
+            subject: subject,
+            body: text,
+            user:  user,
+            pass: pass, // App password
+            service: 'gmail',
+          });
+
+        console.log("Email sent:");
+        res.json({ message: 'Email sent successfully'});
+    } catch (error) {
+        console.error('Error sending email:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
 app.post('/api/mailboxes/send', async (req, res) => {
     const { email, to, subject, text, mailbox } = req.body;
@@ -2109,7 +2144,7 @@ app.post('/send-emails', async (req, res) => {
     let senderIndex = 0;
     setImmediate(async () => {
     for (const data of submittedData) {
-	    const currentSender = senders[senderIndex];
+	    const currentSender = activeMailboxUsers[senderIndex];
         try {
             console.log(`Starting send to ${data.email}`);
 
@@ -2153,7 +2188,8 @@ app.post('/send-emails', async (req, res) => {
             // SENT_EMAILS += 1;
 
             // Send the email
-            const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
+            const result = await mailboxessend(myemail, data.email, subject_line, body_content, currentSender)
+            // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
             senderIndex = (senderIndex + 1) % senders.length;
             console.log(result)
             // if (result) {
