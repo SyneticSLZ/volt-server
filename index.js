@@ -2200,7 +2200,7 @@ app.post('/send-emails', async (req, res) => {
             const { host, port, secure, user, pass } = mailboxFound.smtp;
     console.log("activeMailbox.smtp : ", mailboxFound.smtp)
            await   sendcampsummaryEmail({
-                to: To,
+                to: data.email,
                 subject: subject_line,
                 body: body_content,
                 user:  user,
