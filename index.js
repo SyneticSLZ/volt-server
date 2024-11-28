@@ -2145,6 +2145,7 @@ app.post('/send-emails', async (req, res) => {
     setImmediate(async () => {
     for (const data of submittedData) {
 	    const currentSender = activeMailboxUsers[senderIndex];
+        console.log(currentSender)
         try {
             console.log(`Starting send to ${data.email}`);
 
@@ -2161,7 +2162,7 @@ app.post('/send-emails', async (req, res) => {
 
             const To = data.name;
 
-            console.log(`Email: ${data.email}, Website Content: ${summary}, Uname: ${Uname}, To: ${To}`);
+            // console.log(`Email: ${data.email}, Website Content: ${summary}, Uname: ${Uname}, To: ${To}`);
 
             // Generate the email content using AddMessageToThread
             attmpts = 0
@@ -2188,7 +2189,26 @@ app.post('/send-emails', async (req, res) => {
             // SENT_EMAILS += 1;
 
             // Send the email
-            const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
+            const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === currentSender);
+            if (!mailboxFound) {
+            console.log("none found")
+                return res.status(403).json({ message: 'Mailbox not found' });
+            }
+            console.log("active mailbox", mailboxFound.smtp)
+            
+    
+            const { host, port, secure, user, pass } = mailboxFound.smtp;
+    console.log("activeMailbox.smtp : ", mailboxFound.smtp)
+           await   sendcampsummaryEmail({
+                to: To,
+                subject: subject_line,
+                body: body_content,
+                user:  user,
+                pass: pass, // App password
+                service: 'gmail',
+              });
+
+            // const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
             // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
             senderIndex = (senderIndex + 1) % senders.length;
             console.log(result)
