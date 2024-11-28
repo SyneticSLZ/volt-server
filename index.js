@@ -1,4 +1,4 @@
-const { Configuration, OpenAI } = require('openai');
+	const { Configuration, OpenAI } = require('openai');
 const express = require('express');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
+const mongoose = require('mongoose');	
 const { Email, Campaign, Customer, Mailbox } = require('./models/customer');
 const Driver = require('./models/Driver');
 const app = express();
@@ -1688,20 +1688,22 @@ app.get('/api/mailboxes/active', async (req, res) => {
 
 app.post('/api/mailboxes/send', async (req, res) => {
     const { email, to, subject, text, mailbox } = req.body;
-
+    console.log("body : ", req.body)
     try {
         const customer = await Customer.findOne({ email });
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
+	    console.log("found customer")
 
         const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
         if (!mailbox) {
             return res.status(404).json({ message: 'Mailbox not found' });
         }
+	    
 
         const { host, port, secure, user, pass } = activeMailbox.smtp;
-
+console.log("activeMailbox.smtp : ", activeMailbox.smtp)
        await   sendcampsummaryEmail({
             to: to,
             subject: subject,
@@ -1711,8 +1713,8 @@ app.post('/api/mailboxes/send', async (req, res) => {
             service: 'gmail',
           });
 
-        console.log("Email sent:", info.messageId);
-        res.json({ message: 'Email sent successfully', info });
+        console.log("Email sent:");
+        res.json({ message: 'Email sent successfully'});
     } catch (error) {
         console.error('Error sending email:', error);
         res.status(500).json({ message: 'Server error' });
