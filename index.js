@@ -57,6 +57,9 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI;
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
+let subject_c
+let body_c
+
 app.use(bodyParser.json());
 app.use(express.static('public'));
 app.use(cors({
@@ -593,8 +596,8 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
 			// const subjectMatch = content.match(/^Subject:\s*(.+)$/m);
 			// const bodyMatch = content.match(/Body:\s*\n([\s\S]*)/);
 			
-                        const subject_c = lines[0];
-                        const body_c = lines.slice(1).join('\n');
+                        subject_c = lines[0];
+                     body_c = lines.slice(1).join('\n');
 			// 
                         // const subject_c = subjectMatch ? subjectMatch[1].trim() : " no subj found ";
                         // const body_c = bodyMatch ? bodyMatch[1].trim() : " no body found ";
