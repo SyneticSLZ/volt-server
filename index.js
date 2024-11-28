@@ -2174,12 +2174,9 @@ app.post('/send-emails', async (req, res) => {
                 attmpts += 1
                 console.log(attmpts , ": attempts so far")
                 const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, token, Template);
-                if (subject_c && body_c) {
-                    console.log("Subject:", subject_c);
-                    console.log("Body:", body_c);
-                    console.log("returned : ", emailContent)
-                    attmpts = 100
-                }
+                console.log("returned : ", emailContent)
+
+                // res.json({ subject_line, body_content, To });
             }
             
             // const { s, b } = emailContent;
