@@ -2402,7 +2402,7 @@ app.post('/send-bulk-manual', async (req, res) => {
 
 // Route to generate email content
 app.post('/generate-email-content', async (req, res) => {
-    console.log("personalizing email")
+    console.log("personalizing email", req.body)
     const { website, userPitch, Uname, To, Template} = req.body;
     const threadID = await CreateThread();
 console.log("threadid :  ", threadID)
