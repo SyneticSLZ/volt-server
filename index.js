@@ -2111,8 +2111,8 @@ function calculateDelay(emailsPerHour) {
 
 app.post('/send-emails', async (req, res) => {
     const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId, UserSubject } = req.body;
-    res.status(200).send('Emails are being sent in the background. You can close the tab.');
-    let SENT_EMAILS = 0;
+    res.status(200).send('Emails are being sen t in the background. You can close the tab.');
+    let SENT_EMAILS = 0;  
 
 
 
