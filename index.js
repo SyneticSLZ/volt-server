@@ -2217,8 +2217,8 @@ try {
         } 
         console.log("completed")
     } catch (error) {
-        console.log(`Error processing email for ${data.email}: ${error}`);
-        failedEmails.push(data.email);
+        console.log(`Error: ${error}`);
+        // failedEmails.push(data.email);
         // Handle the exception (log it, update status, etc.)
     }
     // res.json({ status: 'completed', sent_emails: SENT_EMAILS });
