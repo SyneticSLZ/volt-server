@@ -2143,7 +2143,7 @@ let generatedData = []
     
                 const data_new = await response.json();
     let subjectline = ""
-    if(UserSubject){
+    if (typeof UserSubject === 'string' && UserSubject.trim().length > 0) {
      subjectline = UserSubject
     console.log("if : ",subjectline)
     }else{
@@ -2163,6 +2163,8 @@ let generatedData = []
                 subject: subject_line,
                 content: main_message
             });
+
+
             await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
         } catch (error) {
             console.error('Error generating email for', data.email, ':', error);
