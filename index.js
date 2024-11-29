@@ -2105,6 +2105,10 @@ function separateSubject(input) {
     }
 }
 
+function calculateDelay(emailsPerHour) {
+    return Math.ceil(3600 / emailsPerHour) * 1000; // Delay in ms
+}
+
 app.post('/send-emails', async (req, res) => {
     const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId, UserSubject } = req.body;
     res.status(200).send('Emails are being sent in the background. You can close the tab.');
@@ -2190,7 +2194,13 @@ let generatedData = []
 setImmediate(async () => {
 
 try {
+
+    
+    // Example:
+    const delay = calculateDelay(generatedData.length); // ~36 seconds for 100 emails/hour
+
     for (const data of generatedData) {
+        await new Promise(resolve => setTimeout(resolve, delay)); // Simulate delay
         const currentSender = activeMailboxUsers[senderIndex];
         console.log(currentSender)
     console.log(`Starting send to ${data.email}`);
