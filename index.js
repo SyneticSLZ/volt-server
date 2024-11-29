@@ -2106,7 +2106,7 @@ function separateSubject(input) {
 }
 
 app.post('/send-emails', async (req, res) => {
-    const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId } = req.body;
+    const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId, UserSubject } = req.body;
     res.status(200).send('Emails are being sent in the background. You can close the tab.');
     let SENT_EMAILS = 0;
 
