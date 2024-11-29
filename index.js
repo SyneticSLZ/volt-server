@@ -2197,10 +2197,12 @@ try {
 
     
     // Example:
-    const delay = calculateDelay(generatedData.length); // ~36 seconds for 100 emails/hour
+    // const delay = calculateDelay(generatedData.length); // ~36 seconds for 100 emails/hour
 
     for (const data of generatedData) {
-        await new Promise(resolve => setTimeout(resolve, delay)); // Simulate delay
+        console.log(delay)
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate delay
+
         const currentSender = activeMailboxUsers[senderIndex];
         console.log(currentSender)
     console.log(`Starting send to ${data.email}`);
