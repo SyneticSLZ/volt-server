@@ -583,7 +583,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
                     const messages = await openai.beta.threads.messages.list(
                         run.thread_id
                     );
-                    console.log("Messages listed", messages);
+                    // console.log("Messages listed", messages);
 
 
                     // for (const message of messages.data) {
@@ -605,8 +605,8 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
                         //  const b = body
                         body_content = body_c
                         subject_line = subject_c
-                        console.log("Subject:", subject_c);
-                        console.log("Body:", body_c);
+                        // console.log("Subject:", subject_c);
+                        // console.log("Body:", body_c);
                         // await sendEmail(subject, body, To, token);
                         // SENT_EMAILS += 1;
 
@@ -2192,7 +2192,8 @@ app.post('/send-emails', async (req, res) => {
             const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === currentSender);
             if (!mailboxFound) {
             console.log("none found")
-                return res.status(403).json({ message: 'Mailbox not found' });
+                return 
+                // /res.status(403).json({ message: 'Mailbox not found' });
             }
             console.log("active mailbox", mailboxFound.smtp)
             
@@ -2211,7 +2212,7 @@ app.post('/send-emails', async (req, res) => {
             // const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
             // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
             senderIndex = (senderIndex + 1) % senders.length;
-            console.log(result)
+            // console.log(result)
             // if (result) {
                 // console.log("working")
                 //     // Log sent email details to the campaign
