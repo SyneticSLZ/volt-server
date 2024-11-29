@@ -579,7 +579,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
 
 
                 if (run.status === 'completed') {
-
+console.log("completed")
                     const messages = await openai.beta.threads.messages.list(
                         run.thread_id
                     );
