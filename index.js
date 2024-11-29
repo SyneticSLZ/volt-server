@@ -616,7 +616,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
 
                 } else {
                     console.log("status: ", run.status);
-                    console.log(`Time elapsed: ${timeElapsed} seconds`);
+                    console.log(`vc ${timeElapsed} seconds`);
                     timeElapsed += interval;
                     await new Promise(resolve => setTimeout(resolve, interval * 1000)); // Wait for the interval duration
                 }
@@ -2089,15 +2089,143 @@ app.get('/remove-driver', async (req, res) => {
     }
 });
 
+function separateSubject(input) {
+    // Check if the input starts with "Subject: "
+    const prefix = "Subject: ";
+    if (input.startsWith(prefix)) {
+        // Extract the actual subject line by removing the prefix
+        const actualSubject = input.substring(prefix.length);
+        return {
+            prefix: prefix.trim(),
+            subject: actualSubject.trim()
+        };
+    } else {
+        // If the input does not start with "Subject: ", return null or handle accordingly
+        return null;
+    }
+}
+
 app.post('/send-emails', async (req, res) => {
-// async function sendEmails(credentialsDict, submittedData, userPitch, Uname, token) {
-    
     const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId } = req.body;
-
     res.status(200).send('Emails are being sent in the background. You can close the tab.');
-
     let SENT_EMAILS = 0;
-    const threadID = await CreateThread();
+
+
+
+
+let generatedData = []
+    for (let index = 0; index < submittedData.length; index++) {
+        
+        const data = submittedData[index];
+    
+        try {
+            const sddata = submittedData[index];
+            let website = sddata.website
+            if (!/^https:\/\//i.test(website)) {
+                    website = 'https://' + website;
+                }
+            const response = await fetch('https://server.voltmailer.com/generate-email-content', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        website: website, 
+                        userPitch: userPitch, 
+                        Uname: Uname,
+                        To: sddata.name,
+                    Template : Template})
+                });
+    
+                if (!response.ok) {
+                    throw new Error('Failed to generate email content');
+                }
+    
+                const data_new = await response.json();
+    let subjectline = ""
+    if(UserSubject){
+     subjectline = UserSubject
+    console.log("if : ",subjectline)
+    }else{
+     subjectline = separateSubject(data_new.subject_line).subject
+    console.log("else : ", subjectline)
+    }
+                // const subject_line = separateSubject(data_new.subject_line).subject
+                 subject_line = subjectline
+                // console.log(subject_line)
+                 main_message = data_new.body_content
+    
+                console.log(main_message)
+    
+    
+            generatedData.push({
+                email: sddata.email,
+                subject: subject_line,
+                content: main_message
+            });
+            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+        } catch (error) {
+            console.error('Error generating email for', data.email, ':', error);
+    
+        }
+    }
+    
+
+
+
+
+
+
+
+
+
+    const customer = await Customer.findOne({ email: myemail });
+    const activeMailboxUsers = customer.mailboxes
+    .filter(mailbox => mailbox.isActive) // Get active mailboxes
+    .map(mailbox => mailbox.smtp.user); // Extract smtp.user
+     let senderIndex = 0;
+     const failedEmails = [];
+setImmediate(async () => {
+
+try {
+    for (const data of generatedData) {
+        const currentSender = activeMailboxUsers[senderIndex];
+        console.log(currentSender)
+    console.log(`Starting send to ${data.email}`);
+    const To = data.email;
+    const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === currentSender);
+            if (!mailboxFound) {
+            console.log("none found")
+                return 
+            }
+            console.log("active mailbox", mailboxFound.smtp)
+            const { host, port, secure, user, pass } = mailboxFound.smtp;
+            console.log("activeMailbox.smtp : ", mailboxFound.smtp)
+            await   sendcampsummaryEmail({
+                to: data.email,
+                subject: data.subject,
+                body: data.content,
+                user:  user,
+                pass: pass, // App password
+                service: 'gmail',
+              });
+            // const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
+            // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
+            senderIndex = (senderIndex + 1) % activeMailboxUsers.length;
+        } 
+        console.log("completed")
+    } catch (error) {
+        console.log(`Error processing email for ${data.email}: ${error}`);
+        failedEmails.push(data.email);
+        // Handle the exception (log it, update status, etc.)
+    }
+    // res.json({ status: 'completed', sent_emails: SENT_EMAILS });
+	// await sendCampaignSummary(customer._id, campaign._id);
+    
+});
+console.log("Failed emails:", failedEmails);
+});
+
 
     // Retrieve customer details based on their email from the token
     //const userData = verifyJWT(token);
@@ -2108,7 +2236,7 @@ app.post('/send-emails', async (req, res) => {
 
     //console.log('User Data:', userData);
     //const { email, tokens } = userData;
-    const customer = await Customer.findOne({ email: myemail });
+   
 
 
     // Create a new campaign
@@ -2139,20 +2267,7 @@ app.post('/send-emails', async (req, res) => {
         // Find the active mailbox
         
         // Filter all active mailboxes and extract their smtp.user
-  const activeMailboxUsers = customer.mailboxes
-            .filter(mailbox => mailbox.isActive) // Get active mailboxes
-            .map(mailbox => mailbox.smtp.user); // Extract smtp.user
-	
-    const senders = ["email1@gmail.com", "email2@gmail.com", "email3@gmail.com"];
-    let senderIndex = 0;
-    setImmediate(async () => {
-    for (const data of submittedData) {
-	    const currentSender = activeMailboxUsers[senderIndex];
-        console.log(currentSender)
-        try {
-            console.log(`Starting send to ${data.email}`);
 
-            const summary = await summarizeWebsite(data.website);
             // try {
                 // const summary = await extractCompanyInsights(data.website);
                 // console.log('AI-Friendly Summary:', summary);
@@ -2163,21 +2278,7 @@ app.post('/send-emails', async (req, res) => {
 
             // console.log(summary);
 
-            const To = data.name;
-
-            // console.log(`Email: ${data.email}, Website Content: ${summary}, Uname: ${Uname}, To: ${To}`);
-
-            // Generate the email content using AddMessageToThread
-            attmpts = 0
-            maxTries = 3
-            while (attmpts < maxTries) {
-                attmpts += 1
-                console.log(attmpts , ": attempts so far")
-                const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, token, Template);
-                console.log("returned : ", emailContent)
-
-                // res.json({ subject_line, body_content, To });
-            }
+            
             
             // const { s, b } = emailContent;
             // if (emailContent) {
@@ -2189,29 +2290,7 @@ app.post('/send-emails', async (req, res) => {
             // SENT_EMAILS += 1;
 
             // Send the email
-            const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === currentSender);
-            if (!mailboxFound) {
-            console.log("none found")
-                return 
-                // /res.status(403).json({ message: 'Mailbox not found' });
-            }
-            console.log("active mailbox", mailboxFound.smtp)
             
-    
-            const { host, port, secure, user, pass } = mailboxFound.smtp;
-    console.log("activeMailbox.smtp : ", mailboxFound.smtp)
-           await   sendcampsummaryEmail({
-                to: data.email,
-                subject: subject_line,
-                body: body_content,
-                user:  user,
-                pass: pass, // App password
-                service: 'gmail',
-              });
-
-            // const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
-            // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
-            senderIndex = (senderIndex + 1) % senders.length;
             // console.log(result)
             // if (result) {
                 // console.log("working")
@@ -2245,17 +2324,7 @@ app.post('/send-emails', async (req, res) => {
 
             // console.log(`Email: ${data.email}, Subject: ${subjectLine}, Message: ${mainMessage}`);
 
-        } catch (error) {
-            console.log(`Error processing email for ${data.email}: ${error}`);
-            // Handle the exception (log it, update status, etc.)
-        }
-    }
 
-    // res.json({ status: 'completed', sent_emails: SENT_EMAILS });
-	// await sendCampaignSummary(customer._id, campaign._id);
-    console.log("completed")
-});
-});
 
 app.get('/fetch-profile-data', async (req, res) => {
 
