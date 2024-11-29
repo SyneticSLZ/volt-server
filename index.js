@@ -2200,7 +2200,7 @@ try {
     // const delay = calculateDelay(generatedData.length); // ~36 seconds for 100 emails/hour
 
     for (const data of generatedData) {
-        console.log(delay)
+        // console.log(delay)
         await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate delay
 
         const currentSender = activeMailboxUsers[senderIndex];
