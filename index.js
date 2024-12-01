@@ -1252,13 +1252,55 @@ app.get('/unsubscribe', async (req, res) => {
 
   // Example confirmation HTML
   const confirmationHTML = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; text-align: center; margin: 50px;">
-      <h2>Unsubscribe Confirmation</h2>
-      <p>Hello, <strong>${email}</strong>.</p>
-      <p>You have successfully unsubscribed from emails sent by <strong>${sender}</strong>.</p>
-      <p>If this was a mistake, you can <a href="mailto:${sender}" style="color: #007BFF;">contact the sender</a> to re-subscribe.</p>
-      <p style="margin-top: 20px; font-size: 12px; color: #777;">Thank you for your time.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsubscribe Confirmation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f6f8f9 0%, #e5ebee 100%);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-2xl animate__animated animate__fadeIn">
+        <div class="text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mx-auto mb-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Farewell, Inbox Warrior</h2>
+            <p class="text-gray-600 mb-6">We've processed your unsubscribe request with the precision of a ninja.</p>
+        </div>
+        
+        <div class="bg-gray-100 p-4 rounded-lg">
+            <p class="text-sm text-gray-700 mb-2">
+                <strong>Email:</strong> <span class="text-gray-900">${email}</span>
+            </p>
+            <p class="text-sm text-gray-700">
+                <strong>Sender:</strong> <span class="text-gray-900">${sender}</span>
+            </p>
+        </div>
+        
+        <div class="space-y-4">
+            <p class="text-center text-gray-600 text-sm">
+                You've successfully unsubscribed from future communications.
+            </p>
+            
+            <a href="mailto:${sender}" class="w-full block text-center bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Oops, Change My Mind
+            </a>
+        </div>
+        
+        <div class="text-center text-xs text-gray-500 pt-4">
+            Processed with care • No emails were harmed in this process
+        </div>
     </div>
+</body>
+</html>
   `;
 
   // Send the dynamic HTML response
