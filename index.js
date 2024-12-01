@@ -1175,6 +1175,29 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
 }
 };
 
+app.get('/get-unsubscribed-emails', async (req, res) => {
+    try {
+        const { sender } = req.query;
+
+        if (!sender) {
+            return res.status(400).json({ message: 'Sender email is required.' });
+        }
+
+        // Find the customer by sender email
+        const customer = await Customer.findOne({ email: sender });
+
+        if (!customer) {
+            return res.status(404).json({ message: 'Sender not found.' });
+        }
+
+        // Return the unsubscribedEmails array
+        res.status(200).json({ unsubscribedEmails: customer.unsubscribedEmails });
+    } catch (error) {
+        console.error('Error fetching unsubscribed emails:', error);
+        res.status(500).json({ message: 'An error occurred while fetching unsubscribed emails.' });
+    }
+});
+
 
 app.get('/unsubscribe', async (req, res) => {
     const { to, sender} = req.query;
