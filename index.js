@@ -1115,8 +1115,11 @@ async function sendCampaignSummary(customerId, campaignId) {
   console.log(`Summary email sent to ${customer.email}`);
 }
 
-async function sendcampsummaryEmail({ to,subject, body, user, pass, service }) {
+
+
+async function sendcampsummaryEmail({ to, email, subject, body, user, pass, service }) {
  try {
+   const unsubscribeLink = `https://server.voltmailer.com/unsubscribe?sender=${encodeURIComponent(email)}&to=${encodeURIComponent(to)}`;
    const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -1124,13 +1127,24 @@ async function sendcampsummaryEmail({ to,subject, body, user, pass, service }) {
           pass: pass, // App password if 2FA is enabled
         },
       });
+
+      const htmlTemplate = `
+<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <p>${body.replace(/\n/g, '<br>')}</p>
+  <p style="margin-top: 20px; font-size: 12px; color: #777;">
+    If you wish to unsubscribe from these emails, please click 
+    <a href="${unsubscribeLink}" style="color: #007BFF;">here</a>.
+  </p>
+</div>
+`;
     
       // Define email options
       const mailOptions = {  
         from: user,
         to: to,
         subject: subject,
-        text: body,
+        text: `${body}\n\nTo unsubscribe, visit: ${unsubscribeLink}`,
+        html: htmlTemplate,
         // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
         // html: `<p>${body.replace(/\n/g, '<br>')} </p>`,
       };
@@ -1138,11 +1152,68 @@ async function sendcampsummaryEmail({ to,subject, body, user, pass, service }) {
   
     await transporter.sendMail(mailOptions)
     console.log('Message sent: %s');
+
+
+    if (typeof email === 'string' && email.trim().length > 0) {
+        const customer = await Customer.findOne({ email: email });
+        const newTotalEmails = customer.total_emails + 1;   
+    
+        await Customer.updateOne(
+                { email: email },
+                { $set: { total_emails: newTotalEmails } }
+            );
+       }else{
+        console.log("email verified")
+       }
+
+
+
+    
 } catch (error) {
     console.error('Error sending test email:', error.message);
     throw new Error('Failed to send test email.');
 }
 };
+
+
+app.get('/unsubscribe', async (req, res) => {
+    const { to, sender} = req.query;
+    let email = to
+    if (!email || !sender) {
+      return res.status(400).send('Invalid unsubscribe request.');
+    }
+  
+    const customer = await Customer.findOne({ email: sender });
+    if (!customer) {
+        return res.status(404).json({ message: 'Sender not found.' });
+    }
+
+    // Check if the email is already unsubscribed
+    if (customer.unsubscribedEmails.includes(email)) {
+        return res.status(400).json({ message: 'Email is already unsubscribed.' });
+    }
+
+    // Add email to unsubscribedEmails array
+    customer.unsubscribedEmails.push(email);
+    await customer.save();
+
+
+
+  // Example confirmation HTML
+  const confirmationHTML = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; text-align: center; margin: 50px;">
+      <h2>Unsubscribe Confirmation</h2>
+      <p>Hello, <strong>${email}</strong>.</p>
+      <p>You have successfully unsubscribed from emails sent by <strong>${sender}</strong>.</p>
+      <p>If this was a mistake, you can <a href="mailto:${sender}" style="color: #007BFF;">contact the sender</a> to re-subscribe.</p>
+      <p style="margin-top: 20px; font-size: 12px; color: #777;">Thank you for your time.</p>
+    </div>
+  `;
+
+  // Send the dynamic HTML response
+  res.send(confirmationHTML);
+  });
+  
 
   
 
@@ -1747,6 +1818,7 @@ app.post('/api/mailboxes/send', async (req, res) => {
 console.log("activeMailbox.smtp : ", mailboxFound.smtp)
        await   sendcampsummaryEmail({
             to: to,
+            email:email,
             subject: subject,
             body: text,
             user:  user,
@@ -2217,6 +2289,7 @@ try {
             console.log("activeMailbox.smtp : ", mailboxFound.smtp)
             await   sendcampsummaryEmail({
                 to: data.email,
+                email: myemail,
                 subject: data.subject,
                 body: data.content,
                 user:  user,
@@ -2380,6 +2453,7 @@ app.post('/send-bulk-manual', async (req, res) => {
 	    console.log("mailbox details : ", user, pass)
         await   sendcampsummaryEmail({
             to: email,
+            email: myemail,
             subject: subject,
             body: content,
             user:  user,

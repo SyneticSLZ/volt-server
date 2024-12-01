@@ -68,7 +68,8 @@ const customerSchema = new mongoose.Schema({
     bounceRate: { type: Number, default: 0 },
     replyRate: { type: Number, default: 0 },
     campaigns: [campaignSchema],
-    mailboxes: [mailboxSchema]
+    mailboxes: [mailboxSchema],
+    unsubscribedEmails: { type: [String], default: [] } // New field for unsubscribed emails
 });
 // const Customer = mongoose.models.Customer || mongoose.model('Customer', customerSchema);
 
