@@ -1117,7 +1117,7 @@ async function sendCampaignSummary(customerId, campaignId) {
 
 
 
-async function sendcampsummaryEmail({ to, email, subject, body, user, pass, service }) {
+async function sendcampsummaryEmail({ to, email, subject, body, user, pass, service, campaignId }) {
  try {
    const unsubscribeLink = `https://server.voltmailer.com/unsubscribe?sender=${encodeURIComponent(email)}&to=${encodeURIComponent(to)}`;
    const transporter = nodemailer.createTransport({
@@ -1150,11 +1150,39 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
       };
 
   
-    await transporter.sendMail(mailOptions)
+    const info = await transporter.sendMail(mailOptions)
     console.log('Message sent: %s');
 
 
+
+
+
+    // Save { to, subject, messageId: info.messageId } in the database
+
+
     if (typeof email === 'string' && email.trim().length > 0) {
+
+        const newEmail = {
+            recipientEmail: to,
+            subject: subject,
+            messageId: info.messageId,
+            threadId: 'threadId',
+            sentTime: new Date(),
+            status: 'sent',           // Default status
+            bounces: false,           // Assume no bounce initially
+            responseCount: 0          // Initial response count
+        };
+    
+        // Call addEmailToCampaign function with necessary parameters
+        const Emailresult = await addEmailToCampaign(email, campaignId, newEmail);
+    
+        // Check the result and handle any additional logic or error handling as needed
+        if (Emailresult.success) {
+            console.log(`Email successfully added to campaign: ${Emailresult.message}`);
+        } else {
+            console.error(`Failed to add email to campaign: ${Emailresult.message}`);
+        }
+
         const customer = await Customer.findOne({ email: email });
         const newTotalEmails = customer.total_emails + 1;   
     
@@ -2318,6 +2346,7 @@ try {
                 user:  user,
                 pass: pass, // App password
                 service: 'gmail',
+                campaignId: CampaignId
               });
             // const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
             // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
@@ -2482,6 +2511,7 @@ app.post('/send-bulk-manual', async (req, res) => {
             user:  user,
             pass: pass, // App password
             service: 'gmail',
+            campaignId: campaignId
           });
 
         console.log("Email sent:");
