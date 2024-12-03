@@ -545,27 +545,23 @@ let body_content = "";
 async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, template, email) {
     try {
         if (email ==='Test@gmail.com') {
-            const message = await openai.beta.threads.messages.create(
-                ThreadID,
-                {
-                    role: "user",
-                    content: ` This is the pitch I am going to use: ${user_pitch}.Only mention this pitch, nothing on the Company.You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
-    `       
-                }
-            );
+            console.log("Message added for pakistani guy");
+            const content = 
+             ` This is the pitch I am going to use: ${user_pitch}.Only mention this pitch, nothing on the Company.You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
+`
         } else{
-
-        // Create the message
-        const message = await openai.beta.threads.messages.create(
-            ThreadID,
-            {
-                role: "user",
-                content: `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
-`       
-            }
-        );
+              const  content = `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
+`
     }
-        console.log("Message added");
+    const message = await openai.beta.threads.messages.create(
+        ThreadID,
+        {
+            role: "user",
+            content: content
+        }
+    );
+
+    console.log("Message added");
 
         // Create and poll the run
         let run = await openai.beta.threads.runs.createAndPoll(
