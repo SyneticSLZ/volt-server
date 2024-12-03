@@ -1889,7 +1889,7 @@ console.log("activeMailbox.smtp : ", mailboxFound.smtp)
 };
 
 app.post('/api/mailboxes/send', async (req, res) => {
-    const { email, to, subject, text, mailbox } = req.body;
+    const { email, to, subject, text, mailbox, campaignid } = req.body;
     console.log("body : ", req.body)
     try {
         const customer = await Customer.findOne({ email });
@@ -1917,6 +1917,7 @@ console.log("activeMailbox.smtp : ", mailboxFound.smtp)
             user:  user,
             pass: pass, // App password
             service: 'gmail',
+            campaignid: campaignid
           });
 
         console.log("Email sent:");
@@ -2290,9 +2291,9 @@ let generatedData = []
         try {
             const sddata = submittedData[index];
             let website = sddata.website
-            if (!/^https:\/\//i.test(website)) {
-                    website = 'https://' + website;
-                }
+            // if (!/^https:\/\//i.test(website)) {
+            //         website = 'https://' + website;
+            //     }
             const response = await fetch('https://server.voltmailer.com/generate-email-content', {
                     method: 'POST',
                     headers: {
