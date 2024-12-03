@@ -477,13 +477,13 @@ async function logAnalysisToFile(analysis, fileName) {
 async function summarizeWebsite(email, url, maxRetries = 3, retryDelay = 1000) {
     
     if (!url) {
-        if (email === 'Test@gmail.com'){
-            let description = 'no info found';
-            return  description
-    }else {
+    //     if (email === 'Test@gmail.com'){
+    //         let description = 'no info found';
+    //         return  description
+    // }else {
     
         throw new Error('URL is required');
-}
+// }
     }
 
     let attempts = 0;
@@ -509,10 +509,10 @@ async function summarizeWebsite(email, url, maxRetries = 3, retryDelay = 1000) {
             return description;
         } catch (error) {
 
-            if (email === 'Test@gmail.com'){
-                let description = 'no info found, dont mention the website at all, instead just mention the pitch ';
-                return  description
-        }
+        //     if (email === 'Test@gmail.com'){
+        //         let description = 'no info found, dont mention the website at all, instead just mention the pitch ';
+        //         return  description
+        // }
             attempts++;
             console.error(`Attempt ${attempts} failed: ${error.code} - ${error.message}`);
 
@@ -542,8 +542,19 @@ async function CreateThread(){
 let subject_line = "";
 let body_content = "";
 
-async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, template) {
+async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, template, email) {
     try {
+        if (email ==='Test@gmail.com') {
+            const message = await openai.beta.threads.messages.create(
+                ThreadID,
+                {
+                    role: "user",
+                    content: ` This is the pitch I am going to use: ${user_pitch}.Only mention this pitch, nothing on the Company.You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
+    `       
+                }
+            );
+        } else{
+
         // Create the message
         const message = await openai.beta.threads.messages.create(
             ThreadID,
@@ -553,6 +564,7 @@ async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me,
 `       
             }
         );
+    }
         console.log("Message added");
 
         // Create and poll the run
@@ -2618,7 +2630,7 @@ console.log("threadid :  ", threadID)
         console.log('AI-Friendly Summary:', summary);
         console.log("summarized : ", summary)
 
-        const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, Template);
+        const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, Template, email);
         console.log("returned : ", emailContent)
 
         res.json({ subject_line, body_content, To });
