@@ -510,7 +510,7 @@ async function summarizeWebsite(email, url, maxRetries = 3, retryDelay = 1000) {
         } catch (error) {
 
             if (email === 'Test@gmail.com'){
-                let description = 'no info found';
+                let description = 'no info found, dont mention the website at all, instead just mention the pitch ';
                 return  description
         }
             attempts++;
