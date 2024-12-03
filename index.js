@@ -2378,7 +2378,7 @@ try {
         // console.log(delay)
         // console.log(`Delaying next email by ${Math.round(delay)} ms`);
 
-        // await new Promise(resolve => setTimeout(resolve, delay))
+        await new Promise(resolve => setTimeout(resolve, 3000))
 
         const currentSender = activeMailboxUsers[senderIndex];
         console.log(currentSender)
