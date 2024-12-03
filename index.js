@@ -474,7 +474,7 @@ async function logAnalysisToFile(analysis, fileName) {
 
 
 
-async function summarizeWebsite(url, maxRetries = 3, retryDelay = 1000) {
+async function summarizeWebsite(email, url, maxRetries = 3, retryDelay = 1000) {
     if (!url) {
         throw new Error('URL is required');
     }
@@ -501,6 +501,10 @@ async function summarizeWebsite(url, maxRetries = 3, retryDelay = 1000) {
 
             return description;
         } catch (error) {
+            if (email === 'Test@gmail.com'){
+                return  'There is no info for this website'
+        }
+
             attempts++;
             console.error(`Attempt ${attempts} failed: ${error.code} - ${error.message}`);
 
@@ -2280,13 +2284,9 @@ function separateSubject(input) {
 // }
 
 app.post('/send-emails', async (req, res) => {
-    const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId, UserSubject } = req.body;
+    const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId, UserSubject,  } = req.body;
     res.status(200).send('Emails are being sen t in the background. You can close the tab.');
     let SENT_EMAILS = 0;  
-
-    
-
-
 
 let generatedData = []
     for (let index = 0; index < submittedData.length; index++) {
@@ -2309,7 +2309,10 @@ let generatedData = []
                         userPitch: userPitch, 
                         Uname: Uname,
                         To: sddata.name,
-                    Template : Template})
+                    Template : Template,
+                    email: myemail
+                
+                })
                 });
     
                 if (!response.ok) {
@@ -2596,16 +2599,17 @@ app.post('/send-bulk-manual', async (req, res) => {
 // Route to generate email content
 app.post('/generate-email-content', async (req, res) => {
     console.log("personalizing email", req.body)
-    const { website, userPitch, Uname, To, Template} = req.body;
+    const { website, userPitch, Uname, To, Template, email} = req.body;
     const threadID = await CreateThread();
 console.log("threadid :  ", threadID)
     try {
 
-        const summary = await summarizeWebsite(website);
+        const summary = await summarizeWebsite(email, website);
         // const summary = await extractCompanyInsights(website);
         // const summary = await extractCompanyInsights(data.website);
         console.log('AI-Friendly Summary:', summary);
         console.log("summarized : ", summary)
+
         const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, Template);
         console.log("returned : ", emailContent)
 
