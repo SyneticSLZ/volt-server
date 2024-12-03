@@ -51,7 +51,7 @@ const stripe = require('stripe')(process.env.STRIPE_API_KEY);
 
 const YOUR_DOMAIN = 'https://voltmailer.com';
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3002;
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI;
