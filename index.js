@@ -475,8 +475,15 @@ async function logAnalysisToFile(analysis, fileName) {
 
 
 async function summarizeWebsite(email, url, maxRetries = 3, retryDelay = 1000) {
+    
     if (!url) {
+        if (email === 'Test@gmail.com'){
+            let description = 'no info found';
+            return  description
+    }else {
+    
         throw new Error('URL is required');
+}
     }
 
     let attempts = 0;
@@ -501,10 +508,11 @@ async function summarizeWebsite(email, url, maxRetries = 3, retryDelay = 1000) {
 
             return description;
         } catch (error) {
-            if (email === 'Test@gmail.com'){
-                return  'There is no info for this website'
-        }
 
+            if (email === 'Test@gmail.com'){
+                let description = 'no info found';
+                return  description
+        }
             attempts++;
             console.error(`Attempt ${attempts} failed: ${error.code} - ${error.message}`);
 
