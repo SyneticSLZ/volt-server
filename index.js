@@ -2271,13 +2271,13 @@ function separateSubject(input) {
     }
 }
 
-function calculateDelay(emailsPerHour) {
-    const cappedEmailsPerHour = Math.min(emailsPerHour, 90); // Cap at 90 emails/hour for delay calculation
-    const baseDelay = Math.ceil(3600 / cappedEmailsPerHour) * 1000; // Base delay in ms
-    const minVariance = -0.2 * baseDelay; // 20% faster than base delay
-    const maxVariance = 0.3 * baseDelay;  // 30% slower than base delay
-    return baseDelay + Math.random() * (maxVariance - minVariance) + minVariance;
-}
+// function calculateDelay(emailsPerHour) {
+//     const cappedEmailsPerHour = Math.min(emailsPerHour, 90); // Cap at 90 emails/hour for delay calculation
+//     const baseDelay = Math.ceil(3600 / cappedEmailsPerHour) * 1000; // Base delay in ms
+//     const minVariance = -0.2 * baseDelay; // 20% faster than base delay
+//     const maxVariance = 0.3 * baseDelay;  // 30% slower than base delay
+//     return baseDelay + Math.random() * (maxVariance - minVariance) + minVariance;
+// }
 
 app.post('/send-emails', async (req, res) => {
     const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId, UserSubject } = req.body;
@@ -2366,19 +2366,19 @@ setImmediate(async () => {
 
 try {
 
-    const cappedEmailsPerHour = Math.min(generatedData.length, 90); // Capped for safe pacing
+    // const cappedEmailsPerHour = Math.min(generatedData.length, 90); // Capped for safe pacing
     // Example:
-    const emailsPerHour = generatedData.length
-    const startTime = Date.now();
-    let emailsSent = 0;
+    // const emailsPerHour = generatedData.length
+    // const startTime = Date.now();
+    // let emailsSent = 0;
    // ~36 seconds for 100 emails/hour
 
     for (const data of generatedData) {
-        const delay = calculateDelay(cappedEmailsPerHour);
+        // const delay = calculateDelay(cappedEmailsPerHour);
         // console.log(delay)
-        console.log(`Delaying next email by ${Math.round(delay)} ms`);
+        // console.log(`Delaying next email by ${Math.round(delay)} ms`);
 
-        await new Promise(resolve => setTimeout(resolve, delay))
+        // await new Promise(resolve => setTimeout(resolve, delay))
 
         const currentSender = activeMailboxUsers[senderIndex];
         console.log(currentSender)
@@ -2405,16 +2405,16 @@ try {
             // const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
             // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
             senderIndex = (senderIndex + 1) % activeMailboxUsers.length;
-            emailsSent ++;
+            // emailsSent ++;
 
                     // Check if we're exceeding the hourly cap
-        const elapsedTime = Date.now() - startTime;
-        if (emailsSent >= cappedEmailsPerHour && elapsedTime < 3600000) {
-            const waitTime = 3600000 - elapsedTime; // Wait until one hour has passed
-            console.log(`Hourly limit reached. Waiting for ${Math.round(waitTime / 1000)} seconds.`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            emailsSent = 0; // Reset for the next hour
-        }
+        // const elapsedTime = Date.now() - startTime;
+        // if (emailsSent >= cappedEmailsPerHour && elapsedTime < 3600000) {
+        //     const waitTime = 3600000 - elapsedTime; // Wait until one hour has passed
+        //     console.log(`Hourly limit reached. Waiting for ${Math.round(waitTime / 1000)} seconds.`);
+        //     await new Promise(resolve => setTimeout(resolve, waitTime));
+        //     emailsSent = 0; // Reset for the next hour
+        // }
 
         } 
         console.log("completed")
