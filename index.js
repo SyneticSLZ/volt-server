@@ -474,7 +474,7 @@ async function logAnalysisToFile(analysis, fileName) {
 
 
 
-async function summarizeWebsite(email, url, maxRetries = 3, retryDelay = 1000) {
+async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
     
     if (!url) {
     //     if (email === 'Test@gmail.com'){
@@ -542,22 +542,24 @@ async function CreateThread(){
 let subject_line = "";
 let body_content = "";
 
-async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, template, email) {
+async function AddMessageToThread(ThreadID, website_content, user_pitch, To, Me, template) {
     try {
-        if (email ==='Test@gmail.com') {
-            console.log("Message added for pakistani guy");
-            const content = 
-             ` This is the pitch I am going to use: ${user_pitch}.Only mention this pitch, nothing on the Company.You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
-`
-        } else{
-              const  content = `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
-`
-    }
+        // let content = 
+//         if (email ==='Test@gmail.com') {
+//             console.log("Message added for pakistani guy");
+//             const content = 
+//              ` This is the pitch I am going to use: ${user_pitch}.Only mention this pitch, nothing on the Company.You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
+// `
+//         } else{
+//               const  content = `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
+// `
+//     }
     const message = await openai.beta.threads.messages.create(
         ThreadID,
         {
             role: "user",
-            content: content
+            content:  `This is the data I have on the company I'm sending this email to ${website_content}. This is the pitch I am going to use: ${user_pitch}. You should address the reciever of this email with the name ${To}. You should also state that it was sent by me using my name: ${Me}. Generate the subject line then the email please use this template ${template}
+`
         }
     );
 
@@ -2325,8 +2327,7 @@ let generatedData = []
                         userPitch: userPitch, 
                         Uname: Uname,
                         To: sddata.name,
-                    Template : Template,
-                    email: myemail
+                    Template : Template
                 
                 })
                 });
@@ -2615,18 +2616,18 @@ app.post('/send-bulk-manual', async (req, res) => {
 // Route to generate email content
 app.post('/generate-email-content', async (req, res) => {
     console.log("personalizing email", req.body)
-    const { website, userPitch, Uname, To, Template, email} = req.body;
+    const { website, userPitch, Uname, To, Template} = req.body;
     const threadID = await CreateThread();
 console.log("threadid :  ", threadID)
     try {
 
-        const summary = await summarizeWebsite(email, website);
+        const summary = await summarizeWebsite(website);
         // const summary = await extractCompanyInsights(website);
         // const summary = await extractCompanyInsights(data.website);
         console.log('AI-Friendly Summary:', summary);
         console.log("summarized : ", summary)
 
-        const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, Template, email);
+        const emailContent = await AddMessageToThread(threadID, summary, userPitch, To, Uname, Template);
         console.log("returned : ", emailContent)
 
         res.json({ subject_line, body_content, To });
