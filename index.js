@@ -1154,8 +1154,8 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
   <p>${body.replace(/\n/g, '<br>')}</p>
   <p style="margin-top: 20px; font-size: 12px; color: #777;">
-    If you wish to unsubscribe from these emails, please click 
-    <a href="${unsubscribeLink}" style="color: #007BFF;">here</a>.
+    
+    <a href="${unsubscribeLink}" style="color: #007BFF;">unsubscribe</a>.
   </p>
 </div>
 `;
