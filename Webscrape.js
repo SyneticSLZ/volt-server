@@ -18,7 +18,7 @@ class UltimateCompanyIntelligenceScraper {
     constructor(options = {}) {
         this.timeout = options.timeout || 30000;
         this.maxRetries = options.maxRetries || 3;
-        
+        this.browser = null;
         this.tokenizer = new natural.WordTokenizer();
         this.sentimentAnalyzer = new natural.SentimentAnalyzer("English", natural.PorterStemmer, "afinn");
     }
@@ -30,6 +30,21 @@ class UltimateCompanyIntelligenceScraper {
                    .replace(/[\n\r]/g, ' ')
                    .trim();
     }
+    async init() {
+        this.browser = await puppeteer.launch({
+            headless: true, 
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+            args: [
+                '--no-sandbox', 
+                '--disable-setuid-sandbox', 
+                '--disable-web-security'
+            ] 
+        });
+    }
+    async dispose() {
+        await this.browser?.close();
+    }
+
 
     // Improved text extraction with multiple fallback strategies
     extractCompanyDescription($) {
@@ -295,15 +310,6 @@ class UltimateCompanyIntelligenceScraper {
 }
 
 
-const browser = await puppeteer.launch({ 
-    headless: true, 
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-    args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--disable-web-security'
-    ] 
-});
 
 module.exports = UltimateCompanyIntelligenceScraper;
 
