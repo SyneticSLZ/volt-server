@@ -1304,7 +1304,7 @@ sgMail
       console.log("email verified");
     }
 
-    return info;
+    // return info;
   } catch (error) {
     console.error('Error sending test email:', error.message);
     throw new Error('Failed to send test email.');
