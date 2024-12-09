@@ -52,7 +52,9 @@ const openai = new OpenAI({
 
 
 //const ASSISTANT_ID ="asst_GEWAZTa3FphKwL5Whu7SblQE"
-const ASSISTANT_ID ="asst_shvdCBA7snGDSENhmE5iugIm" 
+// const ASSISTANT_ID ="asst_shvdCBA7snGDSENhmE5iugIm" 
+const ASSISTANT_ID ="asst_olg2G5eozjqnUHDVWIctpX2N"
+
 let IsLogged_IN = false;
 
 // Hunter.io API key
@@ -507,6 +509,7 @@ scraper.scrapeCompanyIntelligence(url)
         console.log(JSON.stringify(intelligence, null, 2));
         const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
         console.log(outreachStrategy);
+
         return outreachStrategy
     })
     .catch(console.error);
