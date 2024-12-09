@@ -33,7 +33,7 @@ class UltimateCompanyIntelligenceScraper {
     async init() {
         this.browser = await puppeteer.launch({
             headless: true, 
-            executablePath: '/usr/bin/google-chrome-stable',
+            executablePath: '/opt/render/.cache/puppeteer/chrome/linux-131.0.6778.87/chrome',
             args: [
                 '--no-sandbox', 
                 '--disable-setuid-sandbox', 
