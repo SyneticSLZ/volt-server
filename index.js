@@ -504,53 +504,52 @@ async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
     // Instantiate the scraper
 
 
-scraper.scrapeCompanyIntelligence(url)
-    .then(intelligence => {
-        console.log(JSON.stringify(intelligence, null, 2));
-        const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
-        console.log(outreachStrategy);
+// scraper.scrapeCompanyIntelligence(url)
+//     .then(intelligence => {
+//         console.log(JSON.stringify(intelligence, null, 2));
+//         const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
+//         console.log(outreachStrategy.communicationProfile.keyMessageTopics, outreachStrategy.personalizedOpening, outreachStrategy.connectionPoints, outreachStrategy.potentialChallenges, outreachStrategy.recommendedApproach);
+//         return outreachStrategy
+//     })
+//     .catch(console.error);
 
-        return outreachStrategy
-    })
-    .catch(console.error);
 
-
-    // let attempts = 0;
-    // while (attempts < maxRetries) {
-    //     try {
-    //         // Fetch the website content with a 10-second timeout
-    //         const { data } = await axios.get(url, { timeout: 10000 });
+    let attempts = 0;
+    while (attempts < maxRetries) {
+        try {
+            // Fetch the website content with a 10-second timeout
+            const { data } = await axios.get(url, { timeout: 10000 });
             
-    //         // Parse the HTML content
-    //         const $ = cheerio.load(data);
+            // Parse the HTML content
+            const $ = cheerio.load(data);
 
-    //         // Attempt to extract meta description
-    //         let description = $('meta[name="description"]').attr('content');
+            // Attempt to extract meta description
+            let description = $('meta[name="description"]').attr('content');
             
-    //         if (!description) {
-    //             // Fallback to using headings and first paragraphs if no meta description is present
-    //             const headings = $('h1, h2').map((i, el) => $(el).text()).get();
-    //             const paragraphs = $('p').map((i, el) => $(el).text()).get();
-    //             description = headings.concat(paragraphs).slice(0, 3).join(' ').trim();
-    //         }
+            if (!description) {
+                // Fallback to using headings and first paragraphs if no meta description is present
+                const headings = $('h1, h2').map((i, el) => $(el).text()).get();
+                const paragraphs = $('p').map((i, el) => $(el).text()).get();
+                description = headings.concat(paragraphs).slice(0, 3).join(' ').trim();
+            }
 
-    //         return description;
-    //     } catch (error) {
-    //         attempts++;
-    //         console.error(`Attempt ${attempts} failed: ${error.code} - ${error.message}`);
+            return description;
+        } catch (error) {
+            attempts++;
+            console.error(`Attempt ${attempts} failed: ${error.code} - ${error.message}`);
 
-    //         // Specific handling for network-related errors that may benefit from retrying
-    //         if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
-    //             if (attempts >= maxRetries) {
-    //                 throw new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
-    //             }
-    //             // Exponential backoff delay
-    //             await new Promise(res => setTimeout(res, retryDelay * Math.pow(2, attempts - 1)));
-    //         } else {
-    //             throw new Error('Failed to fetch and summarize the website');
-    //         }
-    //     }
-    // }
+            // Specific handling for network-related errors that may benefit from retrying
+            if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
+                if (attempts >= maxRetries) {
+                    throw new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
+                }
+                // Exponential backoff delay
+                await new Promise(res => setTimeout(res, retryDelay * Math.pow(2, attempts - 1)));
+            } else {
+                throw new Error('Failed to fetch and summarize the website');
+            }
+        }
+    }
 
 
 }
@@ -2445,7 +2444,8 @@ let generatedData = []
     let subjectline = ""
     if (typeof UserSubject === 'string' && UserSubject.trim().length > 0) {
      subjectline = UserSubject
-    console.log("if : ",subjectline)
+     console.log("if : ",subjectline)
+
     }else{
      subjectline = separateSubject(data_new.subject_line).subject
     console.log("else : ", subjectline)
