@@ -486,7 +486,7 @@ async function logAnalysisToFile(analysis, fileName) {
 
 
 
-
+const scraper = new UltimateCompanyIntelligenceScraper();
 async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
     
     if (!url) {
@@ -501,7 +501,7 @@ async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
     }
     // Instantiate the scraper
 
-const scraper = new UltimateCompanyIntelligenceScraper();
+
 scraper.scrapeCompanyIntelligence(url)
     .then(intelligence => {
         console.log(JSON.stringify(intelligence, null, 2));
