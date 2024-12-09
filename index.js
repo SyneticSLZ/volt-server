@@ -497,50 +497,59 @@ async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
     
         throw new Error('URL is required');
 // }
+
     }
+    // Instantiate the scraper
 
-    let attempts = 0;
+const scraper = new UltimateCompanyIntelligenceScraper();
+scraper.scrapeCompanyIntelligence(url)
+    .then(intelligence => {
+        console.log(JSON.stringify(intelligence, null, 2));
+        const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
+        console.log(outreachStrategy);
+        return outreachStrategy
+    })
+    .catch(console.error);
 
-    while (attempts < maxRetries) {
-        try {
-            // Fetch the website content with a 10-second timeout
-            const { data } = await axios.get(url, { timeout: 10000 });
+
+    // let attempts = 0;
+    // while (attempts < maxRetries) {
+    //     try {
+    //         // Fetch the website content with a 10-second timeout
+    //         const { data } = await axios.get(url, { timeout: 10000 });
             
-            // Parse the HTML content
-            const $ = cheerio.load(data);
+    //         // Parse the HTML content
+    //         const $ = cheerio.load(data);
 
-            // Attempt to extract meta description
-            let description = $('meta[name="description"]').attr('content');
+    //         // Attempt to extract meta description
+    //         let description = $('meta[name="description"]').attr('content');
             
-            if (!description) {
-                // Fallback to using headings and first paragraphs if no meta description is present
-                const headings = $('h1, h2').map((i, el) => $(el).text()).get();
-                const paragraphs = $('p').map((i, el) => $(el).text()).get();
-                description = headings.concat(paragraphs).slice(0, 3).join(' ').trim();
-            }
+    //         if (!description) {
+    //             // Fallback to using headings and first paragraphs if no meta description is present
+    //             const headings = $('h1, h2').map((i, el) => $(el).text()).get();
+    //             const paragraphs = $('p').map((i, el) => $(el).text()).get();
+    //             description = headings.concat(paragraphs).slice(0, 3).join(' ').trim();
+    //         }
 
-            return description;
-        } catch (error) {
+    //         return description;
+    //     } catch (error) {
+    //         attempts++;
+    //         console.error(`Attempt ${attempts} failed: ${error.code} - ${error.message}`);
 
-        //     if (email === 'Test@gmail.com'){
-        //         let description = 'no info found, dont mention the website at all, instead just mention the pitch ';
-        //         return  description
-        // }
-            attempts++;
-            console.error(`Attempt ${attempts} failed: ${error.code} - ${error.message}`);
+    //         // Specific handling for network-related errors that may benefit from retrying
+    //         if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
+    //             if (attempts >= maxRetries) {
+    //                 throw new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
+    //             }
+    //             // Exponential backoff delay
+    //             await new Promise(res => setTimeout(res, retryDelay * Math.pow(2, attempts - 1)));
+    //         } else {
+    //             throw new Error('Failed to fetch and summarize the website');
+    //         }
+    //     }
+    // }
 
-            // Specific handling for network-related errors that may benefit from retrying
-            if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
-                if (attempts >= maxRetries) {
-                    throw new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
-                }
-                // Exponential backoff delay
-                await new Promise(res => setTimeout(res, retryDelay * Math.pow(2, attempts - 1)));
-            } else {
-                throw new Error('Failed to fetch and summarize the website');
-            }
-        }
-    }
+
 }
 
 
