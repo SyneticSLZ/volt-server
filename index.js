@@ -26,12 +26,25 @@ const { MongoClient } = require('mongodb');
 const cron = require('node-cron');
 const crypto = require('crypto');
 const moment = require('moment-timezone');
+const sgMail = require('@sendgrid/mail')
+
 const { JSDOM } = require('jsdom');
+
+// const axios = require('axios');
+// const cheerio = require('cheerio');
+// const puppeteer = require('puppeteer');
+const natural = require('natural');
+const { extractKeywords } = require('keyword-extractor');
+
+const EmailTracker = require('./EmailTracker');
+const UltimateCompanyIntelligenceScraper = require('./Webscrape')
+// const { setupLinkedInScraperRoute } = require('./linkedinscraper');
 
 // const M_uri = 'mongodb+srv://syneticslz:<password>@synetictest.bl3xxux.mongodb.net/?retryWrites=true&w=majority&appName=SyneticTest'; // Replace with your MongoDB connection string
 // const M_client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
 app.use(bodyParser.json());
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -49,7 +62,7 @@ const hunter = process.env.HUNTER_API_KEY
 const stripe = require('stripe')(process.env.STRIPE_API_KEY);
 
 
-const YOUR_DOMAIN = 'https://voltmailer.com';
+const YOUR_DOMAIN = [ 'https://voltmailer.com','http://127.0.0.1:5502' ];
 
 const port = process.env.PORT || 3002;
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -63,7 +76,7 @@ let body_c
 app.use(bodyParser.json());
 app.use(express.static('public'));
 app.use(cors({
-    origin: ['http://127.0.0.1:5501', 'https://voltmailer.com'],
+    origin: ['http://127.0.0.1:5502', 'https://voltmailer.com'],
     credentials: true // Allow credentials to be sent
 }));
 
@@ -1139,44 +1152,79 @@ async function sendCampaignSummary(customerId, campaignId) {
 
 
 
+
+
+  const emailTracker = new EmailTracker({
+    imap: {
+      user: process.env.IMAP_USER,
+      password: process.env.IMAP_PASS,
+      host: process.env.IMAP_HOST,
+      port: process.env.IMAP_PORT,
+      tls: true
+    }
+  });
+
+  
 async function sendcampsummaryEmail({ to, email, subject, body, user, pass, service, campaignId }) {
  try {
-   const unsubscribeLink = `https://server.voltmailer.com/unsubscribe?sender=${encodeURIComponent(email)}&to=${encodeURIComponent(to)}`;
-   const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: user,
-          pass: pass, // App password if 2FA is enabled
-        },
-      });
 
-      const htmlTemplate = `
-<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+
+
+//    const unsubscribeLink = `https://server.voltmailer.com/unsubscribe?sender=${encodeURIComponent(email)}&to=${encodeURIComponent(to)}`;
+//    const transporter = nodemailer.createTransport({
+//         service: 'gmail',
+//         auth: {
+//           user: user,
+//           pass: pass, // App password if 2FA is enabled
+//         },
+//       });
+
+//       const htmlTemplate = `
+// <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+//   <p>${body.replace(/\n/g, '<br>')}</p>
+//   <p style="margin-top: 20px; font-size: 12px; color: #777;">
+    
+//     <a href="${unsubscribeLink}" style="color: #007BFF;">unsubscribe</a>.
+//   </p>
+// </div>
+// `;
+    
+//       // Define email options
+//       const mailOptions = {  
+//         from: user,
+//         to: to,
+//         subject: subject,
+//         text: `${body}\n\nTo unsubscribe, visit: ${unsubscribeLink}`,
+//         html: htmlTemplate,
+//         // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
+//         // html: `<p>${body.replace(/\n/g, '<br>')} </p>`,
+//       };
+
+//     const info = await transporter.sendMail(mailOptions)
+//     console.log('Message sent: %s');
+
+
+const msg = {
+  to: to, // Change to your recipient
+  from: user, // Change to your verified sender
+  subject: subject,
+  text: body,
+  html: `
+   <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
   <p>${body.replace(/\n/g, '<br>')}</p>
   <p style="margin-top: 20px; font-size: 12px; color: #777;">
     
-    <a href="${unsubscribeLink}" style="color: #007BFF;">unsubscribe</a>.
   </p>
-</div>
-`;
-    
-      // Define email options
-      const mailOptions = {  
-        from: user,
-        to: to,
-        subject: subject,
-        text: `${body}\n\nTo unsubscribe, visit: ${unsubscribeLink}`,
-        html: htmlTemplate,
-        // html: `<p>Click the link to reset your password: <a href="https://voltmailer.com/reset-password?token=${token}">Reset Password</a></p>`,
-        // html: `<p>${body.replace(/\n/g, '<br>')} </p>`,
-      };
-
-  
-    const info = await transporter.sendMail(mailOptions)
-    console.log('Message sent: %s');
-
-
-
+</div>`,
+}
+sgMail
+  .send(msg)
+  .then(() => {
+    console.log('Email sent')
+  })
+  .catch((error) => {
+    console.error(error)
+  })
 
 
     // Save { to, subject, messageId: info.messageId } in the database
@@ -1212,18 +1260,63 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
                 { email: email },
                 { $set: { total_emails: newTotalEmails } }
             );
-       }else{
-        console.log("email verified")
-       }
 
 
+// Optional: Periodically check for bounces and replies
+    //   try {
+    //     // Check bounces within a reasonable timeframe
+    //     setTimeout(async () => {
+    //       const bounces = await emailTracker.checkBounces();
+    //       const relevantBounces = bounces.filter(
+    //         bounce => bounce.originalMessageId === info.messageId
+    //       );
 
-    
-} catch (error) {
+    //       if (relevantBounces.length > 0) {
+    //         // Update email status or take appropriate action
+    //         await updateEmailStatus(info.messageId, 'bounced');
+    //       }
+    //     }, 5 * 60 * 1000); // Check after 5 minutes
+
+    //     // Check replies
+    //     setTimeout(async () => {
+    //       const replies = await emailTracker.trackReplies(info.trackingId);
+    //       if (replies.length > 0) {
+    //         // Update response count or take action
+    //         await updateResponseCount(info.messageId, replies.length);
+    //       }
+    //     }, 15 * 60 * 1000); // Check after 15 minutes
+    //   } catch (trackingError) {
+    //     console.error('Error in tracking bounces/replies:', trackingError);
+    //   }
+    } else {
+      console.log("email verified");
+    }
+
+    return info;
+  } catch (error) {
     console.error('Error sending test email:', error.message);
     throw new Error('Failed to send test email.');
+  }
 }
-};
+
+
+async function updateEmailStatus(messageId, status) {
+    // Update email status in your database
+    await Email.updateOne(
+      { messageId: messageId },
+      { $set: { status: status } }
+    );
+  }
+  
+  async function updateResponseCount(messageId, count) {
+    // Update response count in your database
+    await Email.updateOne(
+      { messageId: messageId },
+      { $inc: { responseCount: count } }
+    );
+  }
+
+
 
 app.get('/get-unsubscribed-emails', async (req, res) => {
     try {
@@ -3991,16 +4084,382 @@ async function updateDriverFunction(url, newDriverData){
 //     }
 // });
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-    // sendcampsummaryEmail({
-    //     to: 'rohanmehmi72@gmail.com',
-    //     subject: 'Test Email',
-    //     body: 'This is a test email',
-    //     user:  'voltmailerhelp@gmail.com',
-    //     pass: 'chys ltjh yxlo isbu', // App password
-    //     service: 'gmail',
-    //   });
-    // sendcampsummaryEmail("rohanmehmi72@gmail.com", "subject", "body", 'voltmailerhelp@gmail.com', 'chys ltjh yxlo isbu', 'gmail' )
+
+
+// async function CreateThread(){
+//     const thread = await openai.beta.threads.create();
+//     console.log("thread created", thread.id);
+//     return thread.id
+// }
+
+let subject_linkedin = "";
+let body_linkedin = "";
+
+let url_linkedin
+let cookie
+let UserAgent
+
+
+function extractEmailContent(emailText) {
+    // Try to split by known markers first
+    const subjectMarkers = ['Subject Line:', 'Subject:', '**Subject Line**:', '**Subject:**'];
+    const messageMarkers = ['Message:', 'Message Body:', '**Message:**', '**Message Body:**'];
+    
+    // Find the subject
+    const subjectMatch = subjectMarkers.reduce((found, marker) => 
+        found || emailText.split(marker)[1], null);
+    
+    // Find the message body
+    const messageMatch = messageMarkers.reduce((found, marker) => 
+        found || emailText.split(marker)[1], null);
+    
+    // Clean up subject
+    const subject = subjectMatch 
+        ? subjectMatch.split('"')[1] || subjectMatch.trim()
+        : '';
+    
+    // Clean up body
+    const body = messageMatch 
+        ? messageMatch.replace(/"/g, '').trim()
+        : '';
+    
+      return  { subject, body };
+    }
+
+// app.post('/linkedin/personalise', async (req, res) => {
+//     const { url, cookie, userAgent, data, pitch } = req.body;
+
+//     console.log(url, cookie, userAgent, data, pitch)
+    
+//     const{ subject_linkedin , body_linkedin } =  await linkedinpersonalise(url, cookie, userAgent, data, pitch)
+
+//     await SendLinkedInMessage({
+//         url: url,
+//         cookie: cookie,
+//         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+//         message: body_linkedin,
+//         subject: subject_linkedin
+//       });
+
+// });
+
+let data = []
+
+app.post('/linkedin/personalise', async (req, res) => {
+    try {
+        // Validate input
+        const { url, cookie, userAgent, data, pitch } = req.body;
+
+        // Check for required fields
+        if (!url || !cookie || !userAgent || !data || !pitch) {
+            return res.status(400).json({
+                error: 'Missing required fields',
+                details: {
+                    url: !!url,
+                    cookie: !!cookie,
+                    userAgent: !!userAgent,
+                    data: !!data,
+                    pitch: !!pitch
+                }
+            });
+        }
+
+        // Log incoming request (consider removing sensitive info in production)
+        console.log('Received LinkedIn personalization request', { 
+            url: url.substring(0, 50) + '...', 
+            dataLength: data.length 
+        });
+
+        // Attempt personalization
+        await linkedinpersonalise(url, cookie, userAgent, data, pitch);
+
+        // } catch (personaliseError) {
+        //     console.error('Personalization failed:', personaliseError);
+        //     return res.status(500).json({
+        //         error: 'Personalization process failed',
+        //         message: personaliseError.message
+        //     });
+        // }
+
+        // Destructure result with default fallback
+        // const { 
+        //     subject_linkedin = 'Default LinkedIn Message', 
+        //     body_linkedin = 'No personalized message generated' 
+        // } = linkedinPersonaliseResult || {};
+
+        // Attempt to send LinkedIn message
+
+        // Success response
+        res.status(200).json({
+            status: 'success',
+            message: 'LinkedIn message personalized and sent',
+            details: {
+                subjectLength: subject_linkedin.length,
+                bodyLength: body_linkedin.length
+            }
+        });
+
+    } catch (globalError) {
+        // Catch any unexpected errors
+        console.error('Unexpected error in LinkedIn personalization:', globalError);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: 'An unexpected error occurred during LinkedIn personalization'
+        });
+    }
 });
 
+// Optional: Add error handling middleware for unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Optional: You might want to send an alert or log to a monitoring service
+});
+
+async function linkedinpersonalise(url, cookie, userAgent, data, pitch){
+
+ThreadID = await CreateThread()
+try {
+const message = await openai.beta.threads.messages.create(
+    ThreadID,
+    {
+        role: "user",
+        content:  `using this data  :  ${data} can you please create me a personalised linkedin profile using data from these fields  in this file . This is the pitch I am going to use: ${pitch}.  Generate the subject line then the body of the message please as you would as you are a professional lead generation and cold outreach specialist.
+`
+    }
+);
+    console.log("Message added");
+    let run = await openai.beta.threads.runs.createAndPoll(
+        ThreadID,
+        {
+            assistant_id: 'asst_URUrBKJEYZhACXb6YNmZ4xj3',
+            instructions: ""
+        }
+    );
+    console.log("Run created");
+    let timeElapsed = 0;
+    const timeout = 140; // Timeout duration in seconds
+    const interval = 5; // Interval duration in seconds
+
+    const checkRunStatus = async () => {
+        while (timeElapsed < timeout) {
+            try {
+                run = await openai.beta.threads.runs.retrieve(ThreadID, run.id);
+            } catch (error) {
+                console.error('Error retrieving run status:', error);
+                break;
+            }
+            if (run.status === 'completed') {
+                console.log("completed")
+                const messages = await openai.beta.threads.messages.list(
+                    run.thread_id
+                );
+                    const content = messages.data[0].content[0].text.value
+                    console.log(content)
+                    originalMessage = content
+                    const subjectMatch = originalMessage.match(/Subject Line: "(.*?)"/);
+                    const messageMatch = originalMessage.match(/Message:\s*"([\s\S]*?)"$/);
+                    
+                    const subjectLine = subjectMatch ? subjectMatch[1] : "No subject found";
+                    const body = messageMatch ? messageMatch[1] : "No body found";
+                    
+                    // data.push[{
+                    //     body: body, subject:subjectLine
+                    // }]
+                    // console.log(data)
+                    await SendLinkedInMessage({
+                        url: url,
+                        cookie: cookie,
+                        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                        message: body,
+                        subject: subjectLine
+                    });
+                    // const { subject_linkedin, body_linkedin } = extractEmailContent(content);
+
+                //    const { subject, body } = extractEmailContent(content)
+                    // const lines = content.split('\n');
+                    // subject_linkedin = lines[0];
+                    // body_linkedin = lines.slice(1).join('\n');
+
+                    // console.log(url, cookie, userAgent, body_linkedin, subject_linkedin)
+
+
+                    // res.json({ body: body_linkedin, subject : subject_linkedin });
+                    return { body , subjectLine }
+                    // break
+
+            } else {
+                console.log("status: ", run.status);
+                console.log(`vc ${timeElapsed} seconds`);
+                timeElapsed += interval;
+                await new Promise(resolve => setTimeout(resolve, interval * 1000)); // Wait for the interval duration
+            }
+        }
+        console.log('Timeout reached');
+        return {body: null, subjecLine: null};
+    };
+    await checkRunStatus();
+} catch (error) {
+    console.error('Error:', error);
+    return {body: null, subjecLine: null};
+}
+}
+
+async function SendLinkedInMessage({ url, cookie, userAgent, message, subject }) {
+    console.log(url, cookie, userAgent, body_linkedin, subject_linkedin)
+    const options = {
+        headers: {
+            "x-phantombuster-key": process.env.PHANTOMBUSTER_API_KEY,
+            "Content-Type": "application/json",
+        },
+    }
+    
+    axios
+        .post(
+            "https://api.phantombuster.com/api/v2/agents/launch",
+            {
+            "id":"3591875049244378",
+            "argument":{
+                "numberOfProfilesPerLaunch":7,
+                "spreadsheetUrl":`${url}`,
+                "spreadsheetUrlExclusionList":[],
+                "sessionCookie":`${cookie}`,
+                "userAgent":`${userAgent}`,
+                "message":`${message}`,
+                "sendInMail":true,
+                "inMailSubject":`${subject}` }
+            },
+            options,
+        )
+        .then((res) => console.log(res.body))
+        .catch((error) => console.error("Something went wrong :(", error))
+}
+
+
+
+
+
+app.listen(port, async () => {
+    console.log(`Server is running on port ${port}`);
+
+
+
+
+// const msg = {
+//   to: 'syneticslz@gmail.com', // Change to your recipient
+//   from: 'rohanmehmi72@gmail.com', // Change to your verified sender
+//   subject: 'Sending with SendGrid is Fun',
+//   text: 'and easy to do anywhere, even with Node.js',
+//   html: '<strong>and easy to do anywhere, even with Node.js</strong>',
+// }
+// sgMail
+//   .send(msg)
+//   .then(() => {
+//     console.log('Email sent')
+//   })
+//   .catch((error) => {
+//     console.error(error)
+//   })
+
+
+    // Client-side or Postman
+// console.log(await customlinkedinscrape())
+// runScraper();
+// async function main() {
+//     try {
+//         const scrapedData = await runScraper();
+//         console.log(scrapedData);
+//     } catch (error) {
+//         console.error('Error:', error);
+//     }
+// // }
+
+
+
+// const axios = require("axios")
+
+// const options = {
+// 	headers: {
+// 		"x-phantombuster-key": process.env.PHANTOMBUSTER_API_KEY,
+// 		"Content-Type": "application/json",
+// 	},
+// }
+
+// axios
+// 	.post(
+// 		"https://api.phantombuster.com/api/v2/agents/launch",
+// 		{
+//         "id":"3591875049244378",
+//         "argument":{
+//             "numberOfProfilesPerLaunch":7,
+//             "spreadsheetUrl":"https://www.linkedin.com/sales/lead/ACwAAACcvj0BgAW9RF57mBJF2cGU36Dohf8UEu0,NAME_SEARCH,ztro",
+//             "spreadsheetUrlExclusionList":[],
+//             "sessionCookie":"AQEFAREBAAAAABLde_IAAAGToq54SgAAAZPGu0B9TgAAtHVybjpsaTplbnRlcnByaXNlQXV0aFRva2VuOmVKeGpaQUFDb1RseVdpQmFzRXVXR1VRTGZNNndZUVF4WXZsV3Q0RVpVZFk2SnhnWUFYelJCb0k9XnVybjpsaTplbnRlcnByaXNlUHJvZmlsZToodXJuOmxpOmVudGVycHJpc2VBY2NvdW50OjMxMjIyMTIyNiwyOTQyNjQwNjcpXnVybjpsaTptZW1iZXI6MTA4ODE1Mzc5NEcWa-KKPWlOAy-B07wNP1cJj5ddp7uBvhr0nGFj2nLK-Qw-ygDPBn4amQU_BZSjelh_Ft9ycImsFm3bYtz0C3AF6OuFbkA5EASSchVM5l5OCZpMDyX7FIg9S0AAi3jU2BzTuxArMn2RyQwpoiXHKOHhIwZ_vbHbcVnufLFb3SlXFndiNo3uJQaq-1o1e1sQzXWUIys",
+//             "userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+//             "message":"Hey #firstName#, \n\nThe reason I'm reaching out to you is because I believe I can help your business rank on Google's first page and turn more of your website visitors into customers.\n\nI work with a Canadian firm that has 20+ years of experience in crafting SEO content that ranks and converts, they even have 80% of their clients come from referrals. \n\nLet me know if your interested in boosting your websites visibility so you can get more inbound sales.\n\nThanks for your time,",
+//             "sendInMail":true,
+//             "inMailSubject":"Quick Question?" }
+//         },
+// 		options,
+// 	)
+// 	.then((res) => console.log(res.body))
+// 	.catch((error) => console.error("Something went wrong :(", error))
+
+    // Instantiate the scraper
+
+// const scraper = new UltimateCompanyIntelligenceScraper();
+// scraper.scrapeCompanyIntelligence('https://www.voltmailer.com/')
+//     .then(intelligence => {
+//         console.log(JSON.stringify(intelligence, null, 2));
+//         const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
+//         console.log(outreachStrategy);
+//     })
+//     .catch(console.error);
+
+
+
+    //   try {
+    //     // Send a tracked email using the wrapped function
+    //     await   sendcampsummaryEmail({
+    //         to: 'rohanmehmi72@gmail.com',
+    //         subject: 'Test Email',
+    //         body: 'This is a test email',
+    //         user:  user,
+    //         pass: pass, // App password
+    //         service: 'gmail',
+    //       });
+    
+    //     console.log('Sent Email Tracking ID:', sentEmail.trackingId);
+    
+    //     // Check for bounces
+    //     const bounces = await tracker.checkBounces();
+    //     console.log('Bounced Emails:', bounces);
+    
+    //     // Track replies for a specific tracking ID
+    //     const replies = await tracker.trackReplies(sentEmail.trackingId);
+    //     console.log('Email Replies:', replies);
+    //   } catch (error) {
+    //     console.error('Tracking Error:', error);
+    //   }
+
+
+// Bulk scrape multiple URLs
+// const urls = [
+//     'https://site1.com', 
+//     'https://site2.com', 
+//     'https://site3.com'
+// ];
+
+// scraper.scrapeBulk(urls)
+//     .then(results => console.log(results))
+//     .catch(error => console.error(error));
+
+    // Optional: Use the scraped data (e.g., send an email summary)
+    // sendcampsummaryEmail({
+    //   to: 'rohanmehmi72@gmail.com',
+    //   subject: 'Scraped Data Summary',
+    //   body: JSON.stringify(scrapedData, null, 2),
+    //   user: 'voltmailerhelp@gmail.com',
+    //   pass: 'chys ltjh yxlo isbu', // App password
+    //   service: 'gmail',
+    // });
+});
