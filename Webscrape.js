@@ -13,6 +13,8 @@ const compromise = require('compromise');
 
 
 class UltimateCompanyIntelligenceScraper {
+
+    
     constructor(options = {}) {
         this.timeout = options.timeout || 30000;
         this.maxRetries = options.maxRetries || 3;
@@ -291,6 +293,17 @@ class UltimateCompanyIntelligenceScraper {
         return outreachStrategy;
     }
 }
+
+
+const browser = await puppeteer.launch({ 
+    headless: true, 
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+    args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-web-security'
+    ] 
+});
 
 module.exports = UltimateCompanyIntelligenceScraper;
 
