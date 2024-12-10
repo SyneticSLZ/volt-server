@@ -168,13 +168,19 @@ class UltimateCompanyIntelligenceScraper {
         };
 
         try {
+            console.log('Puppeteer launch environment:', {
+                NODE_ENV: process.env.NODE_ENV,
+                PUPPETEER_EXECUTABLE_PATH: process.env.PUPPETEER_EXECUTABLE_PATH,
+                DefaultExecutablePath: puppeteer.executablePath()
+            });
+
             const browser = await puppeteer.launch({ 
                 executablePath: process.env.NODE_ENV === "production" ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
-                headless: true, 
                 args: [
                     '--no-sandbox', 
                     '--disable-setuid-sandbox', 
-                    '--disable-web-security',
+                    '--single-process',
+                    '--no-zygote',
                 ] 
             });
             const page = await browser.newPage();
