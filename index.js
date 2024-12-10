@@ -4426,14 +4426,16 @@ app.listen(port, async () => {
 
     // Instantiate the scraper
 
-// const scraper = new UltimateCompanyIntelligenceScraper();
-// scraper.scrapeCompanyIntelligence('https://www.voltmailer.com/')
-//     .then(intelligence => {
-//         console.log(JSON.stringify(intelligence, null, 2));
-//         const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
-//         console.log(outreachStrategy);
-//     })
-//     .catch(console.error);
+const scraper = new UltimateCompanyIntelligenceScraper();
+console.log("sscraper")
+scraper.scrapeCompanyIntelligence('https://www.voltmailer.com/')
+    .then(intelligence => {
+        
+        console.log(JSON.stringify(intelligence, null, 2));
+        const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
+        console.log(outreachStrategy);
+    })
+    .catch(console.error);
 
 
 
