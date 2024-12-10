@@ -4,10 +4,6 @@ const { parse } = require('url');
 const crypto = require('crypto');
 const { Configuration, OpenAI } = require('openai');
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-
 class AdvancedCompanyIntelligenceScraper {
     constructor(options = {}) {
         // Comprehensive configuration for intelligent scraping
@@ -83,6 +79,94 @@ class AdvancedCompanyIntelligenceScraper {
             .trim();
     }
 
+    // Enhanced description extraction method
+    _extractCompanyDescription($) {
+        const descriptionSelectors = [
+            // Meta tags (highest priority)
+            'meta[property="og:description"]',
+            'meta[name="description"]',
+            
+            // Specific data attributes and IDs
+            '[data-testid="company-description"]',
+            '[data-description]',
+            '#company-description',
+            '.company-description',
+            '[class*="description"]',
+            '[id*="description"]',
+            
+            // About sections with various classes and IDs
+            'section.about-us p',
+            'section.about p',
+            '#about-us p',
+            '#about p',
+            '.about-section p',
+            '.about-us p',
+            '.about p',
+            
+            // Semantic HTML sections
+            'section.company-overview p',
+            'section.overview p',
+            '#overview p',
+            '.overview p',
+            
+            // Specialized sections
+            '[class*="mission-statement"]',
+            '[class*="company-mission"]',
+            '#mission p',
+            '.mission p',
+            
+            // Fallback content selectors
+            'main p',
+            'article p',
+            '.content p',
+            '#content p',
+            
+            // Last resort text-based selectors
+            'body p',
+            'div p'
+        ];
+
+        // Function to evaluate description quality
+        const isValidDescription = (description) => {
+            // Check for meaningful description
+            const trimmedDesc = description.trim();
+            return trimmedDesc.length > 50 && 
+                   trimmedDesc.length <= 1000 && 
+                   !trimmedDesc.toLowerCase().includes('javascript is disabled') &&
+                   !trimmedDesc.toLowerCase().includes('enable javascript');
+        };
+
+        // Try each selector in order
+        for (const selector of descriptionSelectors) {
+            const elements = $(selector);
+            
+            // If multiple elements, concatenate their text
+            let description = '';
+            elements.each((i, elem) => {
+                const text = $(elem).text().trim();
+                if (text) description += text + ' ';
+            });
+
+            // Clean and validate description
+            if (isValidDescription(description)) {
+                return this._cleanText(description).substring(0, 1000);
+            }
+        }
+
+        // Fallback to manual text extraction if no good description found
+        let fallbackDescription = '';
+        $('p').each((i, elem) => {
+            const text = $(elem).text().trim();
+            if (text.length > 50 && fallbackDescription.length < 1000) {
+                fallbackDescription += text + ' ';
+            }
+        });
+
+        return fallbackDescription 
+            ? this._cleanText(fallbackDescription).substring(0, 1000)
+            : "Company description not available.";
+    }
+
     // Multi-source company information gathering
     async scrapeCompanyIntelligence(url) {
         const companyIntel = {
@@ -134,14 +218,13 @@ class AdvancedCompanyIntelligenceScraper {
             companyIntel.keyPeople = keyPeople;
             companyIntel.digitalFootprint.socialLinks = socialLinks;
 
-            // Industry and additional insights
+            // Industry detection
             companyIntel.companyCharacteristics.industry = await this._detectIndustry(description);
 
-            // Optional AI and API-based enhancements
+            // Optional API-based enhancements
             await Promise.all([
                 this._enhanceWithClearbit(companyIntel),
-                this._enhanceWithApollo(companyIntel),
-                this._generateAIInsights(companyIntel)
+                this._enhanceWithApollo(companyIntel)
             ]);
 
             return companyIntel;
@@ -171,33 +254,6 @@ class AdvancedCompanyIntelligenceScraper {
                 await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
             }
         }
-    }
-
-    // Advanced description extraction
-    _extractCompanyDescription($) {
-        const descriptionSelectors = [
-            'meta[property="og:description"]',
-            'meta[name="description"]',
-            '[data-testid="company-description"]',
-            '#company-description',
-            '.company-description',
-            'section.about-us p',
-            '#about-us p',
-            '.about-section p',
-            'main p',
-            'body p'
-        ];
-
-        for (const selector of descriptionSelectors) {
-            const element = $(selector);
-            const description = element.attr('content') || element.text();
-            
-            if (description && description.trim().length > 50) {
-                return this._cleanText(description).substring(0, 500);
-            }
-        }
-
-        return "Company description not available.";
     }
 
     // Key people extraction strategy
@@ -306,42 +362,9 @@ class AdvancedCompanyIntelligenceScraper {
             console.warn('Apollo enhancement failed', error);
         }
     }
-
-    // AI-powered personalization insights
-    async _generateAIInsights(companyIntel) {
-        if (!this.config.apiKeys.openai) return;
-
-        try {
-            const openai = new OpenAI({ apiKey: this.config.apiKeys.openai });
-            const response = await openai.chat.completions.create({
-                model: "gpt-3.5-turbo",
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are an expert at extracting personalization insights for cold emails from company descriptions."
-                    },
-                    {
-                        role: "user",
-                        content: `Analyze this company profile:
-                        Description: ${companyIntel.basicInfo.description}
-                        Industry: ${companyIntel.companyCharacteristics.industry}
-please just provide a summary of this website and its services`
-                    }
-                ],
-                max_tokens: 300
-            });
-
-            companyIntel.additionalInsights.aiPersonalization = 
-                response.choices[0].message.content.trim();
-        } catch (error) {
-            console.warn('AI personalization insights generation failed', error);
-        }
-    }
 }
 
 module.exports = AdvancedCompanyIntelligenceScraper;
-
-
 
 // // Activation code to run the script
 // if (require.main === module) {

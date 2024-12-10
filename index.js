@@ -437,8 +437,8 @@ async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
 
 try {
     const companyIntel = await scraper.scrapeCompanyIntelligence(url);
-    console.log(JSON.stringify(companyIntel.additionalInsights.aiPersonalization, null, 2));
-    let description = companyIntel.additionalInsights.aiPersonalization
+    console.log(JSON.stringify(companyIntel, null, 2));
+    let description = `${companyIntel.basicInfo.description} plus industry : ${companyIntel.companyCharacteristics.industry}`
     return description
 } catch (error) {
     console.error('Scraping failed:', error);
@@ -4424,7 +4424,7 @@ app.listen(port, async () => {
     //   } catch (error) {
     //     console.error('Tracking Error:', error);
     //   }
-
+    // await summarizeWebsite('https://www.voltmailer.com')
 
 // Bulk scrape multiple URLs
 // const urls = [
