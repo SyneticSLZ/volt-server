@@ -18,7 +18,7 @@ const puppeteer = require('puppeteer');
 const url = require('url');
 const nlp = require('compromise');
 // const fetch = require('node-fetch');
-const fs = require('fs');
+// const fs = require('fs');
 // const fs = require('fs').promises;
 const path = require('path');
 const Hunter = require('hunter.io');
@@ -30,6 +30,10 @@ const sgMail = require('@sendgrid/mail')
 
 const { JSDOM } = require('jsdom');
 
+const fs = require('fs').promises;
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Replace with your OpenAI API Key
+
 // const axios = require('axios');
 // const cheerio = require('cheerio');
 // const puppeteer = require('puppeteer');
@@ -38,6 +42,7 @@ const { extractKeywords } = require('keyword-extractor');
 
 const EmailTracker = require('./EmailTracker');
 const AdvancedCompanyIntelligenceScraper = require('./Webscrape')
+const AdvancedCompanyProfileScraper = require('./profile')
 // const { setupLinkedInScraperRoute } = require('./linkedinscraper');
 
 // const M_uri = 'mongodb+srv://syneticslz:<password>@synetictest.bl3xxux.mongodb.net/?retryWrites=true&w=majority&appName=SyneticTest'; // Replace with your MongoDB connection string
@@ -201,6 +206,9 @@ async function summarsizeWebsite(url) {
 
 
 
+
+
+
 async function extractCompanyInsights(url, maxRetries = 3, retryDelay = 1000) {
     if (!url) {
         throw new Error('URL is required');
@@ -209,15 +217,21 @@ async function extractCompanyInsights(url, maxRetries = 3, retryDelay = 1000) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const domain = new URL(url).hostname;
     const logFileName = `company_analysis_${domain}_${timestamp}.json`;
-    
+
     let attempts = 0;
 
     while (attempts < maxRetries) {
         try {
+            // Validate the URL with a HEAD request
+            const headResponse = await axios.head(url, { timeout: 5000 });
+            if (headResponse.status !== 200) {
+                throw new Error(`HEAD request failed with status code ${headResponse.status}`);
+            }
+
             const { data } = await axios.get(url, { timeout: 10000 });
             const $ = cheerio.load(data);
 
-            // Initialize comprehensive company analysis object
+            // Initialize company analysis object
             const companyAnalysis = {
                 basicInfo: {
                     description: '',
@@ -248,44 +262,12 @@ async function extractCompanyInsights(url, maxRetries = 3, retryDelay = 1000) {
                 }
             };
 
-            // Helper functions
-            const cleanText = (text) => {
-                return text.replace(/\s+/g, ' ')
-                    .replace(/[\n\r\t]/g, ' ')
-                    .trim();
-            };
+            const cleanText = (text) =>
+                text.replace(/\s+/g, ' ').replace(/[\n\r\t]/g, ' ').trim();
 
-            const extractKeywordsFromText = (text) => {
-                const techKeywords = [
-                    'API', 'cloud', 'AI', 'automation', 'platform', 'software',
-                    'integration', 'analytics', 'data', 'mobile', 'web', 'IoT',
-                    'blockchain', 'security', 'infrastructure'
-                ];
-
-                const industryKeywords = [
-                    'healthcare', 'finance', 'retail', 'education', 'manufacturing',
-                    'technology', 'enterprise', 'SMB', 'startup', 'government'
-                ];
-
-                return {
-                    tech: techKeywords.filter(keyword => 
-                        text.toLowerCase().includes(keyword.toLowerCase())
-                    ),
-                    industry: industryKeywords.filter(keyword =>
-                        text.toLowerCase().includes(keyword.toLowerCase())
-                    )
-                };
-            };
-
-            // Extract main content
             $('[class*="about"], [class*="company"], [class*="mission"], main').each((_, element) => {
                 const section = $(element);
                 const sectionText = section.text();
-                const keywords = extractKeywordsFromText(sectionText);
-                
-                companyAnalysis.opportunities.techStack.push(...keywords.tech);
-                companyAnalysis.marketPresence.industries.push(...keywords.industry);
-
                 section.find('h1, h2, h3, h4').each((_, heading) => {
                     const headingText = $(heading).text().toLowerCase();
                     const contentText = cleanText($(heading).next().text());
@@ -304,182 +286,108 @@ async function extractCompanyInsights(url, maxRetries = 3, retryDelay = 1000) {
                 });
             });
 
-            // Extract contact information
             $('[class*="contact"], [class*="footer"]').each((_, element) => {
                 const contactText = $(element).text();
                 const emails = contactText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
                 const phones = contactText.match(/[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}/g) || [];
-                
-                companyAnalysis.opportunities.contactChannels.push(
-                    ...emails,
-                    ...phones
-                );
+                companyAnalysis.opportunities.contactChannels.push(...emails, ...phones);
             });
 
-            // Clean up data
-            Object.keys(companyAnalysis).forEach(category => {
-                Object.keys(companyAnalysis[category]).forEach(key => {
+            Object.keys(companyAnalysis).forEach((category) => {
+                Object.keys(companyAnalysis[category]).forEach((key) => {
                     if (typeof companyAnalysis[category][key] === 'string') {
                         companyAnalysis[category][key] = cleanText(companyAnalysis[category][key]);
                     } else if (Array.isArray(companyAnalysis[category][key])) {
                         companyAnalysis[category][key] = [...new Set(
                             companyAnalysis[category][key]
-                                .filter(item => item && item.length > 0)
-                                .map(item => cleanText(item))
+                                .filter((item) => item && item.length > 0)
+                                .map((item) => cleanText(item))
                         )];
                     }
                 });
             });
 
-            // Generate AI-friendly summary
-            const aiSummary = {
-                company_url: url,
-                analysis_date: new Date().toISOString(),
-                key_points: {
-                    business_core: summarizeBusinessCore(companyAnalysis),
-                    opportunities: summarizeOpportunities(companyAnalysis),
-                    tech_stack: companyAnalysis.opportunities.techStack.slice(0, 5),
-                    main_challenges: companyAnalysis.businessModel.painPoints.slice(0, 3),
-                    potential_collaboration: identifyTopCollaborationAreas(companyAnalysis)
-                },
-                contact_info: summarizeContactInfo(companyAnalysis)
-            };
+            // Integrate AI for summary generation
+            const aiSummary = await generateAISummary(url, companyAnalysis);
 
-            // Log detailed analysis to file
+            // Log analysis to file
             await logAnalysisToFile(companyAnalysis, logFileName);
 
-            // Return concise summary
-            return aiSummary;
+            // Return summary
+            return { summary: "Analysis complete", analysis: companyAnalysis };
 
         } catch (error) {
             attempts++;
-            console.error(`Attempt ${attempts} failed: ${error.code} - ${error.message}`);
+            console.error(`Attempt ${attempts} failed: ${error.message}`);
 
-            if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
-                if (attempts >= maxRetries) {
-                    throw new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
-                }
-                await new Promise(res => setTimeout(res, retryDelay * Math.pow(2, attempts - 1)));
-            } else {
-                throw new Error(`Failed to analyze the website: ${error.message}`);
+            if (error.response?.status === 404) {
+                throw new Error(`404 Not Found: The URL ${url} does not exist`);
             }
+
+            if (attempts >= maxRetries) {
+                throw new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
+            }
+
+            // Exponential backoff for retries
+            await new Promise(res => setTimeout(res, retryDelay * Math.pow(2, attempts - 1)));
         }
     }
 }
 
-// Helper functions remain the same as in the previous version
-function summarizeBusinessCore(analysis) {
-    const core = {
-        description: truncateText(analysis.basicInfo.description, 150),
-        main_offering: identifyMainOffering(analysis),
-        target_market: analysis.businessModel.targetMarket.slice(0, 2),
-        industry_focus: analysis.marketPresence.industries.slice(0, 3)
-    };
 
-    return removeEmptyValues(core);
-}
+async function generateAISummary(url, companyAnalysis) {
+    const prompt = `
+Analyze the following company data and summarize key points:
+Company URL: ${url}
 
-function summarizeOpportunities(analysis) {
-    // Create a default opportunities array if potentialOpportunities is undefined
-    const opportunities = analysis.potentialOpportunities || [];
-    return opportunities
-        .slice(0, 3)
-        .map(opp => ({
-            area: opp.area,
-            summary: truncateText(opp.opportunities, 100)
-        }));
-}
+Basic Info:
+Description: ${companyAnalysis.basicInfo.description}
+Mission: ${companyAnalysis.basicInfo.mission}
+Vision: ${companyAnalysis.basicInfo.vision}
+About: ${companyAnalysis.basicInfo.about}
 
-function identifyTopCollaborationAreas(analysis) {
-    const areas = [];
+Business Model:
+Products: ${companyAnalysis.businessModel.products.join(', ')}
+Services: ${companyAnalysis.businessModel.services.join(', ')}
+Pain Points: ${companyAnalysis.businessModel.painPoints.join(', ')}
 
-    if (analysis.opportunities.techStack.length > 0) {
-        areas.push({
-            type: 'technology',
-            details: analysis.opportunities.techStack.slice(0, 3)
-        });
-    }
+Opportunities:
+Tech Stack: ${companyAnalysis.opportunities.techStack.join(', ')}
+Contact Channels: ${companyAnalysis.opportunities.contactChannels.join(', ')}
 
-    if (analysis.opportunities.collaborationAreas.length > 0) {
-        areas.push({
-            type: 'business',
-            details: analysis.opportunities.collaborationAreas
-                .slice(0, 2)
-                .map(area => truncateText(area, 80))
-        });
-    }
+Market Presence:
+Industries: ${companyAnalysis.marketPresence.industries.join(', ')}
 
-    if (analysis.businessModel.painPoints.length > 0) {
-        areas.push({
-            type: 'solution',
-            details: analysis.businessModel.painPoints
-                .slice(0, 2)
-                .map(point => truncateText(point, 80))
-        });
-    }
+Provide a concise analysis with key insights.
+`;
 
-    return areas.slice(0, 3);
-}
-
-function summarizeContactInfo(analysis) {
-    const contacts = analysis.opportunities.contactChannels;
-    return {
-        email: contacts.find(c => c.includes('@')),
-        social: contacts.filter(c => c.includes('linkedin.com') || c.includes('twitter.com')).slice(0, 2),
-        location: analysis.marketPresence.locations[0]
-    };
-}
-
-function identifyMainOffering(analysis) {
-    const products = analysis.businessModel.products;
-    const services = analysis.businessModel.services;
-    
-    if (products.length > 0) {
-        return {
-            type: 'product',
-            offerings: products.slice(0, 2).map(p => truncateText(p, 80))
-        };
-    } else if (services.length > 0) {
-        return {
-            type: 'service',
-            offerings: services.slice(0, 2).map(s => truncateText(s, 80))
-        };
-    }
-    
-    return null;
-}
-
-function truncateText(text, maxLength) {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substr(0, maxLength - 3) + '...';
-}
-
-function removeEmptyValues(obj) {
-    return Object.fromEntries(
-        Object.entries(obj)
-            .filter(([_, value]) => {
-                if (Array.isArray(value)) return value.length > 0;
-                if (typeof value === 'object' && value !== null) {
-                    return Object.keys(removeEmptyValues(value)).length > 0;
-                }
-                return value !== null && value !== undefined && value !== '';
-            })
+    const response = await axios.post(
+        'https://api.openai.com/v1/completions',
+        {
+            model: 'gpt-4',
+            prompt,
+            max_tokens: 500,
+            temperature: 0.7
+        },
+        {
+            headers: {
+                'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        }
     );
+
+    return response.data.choices[0].text.trim();
 }
 
 async function logAnalysisToFile(analysis, fileName) {
     try {
         const logsDir = path.join(process.cwd(), 'company_analysis_logs');
         await fs.mkdir(logsDir, { recursive: true });
-        
+
         const filePath = path.join(logsDir, fileName);
-        await fs.writeFile(
-            filePath,
-            JSON.stringify(analysis, null, 2),
-            'utf8'
-        );
-        
+        await fs.writeFile(filePath, JSON.stringify(analysis, null, 2), 'utf8');
+
         console.log(`Detailed analysis logged to: ${filePath}`);
     } catch (error) {
         console.error('Error logging analysis:', error);
@@ -1139,7 +1047,7 @@ async function sendCampaignSummary(customerId, campaignId) {
   const overallMetrics = await calculateCustomerMetrics(customerId);
 
   const emailBody = `
-    Campaign Summary:
+    Campaign ary:
     - Campaign Name: ${campaign.campaignName}
     - Total Emails Sent: ${campaignMetrics.totalEmails}
     - Bounce Rate: ${campaignMetrics.bounceRate}%
@@ -4441,18 +4349,49 @@ app.listen(port, async () => {
 
     // Instantiate the scraper
 
-// const scraper = new UltimateCompanyIntelligenceScraper();
-// console.log("sscraper")
-// scraper.scrapeCompanyIntelligence('https://www.voltmailer.com/')
-//     .then(intelligence => {
-
-//         console.log(JSON.stringify(intelligence, null, 2));
-//         const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
-//         console.log(outreachStrategy);
-//     })
-//     .catch(console.error);
+    // (async () => {
+    //     const scraper = new AdvancedCompanyIntelligenceScraper();
+    //     const data = await scraper.scrape("https://www.voltmailer.com/");
+    //     console.log(data);
+    //   })();
 
 
+      // Example usage
+
+    const scraper = new AdvancedCompanyIntelligenceScraper({
+        // Optional API keys for enhanced data gathering
+        openaiApiKey: process.env.OPENAI_API_KEY,
+        clearbitApiKey: process.env.CLEARBIT_API_KEY,
+        apolloApiKey: process.env.APOLLO_API_KEY,
+        
+        // Optional proxy configuration
+        // proxies: [
+        //     { 
+        //         host: 'proxy1.example.com', 
+        //         port: 8080, 
+        //         auth: { username: 'user', password: 'pass' } 
+        //     }
+        // ]
+    });
+
+    const pscraper = new AdvancedCompanyProfileScraper();
+    try {
+        const companyProfile = await pscraper.extractCompanyProfile('https://rolex.com');
+        console.log(JSON.stringify(companyProfile, null, 2));
+    } catch (error) {
+        console.error('Scraping failed:', error);
+    }
+
+
+    try {
+        const companyIntel = await scraper.scrapeCompanyIntelligence('https://www.rolex.com/');
+        console.log(JSON.stringify(companyIntel, null, 2));
+    } catch (error) {
+        console.error('Scraping failed:', error);
+    }
+
+    
+    
 
     //   try {
     //     // Send a tracked email using the wrapped function
