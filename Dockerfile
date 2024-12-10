@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Copy package.json and install dependencies
 COPY package.json /app/
-RUN npm install
+RUN npm install --unsafe-perm
 
 
 # Copy rest of the application
