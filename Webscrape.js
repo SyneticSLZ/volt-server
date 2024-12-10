@@ -181,7 +181,8 @@ class UltimateCompanyIntelligenceScraper {
                     '--disable-setuid-sandbox', 
                     '--single-process',
                     '--no-zygote',
-                ] 
+                ],
+                dumpio: true
             });
             const page = await browser.newPage();
             
