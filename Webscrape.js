@@ -13,12 +13,10 @@ const compromise = require('compromise');
 
 
 class UltimateCompanyIntelligenceScraper {
-
-    
     constructor(options = {}) {
         this.timeout = options.timeout || 30000;
         this.maxRetries = options.maxRetries || 3;
-        this.browser = null;
+        
         this.tokenizer = new natural.WordTokenizer();
         this.sentimentAnalyzer = new natural.SentimentAnalyzer("English", natural.PorterStemmer, "afinn");
     }
@@ -30,21 +28,6 @@ class UltimateCompanyIntelligenceScraper {
                    .replace(/[\n\r]/g, ' ')
                    .trim();
     }
-    async init() {
-        this.browser = await puppeteer.launch({
-            headless: true, 
-            executablePath: '/opt/render/.cache/puppeteer/chrome/linux-131.0.6778.87/chrome',
-            args: [
-                '--no-sandbox', 
-                '--disable-setuid-sandbox', 
-                '--disable-web-security'
-            ] 
-        });
-    }
-    async dispose() {
-        await this.browser?.close();
-    }
-
 
     // Improved text extraction with multiple fallback strategies
     extractCompanyDescription($) {
@@ -308,8 +291,6 @@ class UltimateCompanyIntelligenceScraper {
         return outreachStrategy;
     }
 }
-
-
 
 module.exports = UltimateCompanyIntelligenceScraper;
 
