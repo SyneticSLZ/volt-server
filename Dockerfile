@@ -1,27 +1,19 @@
-# Use an official Node.js runtime as a base image
-FROM node:20
+FROM node:20-bookworm
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    libgstreamer1.0-0 \
-    libgstreamer-plugins-base1.0-0 \
-    libenchant-2-2 \
-    libsecret-1-0 \
-    libmanette-0.2-0 \
-    libgles2-mesa \
-    && rm -rf /var/lib/apt/lists/*
+# Install Playwright and its dependencies
+RUN npx -y playwright@1.49.0 install --with-deps
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
 # Copy package.json and install dependencies
 COPY package.json /app/
 RUN npm install
 
-# Copy the rest of your application
+# Copy rest of the application
 COPY . /app/
 
-# Expose the port your app will run on
+# Expose port if needed
 EXPOSE 10000
 
 # Start the application
