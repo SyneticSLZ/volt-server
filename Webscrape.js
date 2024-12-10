@@ -5,7 +5,7 @@ const cheerio = require('cheerio');
 const natural = require('natural');
 const compromise = require('compromise');
 const OpenAI = require('openai');
-const { extractEmails } = require('email-extractor');
+// const { extractEmails } = require('email-extractor');
 
 class AdvancedCompanyIntelligenceScraper {
     constructor(options = {}) {
