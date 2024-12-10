@@ -4155,6 +4155,7 @@ function extractEmailContent(emailText) {
 
 // });
 app.post('/scrape', async (req, res) => {
+    console.log("running scraper ")
 const scraper = new UltimateCompanyIntelligenceScraper();
 scraper.scrapeCompanyIntelligence('https://www.voltmailer.com/')
     .then(intelligence => {
@@ -4430,7 +4431,7 @@ const scraper = new UltimateCompanyIntelligenceScraper();
 console.log("sscraper")
 scraper.scrapeCompanyIntelligence('https://www.voltmailer.com/')
     .then(intelligence => {
-        
+
         console.log(JSON.stringify(intelligence, null, 2));
         const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
         console.log(outreachStrategy);
