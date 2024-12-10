@@ -322,17 +322,10 @@ class AdvancedCompanyIntelligenceScraper {
                     },
                     {
                         role: "user",
-                        content: `Analyze this company profile and provide key personalization insights for me to effectively sell to them:
+                        content: `Analyze this company profile:
                         Description: ${companyIntel.basicInfo.description}
                         Industry: ${companyIntel.companyCharacteristics.industry}
-                        
-                        Provide:
-                        1. Potential pain points that this company may face
-                        2. Key messaging angles to send to this company
-                        3. Recommended email tone
-                        4. Potential conversation starters that i can send to this company
-                        
-                        I am selling to this company not from them, this is not building a pitch for this company this is building a cold email to sell them services.`
+please just provide a summary of this website and its services`
                     }
                 ],
                 max_tokens: 300
