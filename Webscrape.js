@@ -206,7 +206,7 @@ class UltimateCompanyIntelligenceScraper {
             ]);
         
             // Attempt to find the actual executable
-            const execPath = await findChromiumExecutable();
+            const execPath = await this.findChromiumExecutable();
         
             const browser = await puppeteer.launch({ 
                 executablePath: execPath,
