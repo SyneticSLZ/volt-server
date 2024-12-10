@@ -158,6 +158,30 @@ class UltimateCompanyIntelligenceScraper {
         return industryMatches.length > 0 ? industryMatches[0].industry : 'Technology';
     }
 
+
+    async findChromiumExecutable() {
+        const possiblePaths = [
+            '/usr/bin/chromium',
+            '/usr/bin/google-chrome',
+            '/usr/bin/chromium-browser',
+            process.env.PUPPETEER_EXECUTABLE_PATH
+        ];
+    
+        for (const path of possiblePaths) {
+            try {
+                // Check if the file exists and is executable
+                await fs.access(path, fs.constants.X_OK);
+                console.log(`Found executable Chromium at: ${path}`);
+                return path;
+            } catch (error) {
+                console.log(`Path not executable: ${path}`);
+            }
+        }
+    
+        throw new Error('No Chromium executable found');
+    }
+
+
     // Comprehensive scraping method with enhanced error handling
     async scrapeCompanyIntelligence(url) {
         const companyIntel = {
@@ -174,13 +198,23 @@ class UltimateCompanyIntelligenceScraper {
                 DefaultExecutablePath: puppeteer.executablePath()
             });
 
+            console.log('Checking possible Chromium paths:', [
+                '/usr/bin/chromium',
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium-browser',
+                process.env.PUPPETEER_EXECUTABLE_PATH
+            ]);
+        
+            // Attempt to find the actual executable
+            const execPath = await findChromiumExecutable();
+        
             const browser = await puppeteer.launch({ 
-                executablePath: process.env.NODE_ENV === "production" ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
+                executablePath: execPath,
+                headless: true, 
                 args: [
                     '--no-sandbox', 
                     '--disable-setuid-sandbox', 
-                    '--single-process',
-                    '--no-zygote',
+                    '--disable-web-security',
                 ],
                 dumpio: true
             });
