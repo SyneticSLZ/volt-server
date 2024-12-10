@@ -4365,19 +4365,19 @@ async function SendLinkedInMessage({ url, cookie, userAgent, message, subject })
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
 
-        const scraper = new AdvancedCompanyIntelligenceScraper({
-            openaiApiKey: process.env.OPENAI_API_KEY,
-            timeout: 60000,
-            maxRetries: 3
-        });
+        // const scraper = new AdvancedCompanyIntelligenceScraper({
+        //     openaiApiKey: process.env.OPENAI_API_KEY,
+        //     timeout: 60000,
+        //     maxRetries: 3
+        // });
     
-        try {
-            const companyUrl = 'https://voltmailer.com';
-            const companyIntel = await scraper.scrapeCompanyIntelligence(companyUrl);
-            console.log(JSON.stringify(companyIntel, null, 2));
-        } catch (error) {
-            console.error('Scraping failed:', error);
-        }
+        // try {
+        //     const companyUrl = 'https://voltmailer.com';
+        //     const companyIntel = await scraper.scrapeCompanyIntelligence(companyUrl);
+        //     console.log(JSON.stringify(companyIntel, null, 2));
+        // } catch (error) {
+        //     console.error('Scraping failed:', error);
+        // }
     
 // const msg = {
 //   to: 'syneticslz@gmail.com', // Change to your recipient
