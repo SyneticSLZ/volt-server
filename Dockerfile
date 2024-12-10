@@ -1,15 +1,15 @@
 # Use an official Node.js runtime as a base image
 FROM node:20
 
-# Install missing dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libgstreamer-gl1.0-0 \
+    libgstreamer1.0-0 \
     libgstreamer-plugins-base1.0-0 \
-    libenchant2-2 \
+    libenchant-2-2 \
     libsecret-1-0 \
     libmanette-0.2-0 \
     libgles2-mesa \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /app
