@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 # Install Playwright browsers
-RUN npx playwright install
+# RUN npx playwright install
 
 # Set the working directory
 WORKDIR /app
@@ -23,8 +23,8 @@ COPY package-lock.json /app/
 RUN npm install
 
 # Copy the rest of your application
-COPY . /app/
-COPY .env /app/
+COPY . .
+# COPY .env /app/
 
 
 # Expose the port your app will run on
