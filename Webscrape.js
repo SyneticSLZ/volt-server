@@ -16,7 +16,6 @@ class UltimateCompanyIntelligenceScraper {
     constructor(options = {}) {
         this.timeout = options.timeout || 30000;
         this.maxRetries = options.maxRetries || 3;
-        
         this.tokenizer = new natural.WordTokenizer();
         this.sentimentAnalyzer = new natural.SentimentAnalyzer("English", natural.PorterStemmer, "afinn");
     }
@@ -159,7 +158,7 @@ class UltimateCompanyIntelligenceScraper {
     }
 
 
-    async findChromiumExecutable($) {
+    async findChromiumExecutable() {
         const possiblePaths = [
             '/usr/bin/chromium',
             '/usr/bin/google-chrome',
@@ -206,7 +205,7 @@ class UltimateCompanyIntelligenceScraper {
             ]);
         
             // Attempt to find the actual executable
-            const execPath = await this.findChromiumExecutable($);
+            const execPath = await this.findChromiumExecutable();
         
             const browser = await puppeteer.launch({ 
                 executablePath: execPath,
