@@ -394,6 +394,22 @@ async function logAnalysisToFile(analysis, fileName) {
     }
 }
 
+const scraper = new AdvancedCompanyIntelligenceScraper({
+    // Optional API keys for enhanced data gathering
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    clearbitApiKey: process.env.CLEARBIT_API_KEY,
+    apolloApiKey: process.env.APOLLO_API_KEY,
+    
+    // Optional proxy configuration
+    // proxies: [
+    //     { 
+    //         host: 'proxy1.example.com', 
+    //         port: 8080, 
+    //         auth: { username: 'user', password: 'pass' } 
+    //     }
+    // ]
+});
+
 
 
 // const scraper = new UltimateCompanyIntelligenceScraper();
@@ -409,6 +425,24 @@ async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
 // }
 
     }
+
+    // const pscraper = new AdvancedCompanyProfileScraper();
+// try {
+//     const companyProfile = await pscraper.extractCompanyProfile('https://rolex.com');
+//     console.log(JSON.stringify(companyProfile, null, 2));
+// } catch (error) {
+//     console.error('Scraping failed:', error);
+// }
+
+
+try {
+    const companyIntel = await scraper.scrapeCompanyIntelligence(url);
+    console.log(JSON.stringify(companyIntel.additionalInsights.aiPersonalization, null, 2));
+    let description = companyIntel.additionalInsights.aiPersonalization
+    return description
+} catch (error) {
+    console.error('Scraping failed:', error);
+
     // Instantiate the scraper
 
 
@@ -458,7 +492,7 @@ async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
             }
         }
     }
-
+}
 
 }
 
@@ -4358,37 +4392,7 @@ app.listen(port, async () => {
 
       // Example usage
 
-    const scraper = new AdvancedCompanyIntelligenceScraper({
-        // Optional API keys for enhanced data gathering
-        openaiApiKey: process.env.OPENAI_API_KEY,
-        clearbitApiKey: process.env.CLEARBIT_API_KEY,
-        apolloApiKey: process.env.APOLLO_API_KEY,
-        
-        // Optional proxy configuration
-        // proxies: [
-        //     { 
-        //         host: 'proxy1.example.com', 
-        //         port: 8080, 
-        //         auth: { username: 'user', password: 'pass' } 
-        //     }
-        // ]
-    });
 
-    const pscraper = new AdvancedCompanyProfileScraper();
-    try {
-        const companyProfile = await pscraper.extractCompanyProfile('https://rolex.com');
-        console.log(JSON.stringify(companyProfile, null, 2));
-    } catch (error) {
-        console.error('Scraping failed:', error);
-    }
-
-
-    try {
-        const companyIntel = await scraper.scrapeCompanyIntelligence('https://www.rolex.com/');
-        console.log(JSON.stringify(companyIntel, null, 2));
-    } catch (error) {
-        console.error('Scraping failed:', error);
-    }
 
     
     
