@@ -159,7 +159,7 @@ class UltimateCompanyIntelligenceScraper {
     }
 
 
-    async findChromiumExecutable() {
+    async findChromiumExecutable($) {
         const possiblePaths = [
             '/usr/bin/chromium',
             '/usr/bin/google-chrome',
@@ -206,7 +206,7 @@ class UltimateCompanyIntelligenceScraper {
             ]);
         
             // Attempt to find the actual executable
-            const execPath = await this.findChromiumExecutable();
+            const execPath = await this.findChromiumExecutable($);
         
             const browser = await puppeteer.launch({ 
                 executablePath: execPath,
