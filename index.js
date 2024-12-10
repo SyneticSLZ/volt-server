@@ -37,7 +37,7 @@ const natural = require('natural');
 const { extractKeywords } = require('keyword-extractor');
 
 const EmailTracker = require('./EmailTracker');
-const UltimateCompanyIntelligenceScraper = require('./Webscrape')
+const AdvancedCompanyIntelligenceScraper = require('./Webscrape')
 // const { setupLinkedInScraperRoute } = require('./linkedinscraper');
 
 // const M_uri = 'mongodb+srv://syneticslz:<password>@synetictest.bl3xxux.mongodb.net/?retryWrites=true&w=majority&appName=SyneticTest'; // Replace with your MongoDB connection string
@@ -488,7 +488,7 @@ async function logAnalysisToFile(analysis, fileName) {
 
 
 
-const scraper = new UltimateCompanyIntelligenceScraper();
+// const scraper = new UltimateCompanyIntelligenceScraper();
 async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
     
     if (!url) {
@@ -4365,6 +4365,20 @@ async function SendLinkedInMessage({ url, cookie, userAgent, message, subject })
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
 
+        const scraper = new AdvancedCompanyIntelligenceScraper({
+            openaiApiKey: process.env.OPENAI_API_KEY,
+            timeout: 60000,
+            maxRetries: 3
+        });
+    
+        try {
+            const companyUrl = 'https://voltmailer.com';
+            const companyIntel = await scraper.scrapeCompanyIntelligence(companyUrl);
+            console.log(JSON.stringify(companyIntel, null, 2));
+        } catch (error) {
+            console.error('Scraping failed:', error);
+        }
+    
 // const msg = {
 //   to: 'syneticslz@gmail.com', // Change to your recipient
 //   from: 'rohanmehmi72@gmail.com', // Change to your verified sender
@@ -4427,16 +4441,16 @@ app.listen(port, async () => {
 
     // Instantiate the scraper
 
-const scraper = new UltimateCompanyIntelligenceScraper();
-console.log("sscraper")
-scraper.scrapeCompanyIntelligence('https://www.voltmailer.com/')
-    .then(intelligence => {
+// const scraper = new UltimateCompanyIntelligenceScraper();
+// console.log("sscraper")
+// scraper.scrapeCompanyIntelligence('https://www.voltmailer.com/')
+//     .then(intelligence => {
 
-        console.log(JSON.stringify(intelligence, null, 2));
-        const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
-        console.log(outreachStrategy);
-    })
-    .catch(console.error);
+//         console.log(JSON.stringify(intelligence, null, 2));
+//         const outreachStrategy = scraper.generateColdOutreachStrategy(intelligence);
+//         console.log(outreachStrategy);
+//     })
+//     .catch(console.error);
 
 
 
