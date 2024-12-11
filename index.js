@@ -33,6 +33,12 @@ const { JSDOM } = require('jsdom');
 const fs = require('fs').promises;
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Replace with your OpenAI API Key
+const Mailjet = require('node-mailjet')
+
+const mailjet = Mailjet.apiConnect(
+    process.env.MJ_APIKEY_PUBLIC,
+    process.env.MJ_APIKEY_PRIVATE
+  );
 
 // const axios = require('axios');
 // const cheerio = require('cheerio');
@@ -1183,6 +1189,29 @@ sgMail
   .catch((error) => {
     console.error(error)
   })
+
+  const info = mailjet.post('send').request({
+    FromEmail: user,
+    FromName: 'Alex',
+    Subject: subject,
+    'Text-part':
+      body,
+    'Html-part':
+      `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <p>${body.replace(/\n/g, '<br>')}</p>
+  <p style="margin-top: 20px; font-size: 12px; color: #777;">
+    
+  </p>
+</div>`,
+    Recipients: [{ Email: to }],
+  })
+  info
+    .then(result => {
+      console.log(info.body)
+    })
+    .catch(err => {
+      console.log(err.statusCode)
+    })
 
 
     // Save { to, subject, messageId: info.messageId } in the database
@@ -4311,6 +4340,40 @@ async function SendLinkedInMessage({ url, cookie, userAgent, message, subject })
 
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
+
+
+
+    // const request = mailjet.post('send').request({
+    //     Messages: [
+    //       {
+    //         FromEmail: 'syneticslz@gmail.com',
+    //         FromName: 'Alex',
+    //         Recipients: [{ Email: 'rohanmehmi72@gmail.com', Name: 'passenger 1' }],
+    //         Subject: 'Your email flight plan!',
+    //         'Text-part':
+    //           'Dear passenger 1, welcome to Mailjet! May the delivery force be with you!',
+    //         'Html-part':
+    //           '<h3>Dear passenger 1, welcome to <a href="https://www.mailjet.com/">Mailjet</a>!<br />May the delivery force be with you!',
+    //       },
+    //       {
+    //         FromEmail: 'rohanmehmi72@gmail.com',
+    //         FromName: 'Mailjet Pilot',
+    //         Recipients: [{ Email: 'varityclothes@gmail.com', Name: 'passenger 2' }],
+    //         Subject: 'Your email flight plan!',
+    //         'Text-part':
+    //           'Dear passenger 2, welcome to Mailjet! May the delivery force be with you!',
+    //         'Html-part':
+    //           '<h3>Dear passenger 2, welcome to <a href="https://www.mailjet.com/">Mailjet</a>!<br />May the delivery force be with you!',
+    //       },
+    //     ],
+    //   })
+    //   request
+    //     .then(result => {
+    //       console.log(result.body)
+    //     })
+    //     .catch(error => {
+    //       console.log(error.statusCode)
+    //     })
 
         // const scraper = new AdvancedCompanyIntelligenceScraper({
         //     openaiApiKey: process.env.OPENAI_API_KEY,
