@@ -1193,65 +1193,65 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
 
 
 
-  const url = 'https://api.brevo.com/v3/smtp/email';
-  const apiKey = process.env.BREVO; // Replace with your actual API key
+//   const url = 'https://api.brevo.com/v3/smtp/email';
+//   const apiKey = process.env.BREVO; // Replace with your actual API key
 
-  const data = {
-      sender: {
-          name: 'Alex',
-          email: user,
-      },
-      to: [
-          {
-              email: to,
-              name: 'Ro',
-          },
-      ],
-      subject: subject,
-      htmlContent: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-   <p>${body.replace(/\n/g, '<br>')}</p>
-   <p style="margin-top: 20px; font-size: 12px; color: #777;">
+//   const data = {
+//       sender: {
+//           name: 'Alex',
+//           email: user,
+//       },
+//       to: [
+//           {
+//               email: to,
+//               name: 'Ro',
+//           },
+//       ],
+//       subject: subject,
+//       htmlContent: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+//    <p>${body.replace(/\n/g, '<br>')}</p>
+//    <p style="margin-top: 20px; font-size: 12px; color: #777;">
     
-   </p>
-</div>`,
-  };
-
-  try {
-      const info = await axios.post(url, data, {
-          headers: {
-              'accept': 'application/json',
-              'api-key': apiKey,
-              'content-type': 'application/json',
-          },
-      });
-
-      console.log('Email sent successfully:', info.data);
-  } catch (error) {
-      console.error('Error sending email:', error.info ? error.info.data : error.message);
-  }
-
-//   const info = mailjet.post('send').request({
-//     FromEmail: user,
-//     FromName: 'Alex',
-//     Subject: subject,
-//     'Text-part':
-//       body,
-//     'Html-part':
-//       `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-//   <p>${body.replace(/\n/g, '<br>')}</p>
-//   <p style="margin-top: 20px; font-size: 12px; color: #777;">
-    
-//   </p>
+//    </p>
 // </div>`,
-//     Recipients: [{ Email: to }],
-//   })
-//   info
-//     .then(result => {
-//       console.log(result.body)
-//     })
-//     .catch(err => {
-//       console.log(err.statusCode)
-//     })
+//   };
+
+//   try {
+//       const info = await axios.post(url, data, {
+//           headers: {
+//               'accept': 'application/json',
+//               'api-key': apiKey,
+//               'content-type': 'application/json',
+//           },
+//       });
+
+//       console.log('Email sent successfully:', info.data);
+//   } catch (error) {
+//       console.error('Error sending email:', error.info ? error.info.data : error.message);
+//   }
+
+  const info = mailjet.post('send').request({
+    FromEmail: user,
+    FromName: 'Alex',
+    Subject: subject,
+    'Text-part':
+      body,
+    'Html-part':
+      `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <p>${body.replace(/\n/g, '<br>')}</p>
+  <p style="margin-top: 20px; font-size: 12px; color: #777;">
+    
+  </p>
+</div>`,
+    Recipients: [{ Email: to }],
+  })
+  info
+    .then(result => {
+      console.log( 'success : ', result.body)
+    })
+    .catch(err => {
+      console.log(err.statusCode)
+    })
 
 
     // Save { to, subject, messageId: info.messageId } in the database
@@ -4389,16 +4389,16 @@ app.listen(port, async () => {
 
 
 
-    await   sendcampsummaryEmail({
-        to: 'rohanmehmi72@gmail.com',
-        email:'email',
-        subject: 'subject',
-        body: 'text',
-        user:  'alexrmacgregor@gmail.com',
-        pass: 'pass', // App password
-        service: 'gmail',
-        campaignid: 'campaignid'
-      });
+    // await   sendcampsummaryEmail({
+    //     to: 'rohanmehmi72@gmail.com',
+    //     email:'rohanmehmi72@gmail.com',
+    //     subject: 'subject',
+    //     body: 'text',
+    //     user:  'alexrmacgregor@gmail.com',
+    //     pass: 'pass', // App password
+    //     service: 'gmail',
+    //     campaignid: 'campaignid'
+    //   });
     // sendTransactionalEmail();
 
     // const request = mailjet.post('send').request({
