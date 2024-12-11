@@ -1168,50 +1168,90 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
 //     console.log('Message sent: %s');
 
 
-const msg = {
-  to: to, // Change to your recipient
-  from: user, // Change to your verified sender
-  subject: subject,
-  text: body,
-  html: `
-   <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <p>${body.replace(/\n/g, '<br>')}</p>
-  <p style="margin-top: 20px; font-size: 12px; color: #777;">
+// const msg = {
+//   to: to, // Change to your recipient
+//   from: user, // Change to your verified sender
+//   subject: subject,
+//   text: body,
+//   html: `
+//    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+//   <p>${body.replace(/\n/g, '<br>')}</p>
+//   <p style="margin-top: 20px; font-size: 12px; color: #777;">
     
-  </p>
-</div>`,
-}
-sgMail
-  .send(msg)
-  .then(() => {
-    console.log('Email sent')
-  })
-  .catch((error) => {
-    console.error(error)
-  })
+//   </p>
+// </div>`,
+// }
+// sgMail
+//   .send(msg)
+//   .then(() => {
+//     console.log('Email sent')
+//   })
+//   .catch((error) => {
+//     console.error(error)
+//   })
 
-  const info = mailjet.post('send').request({
-    FromEmail: user,
-    FromName: 'Alex',
-    Subject: subject,
-    'Text-part':
-      body,
-    'Html-part':
-      `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <p>${body.replace(/\n/g, '<br>')}</p>
-  <p style="margin-top: 20px; font-size: 12px; color: #777;">
+
+
+
+  const url = 'https://api.brevo.com/v3/smtp/email';
+  const apiKey = process.env.BREVO; // Replace with your actual API key
+
+  const data = {
+      sender: {
+          name: 'Alex',
+          email: user,
+      },
+      to: [
+          {
+              email: to,
+              name: 'Ro',
+          },
+      ],
+      subject: subject,
+      htmlContent: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+   <p>${body.replace(/\n/g, '<br>')}</p>
+   <p style="margin-top: 20px; font-size: 12px; color: #777;">
     
-  </p>
+   </p>
 </div>`,
-    Recipients: [{ Email: to }],
-  })
-  info
-    .then(result => {
-      console.log(result.body)
-    })
-    .catch(err => {
-      console.log(err.statusCode)
-    })
+  };
+
+  try {
+      const info = await axios.post(url, data, {
+          headers: {
+              'accept': 'application/json',
+              'api-key': apiKey,
+              'content-type': 'application/json',
+          },
+      });
+
+      console.log('Email sent successfully:', info.data);
+  } catch (error) {
+      console.error('Error sending email:', error.info ? error.info.data : error.message);
+  }
+
+//   const info = mailjet.post('send').request({
+//     FromEmail: user,
+//     FromName: 'Alex',
+//     Subject: subject,
+//     'Text-part':
+//       body,
+//     'Html-part':
+//       `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+//   <p>${body.replace(/\n/g, '<br>')}</p>
+//   <p style="margin-top: 20px; font-size: 12px; color: #777;">
+    
+//   </p>
+// </div>`,
+//     Recipients: [{ Email: to }],
+//   })
+//   info
+//     .then(result => {
+//       console.log(result.body)
+//     })
+//     .catch(err => {
+//       console.log(err.statusCode)
+//     })
 
 
     // Save { to, subject, messageId: info.messageId } in the database
@@ -4336,12 +4376,18 @@ async function SendLinkedInMessage({ url, cookie, userAgent, message, subject })
 
 
 
+const sendTransactionalEmail = async () => {
+
+};
+
+
+
 
 
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
 
-
+    // sendTransactionalEmail();
 
     // const request = mailjet.post('send').request({
     //     Messages: [
