@@ -4387,6 +4387,18 @@ const sendTransactionalEmail = async () => {
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
 
+
+
+    await   sendcampsummaryEmail({
+        to: 'rohanmehmi72@gmail.com',
+        email:'email',
+        subject: 'subject',
+        body: 'text',
+        user:  'alexrmacgregor@gmail.com',
+        pass: 'pass', // App password
+        service: 'gmail',
+        campaignid: 'campaignid'
+      });
     // sendTransactionalEmail();
 
     // const request = mailjet.post('send').request({
