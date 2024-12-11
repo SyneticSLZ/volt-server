@@ -1207,7 +1207,7 @@ sgMail
   })
   info
     .then(result => {
-      console.log(info.body)
+      console.log(result.body)
     })
     .catch(err => {
       console.log(err.statusCode)
