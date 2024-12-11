@@ -1204,7 +1204,7 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
       to: [
           {
               email: to,
-            //   name: 'Ro',
+              name: 'Ro',
           },
       ],
       subject: subject,
