@@ -4376,8 +4376,50 @@ async function SendLinkedInMessage({ url, cookie, userAgent, message, subject })
 
 
 
-const sendTransactionalEmail = async () => {
+const sendTransactionalEmail = async (to,
+    email,
+    subject,
+    body,
+    user,
+    pass,
+    service,
+    campaignid) => {
+  const url = 'https://api.brevo.com/v3/smtp/email';
+  const apiKey = process.env.BREVO; // Replace with your actual API key
 
+  const data = {
+      sender: {
+          name: 'Alex',
+          email: user,
+      },
+      to: [
+          {
+              email: to,
+              name: 'Ro',
+          },
+      ],
+      subject: subject,
+      htmlContent: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+   <p>${body.replace(/\n/g, '<br>')}</p>
+   <p style="margin-top: 20px; font-size: 12px; color: #777;">
+    
+   </p>
+</div>`,
+  };
+
+  try {
+      const info = await axios.post(url, data, {
+          headers: {
+              'accept': 'application/json',
+              'api-key': apiKey,
+              'content-type': 'application/json',
+          },
+      });
+
+      console.log('Email sent successfully:', info.data);
+  } catch (error) {
+      console.error('Error sending email:', error.info ? error.info.data : error.message);
+  }
 };
 
 
@@ -4386,6 +4428,7 @@ const sendTransactionalEmail = async () => {
 
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
+
 
 
 
@@ -4399,7 +4442,16 @@ app.listen(port, async () => {
     //     service: 'gmail',
     //     campaignid: 'campaignid'
     //   });
-    // sendTransactionalEmail();
+//     sendTransactionalEmail({
+//         to: 'rohanmehmi72@gmail.com',
+//             email:'rohanmehmi72@gmail.com',
+//             subject: 'subject',
+//             body: 'text',
+//             user:  'alexrmacgregor@gmail.com',
+//             pass: 'pass', // App password
+//             service: 'gmail',
+//             campaignid: 'campaignid'
+// });
 
     // const request = mailjet.post('send').request({
     //     Messages: [

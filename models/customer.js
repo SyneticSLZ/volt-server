@@ -46,8 +46,17 @@ const mailboxSchema = new mongoose.Schema({
         port: { type: Number, required: true },
         secure: { type: Boolean, required: true }, // true for 465, false for other ports
         user: { type: String, required: true },   // SMTP username
-        pass: { type: String, required: true }    // SMTP password
-    },
+        pass: { type: String, required: true },
+        gmail:
+        {
+            id:{ type: String, required: true },
+            provider: { type: String, required: true },
+            email: { type: String, required: true },
+            accessToken: { type: String, required: true },
+            refreshToken:{ type: String, required: true },
+            expiresAt: { type: Number,  required: true  }
+        }   // SMTP password
+    },  
     isActive: { type: Boolean, default: false }
 });
 
