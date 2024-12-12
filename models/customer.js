@@ -42,19 +42,19 @@ const campaignSchema = new mongoose.Schema({
 
 const mailboxSchema = new mongoose.Schema({
     smtp: {
-        host: { type: String, required: true },
-        port: { type: Number, required: true },
-        secure: { type: Boolean, required: true }, // true for 465, false for other ports
+        host: { type: String },
+        port: { type: Number},
+        secure: { type: Boolean }, // true for 465, false for other ports
         user: { type: String, required: true },   // SMTP username
-        pass: { type: String, required: true },
+        pass: { type: String },
         gmail:
         {
-            id:{ type: String, required: true },
-            provider: { type: String, required: true },
-            email: { type: String, required: true },
-            accessToken: { type: String, required: true },
-            refreshToken:{ type: String, required: true },
-            expiresAt: { type: Number,  required: true  }
+            id:{ type: String},
+            provider: { type: String},
+            email: { type: String },
+            accessToken: { type: String },
+            refreshToken:{ type: String},
+            expiresAt: { type: Number }
         }   // SMTP password
     },  
     isActive: { type: Boolean, default: false }
