@@ -4651,7 +4651,7 @@ app.listen(port, async () => {
 
 
 
-    console.log(await GetEmailsxx('margaeryfrey.325319@gmail.com'))
+    // console.log(await GetEmailsxx('margaeryfrey.325319@gmail.com'))
     // await   sendcampsummaryEmail({
     //     to: 'syneticslz@gmail.com',
     //     email:'margaeryfrey.325319@gmail.com',
