@@ -1,21 +1,3 @@
-// const mongoose = require('mongoose');
-
-// const customerSchema = new mongoose.Schema({
-//     stripeID: String,
-//     email: { type: String, required: true, unique: true },
-//     plan: String,
-//     total_emails: Number,
-//     priceID: String,
-//     password: String,
-//     name: String,
-//     plan_emails: Number,
-//     affiliate: String
-// });
-
-// const Customer = mongoose.model('Customer', customerSchema);
-
-// module.exports = Customer;
-
 const mongoose = require('mongoose');
 
 const emailSchema = new mongoose.Schema({
@@ -27,6 +9,19 @@ const emailSchema = new mongoose.Schema({
     status: { type: String, enum: ['sent', 'bounced', 'delivered'], default: 'sent' },
     bounces: { type: Boolean, default: false },
     responseCount: { type: Number, default: 0 }
+});
+
+const EDataSchema = new mongoose.Schema({
+    id: String,
+    recipient:String,
+    from:String,
+    UUID:String,
+    threadId:String,
+    body:String,
+    subject:String,
+    date:String,
+    sentwith:String,
+    status:String,
 });
 
 const campaignSchema = new mongoose.Schema({
@@ -77,6 +72,7 @@ const customerSchema = new mongoose.Schema({
     bounceRate: { type: Number, default: 0 },
     replyRate: { type: Number, default: 0 },
     campaigns: [campaignSchema],
+    emails: [EDataSchema],
     mailboxes: [mailboxSchema],
     unsubscribedEmails: { type: [String], default: [] } // New field for unsubscribed emails
 });
@@ -87,6 +83,7 @@ const customerSchema = new mongoose.Schema({
 
 // Create Models
 const Email = mongoose.models.Email || mongoose.model('Email', emailSchema);
+const EData = mongoose.models.EData || mongoose.model('EData', EDataSchema );
 const Campaign = mongoose.models.Campaign || mongoose.model('Campaign', campaignSchema);
 const Customer = mongoose.models.Customer || mongoose.model('Customer', customerSchema);
 const Mailbox = mongoose.models.Mailbox || mongoose.model('Mailbox', mailboxSchema);
@@ -94,10 +91,12 @@ const Mailbox = mongoose.models.Mailbox || mongoose.model('Mailbox', mailboxSche
 // Export the models and schemas
 module.exports = {
     Email,
+    EData,
     Campaign,
     Customer,
     Mailbox,
     emailSchema,
+    EDataSchema,
     campaignSchema,
     customerSchema,
     mailboxSchema

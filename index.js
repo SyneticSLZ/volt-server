@@ -8,7 +8,7 @@ const session = require('express-session');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');	
-const { Email, Campaign, Customer, Mailbox } = require('./models/customer');
+const { Email, Campaign, Customer, Mailbox, EData } = require('./models/customer');
 const Driver = require('./models/Driver');
 const app = express();
 dotenv.config();
@@ -82,6 +82,15 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI;
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
+
+
+
+const GOOGLE_OAUTH_CONFIG = {
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET  , // Add your client secret here
+    redirectUri: 'https://www.voltmailer.com/Dashboard.html',
+    scopes: ['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/gmail.send']
+  };
 
 let subject_c
 let body_c
@@ -1128,10 +1137,112 @@ async function sendCampaignSummary(customerId, campaignId) {
     }
   });
 
+
+  async function refreshTokenIfNeeded(account) {
+    // Check if token is expired or about to expire
+    if (account.expiresAt && Date.now() >= account.expiresAt - 300000) { // 5 minutes buffer
+      try {
+        const refreshResponse = await axios.post('https://oauth2.googleapis.com/token', {
+          client_id: GOOGLE_OAUTH_CONFIG.clientId,
+          client_secret: GOOGLE_OAUTH_CONFIG.clientSecret,
+          refresh_token: account.refreshToken,
+          grant_type: 'refresh_token'
+        });
+
+        // Update tokens
+        account.accessToken = refreshResponse.data.access_token;
+        account.expiresAt = Date.now() + (refreshResponse.data.expires_in * 1000);
+
+        // Update in stored accounts
+        const index = this.accounts.findIndex(a => a.id === account.id);
+        if (index !== -1) {
+          this.accounts[index] = account;
+          this.saveAccounts();
+        }
+      } catch (error) {
+        console.error('Token refresh failed:', error);
+        throw error;
+      }
+    }
+  }
+
+
+  async function sendEmailGMAIL(to, subject, body, fromEmail, selectedAccount) {
+
+// Get account from customer mailbox then 
+    try {
+      // Refresh token if expired
+      await refreshTokenIfNeeded(selectedAccount);
+
+      // Construct raw email message
+      const rawMessage = btoa(
+        `To: ${to}\r\n` +
+        `Subject: ${subject}\r\n` +
+        `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
+        body
+      ).replace(/\+/g, '-').replace(/\//g, '_');
+
+      // Send email via Gmail API
+      const response = await axios.post(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`,
+        { raw: rawMessage },
+        {
+          headers: {
+            'Authorization': `Bearer ${selectedAccount.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      console.log("success : ", response.data)
+      const now = new Date();
+      console.log(now.toISOString());
+
+
+      const NewUpdatedEmail = new EData({
+        id: response.data.id,
+        recipient:to,
+        from:selectedAccount.email,
+        UUID:null,
+        threadId:response.data.threadID,
+        body:body,
+        subject:subject,
+        date: now.toISOString(),
+        sentwith: 'gmail',
+        status: 'delivered',
+    });
+
+    // Save the campaign to the database
+    await NewUpdatedEmail.save();
+
+    // Find the customer by email
+    const customer = await Customer.findOne({ email: fromEmail });
+
+    if (!customer) {
+        console.log("customer not found")
+        return res.status(404).json({ message: 'Customer not found' });
+        
+    }
+
+    // Add the new campaign to the customer's campaigns array
+    customer.emails.push(NewUpdatedEmail);
+    
+    // Save the updated customer to the database
+    await customer.save();
+    console.log("successfuly added email", NewUpdatedEmail)
+
+
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      throw error;
+    }
+  }
+
+
   
 async function sendcampsummaryEmail({ to, email, subject, body, user, pass, service, campaignId }) {
  try {
-
 
 
 //    const unsubscribeLink = `https://server.voltmailer.com/unsubscribe?sender=${encodeURIComponent(email)}&to=${encodeURIComponent(to)}`;
@@ -1230,6 +1341,47 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
 //       console.error('Error sending email:', error.info ? error.info.data : error.message);
 //   }
 
+const customer = await Customer.findOne({ email: email });
+var google = false;
+
+if (!customer) {
+console.log("no customer found")
+    return 'Customer not found' 
+}
+
+console.log("found customer", customer.mailboxes )
+
+const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === user);
+
+const accountGmail = mailboxFound.smtp.gmail
+
+
+if (mailboxFound.smtp.user == accountGmail.email){
+    console.log("google mailbox")
+    google = true
+
+}else {
+
+    google = false
+    console.log("mailjet")
+    }
+
+
+if (!mailboxFound) {
+console.log("none found")
+    return  'Mailbox not found'
+}
+
+console.log("active mailbox", mailboxFound.smtp)
+
+if (google){
+    console.log(accountGmail)
+ sendEmailGMAIL(to, subject, body, email, accountGmail)
+
+}else {
+
+
+
   const info = mailjet.post('send').request({
     FromEmail: user,
     FromName: 'Alex',
@@ -1246,41 +1398,58 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
     Recipients: [{ Email: to }],
   })
   info
-    .then(result => {
-      console.log( 'success : ', result.body)
+    .then(async (result) => {
+
+    //   console.log( 'success : ', result.body)
+console.log('Email:', result.body.Sent[0].Email);
+console.log('MessageID:', result.body.Sent[0].MessageID);
+console.log('MessageUUID:', result.body.Sent[0].MessageUUID);
+
+
+      const now = new Date();
+      console.log(now.toISOString());
+
+
+      const NewUpdatedEmail = new EData({
+        id: result.body.Sent[0].MessageID,
+        recipient:to,
+        from: user,
+        UUID:result.body.Sent[0].MessageUUID,
+        threadId:null,
+        body:body,
+        subject:subject,
+        date: now.toISOString(),
+        sentwith: 'mailjet',
+        status: 'delivered',
+    });
+
+    // Save the campaign to the database
+    await NewUpdatedEmail.save();
+
+    // Find the customer by email
+    const customer = await Customer.findOne({ email: email });
+
+    if (!customer) {
+        console.log("customer not found")
+        return res.status(404).json({ message: 'Customer not found' });
+        
+    }
+
+    // Add the new campaign to the customer's campaigns array
+    customer.emails.push(NewUpdatedEmail);
+    
+    // Save the updated customer to the database
+    await customer.save();
+    console.log("successfuly added email", NewUpdatedEmail)
+      
     })
     .catch(err => {
       console.log(err.statusCode)
     })
 
+}
 
-    // Save { to, subject, messageId: info.messageId } in the database
-
-
-    if (typeof email === 'string' && email.trim().length > 0) {
-
-        const newEmail = {
-            recipientEmail: to,
-            subject: subject,
-            messageId: info.messageId,
-            threadId: 'threadId',
-            sentTime: new Date(),
-            status: 'sent',           // Default status
-            bounces: false,           // Assume no bounce initially
-            responseCount: 0          // Initial response count
-        };
-    
-        // Call addEmailToCampaign function with necessary parameters
-        const Emailresult = await addEmailToCampaign(email, campaignId, newEmail);
-    
-        // Check the result and handle any additional logic or error handling as needed
-        if (Emailresult.success) {
-            console.log(`Email successfully added to campaign: ${Emailresult.message}`);
-        } else {
-            console.error(`Failed to add email to campaign: ${Emailresult.message}`);
-        }
-
-        const customer = await Customer.findOne({ email: email });
+        // const customer = await Customer.findOne({ email: email });
         const newTotalEmails = customer.total_emails + 1;   
     
         await Customer.updateOne(
@@ -1315,9 +1484,6 @@ async function sendcampsummaryEmail({ to, email, subject, body, user, pass, serv
     //   } catch (trackingError) {
     //     console.error('Error in tracking bounces/replies:', trackingError);
     //   }
-    } else {
-      console.log("email verified");
-    }
 
     // return info;
   } catch (error) {
@@ -1993,6 +2159,59 @@ app.get('/api/mailboxes/active', async (req, res) => {
     }
 });
 
+
+app.get('/api/emails', async (req, res) => {
+    const { email } = req.query;
+
+    try {
+        // Find the customer by email
+        const customer = await Customer.findOne({ email });
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        // Find the active mailbox
+        
+        // Filter all active mailboxes and extract their smtp.user
+        const Emails = customer.emails
+
+        
+
+        // If no active mailbox exists, return null
+        if (!Emails) {
+            return res.json(null); // Respond with null
+        }
+
+        // Return the list of smtp.user values
+        res.json(Emails);
+    } catch (error) {
+        console.error('Error retrieving active mailbox:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+async function GetEmailsxx(email){
+    const customer = await Customer.findOne({ email });
+    if (!customer) {
+        return 'Customer not found' ;
+    }
+
+    // Find the active mailbox
+    
+    // Filter all active mailboxes and extract their smtp.user
+    const Emails = customer.emails
+
+    
+
+    // If no active mailbox exists, return null
+    if (!Emails) {
+        return res.json(null); // Respond with null
+    }
+
+    // Return the list of smtp.user values
+    return Emails;
+}
+
 async function mailboxessend(email, to, subject, text, mailbox){
     console.log("body : ", req.body)
     try {
@@ -2004,6 +2223,7 @@ async function mailboxessend(email, to, subject, text, mailbox){
 	    console.log("found customer", customer.mailboxes )
 
         const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === mailbox);
+
         if (!mailboxFound) {
 		console.log("none found")
             return  'Mailbox not found'
@@ -4431,17 +4651,19 @@ app.listen(port, async () => {
 
 
 
-
+    console.log(await GetEmailsxx('margaeryfrey.325319@gmail.com'))
     // await   sendcampsummaryEmail({
-    //     to: 'rohanmehmi72@gmail.com',
-    //     email:'rohanmehmi72@gmail.com',
+    //     to: 'syneticslz@gmail.com',
+    //     email:'margaeryfrey.325319@gmail.com',
     //     subject: 'subject',
     //     body: 'text',
-    //     user:  'alexrmacgregor@gmail.com',
+    //     user:  'rohanmehmi72@gmail.com',
     //     pass: 'pass', // App password
     //     service: 'gmail',
     //     campaignid: 'campaignid'
     //   });
+
+
 //     sendTransactionalEmail({
 //         to: 'rohanmehmi72@gmail.com',
 //             email:'rohanmehmi72@gmail.com',
