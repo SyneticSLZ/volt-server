@@ -4723,6 +4723,41 @@ const sendTransactionalEmail = async (to,
   }
 };
 
+async function updateEmailStatus(messageId, newStatus) {
+    try {
+        // Find the customer that has the email with this messageId
+        const customer = await Customer.findOne({
+            'campaigns.sentEmails.messageId': messageId
+        });
+
+        if (!customer) {
+            throw new Error('Email not found');
+        }
+
+        // Find and update the specific email in the nested array
+        const result = await Customer.findOneAndUpdate(
+            {
+                'campaigns.sentEmails.messageId': messageId
+            },
+            {
+                $set: {
+                    'campaigns.$[].sentEmails.$[email].status': newStatus
+                }
+            },
+            {
+                arrayFilters: [
+                    { 'email.messageId': messageId }
+                ],
+                new: true
+            }
+        );
+
+        return result;
+    } catch (error) {
+        console.error('Error updating email status:', error);
+        throw error;
+    }
+}
 
 app.post('/webhooks/mailjet', (req, res) => {
     try {
@@ -4730,24 +4765,27 @@ app.post('/webhooks/mailjet', (req, res) => {
 
         // Iterate over each event
         events.forEach(event => {
-            const { event: eventType, email, timestamp, messageID } = event;
+            const { event: eventType, email, timestamp, MessageID } = event;
 
             switch (eventType) {
                 case 'open':
-                    console.log(event)
-                    console.log(`Email opened: ${email}, Message ID: ${messageID}`);
+                    console.log(event.MessageID)
+                    console.log(`Email opened: ${email}, Message ID: ${MessageID}`);
+                    updateEmailStatus(event.MessageID, 'opened')
                     // Handle opened event (e.g., log to DB)
                     break;
 
                 case 'bounce':
                     console.log(event)
                     console.log(`Email bounced: ${email}, Message ID: ${messageID}`);
+                    updateEmailStatus(event.MessageID, 'bounced')
                     // Handle bounce event (e.g., mark email as invalid)
                     break;
 
                 case 'spam':
                     console.log(event)
                     console.log(`Email marked as spam: ${email}, Message ID: ${messageID}`);
+                    updateEmailStatus(event.MessageID, 'spam')
                     // Handle spam event (e.g., flag in DB)
                     break;
 
