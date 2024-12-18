@@ -4732,6 +4732,7 @@ async function updateEmailStatusMongo(emailId, newStatus) {
         if (!customer) {
             throw new Error(`No email found with id: ${emailId}`);
         }
+        console.log("found customer")
         const emailIndex = customer.emails.findIndex(email => email.id === emailId);
         
         // Update the specific email using the index
