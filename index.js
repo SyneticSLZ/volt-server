@@ -4750,6 +4750,7 @@ async function updateEmailStatusMongo(emailId, newStatus) {
 
 app.post('/webhooks/mailjet', async (req, res) => {
     try {
+        console.log("hi")
         const events = req.body;
 
         // Iterate over each event
