@@ -4725,14 +4725,13 @@ const sendTransactionalEmail = async (to,
 
 async function updateEmailStatusMongo(emailId, newStatus) {
     try {
-        const customer = await Customer.findOne({
-            'emails.id': emailId
-        });
+
+        const customer = await Customer.findOne({ 'emails.id': emailId });
 
         if (!customer) {
             throw new Error(`No email found with id: ${emailId}`);
         }
-        console.log("found customer")
+        console.log("found")
         const emailIndex = customer.emails.findIndex(email => email.id === emailId);
         
         // Update the specific email using the index
@@ -4759,7 +4758,7 @@ app.post('/webhooks/mailjet', async (req, res) => {
 
             switch (eventType) {
                 case 'open':
-                    console.log(event.MessageID)
+                    console.log(event)
                     console.log(`Email opened: ${email}, Message ID: ${MessageID}`);
                     await updateEmailStatusMongo(event.MessageID, 'opened')
                     // Handle opened event (e.g., log to DB)
