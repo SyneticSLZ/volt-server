@@ -22,6 +22,7 @@ const EDataSchema = new mongoose.Schema({
     date:String,
     sentwith:String,
     status:String,
+    customID:String
 });
 
 const campaignSchema = new mongoose.Schema({

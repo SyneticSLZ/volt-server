@@ -1379,8 +1379,8 @@ if (google){
  sendEmailGMAIL(to, subject, body, email, accountGmail)
 
 }else {
-
-
+    const now = new Date();
+    const customID = `${user}:${now.toISOString()}:${Math.floor(Math.random() * 10)}`
 
   const info = mailjet.post('send').request({
     FromEmail: user,
@@ -1396,17 +1396,19 @@ if (google){
   </p>
 </div>`,
     Recipients: [{ Email: to }],
+    'Mj-CustomID': 'customID',
   })
   info
     .then(async (result) => {
 
     //   console.log( 'success : ', result.body)
+    console.log('Email:', result.body.Sent[0]);
 console.log('Email:', result.body.Sent[0].Email);
 console.log('MessageID:', result.body.Sent[0].MessageID);
 console.log('MessageUUID:', result.body.Sent[0].MessageUUID);
 
 
-      const now = new Date();
+
       console.log(now.toISOString());
 
 
@@ -1421,6 +1423,7 @@ console.log('MessageUUID:', result.body.Sent[0].MessageUUID);
         date: now.toISOString(),
         sentwith: 'mailjet',
         status: 'delivered',
+        customID : customID
     });
 
     // Save the campaign to the database
@@ -2179,19 +2182,21 @@ async function apiemails(email){
         ) => {
             if (email.sentwith === 'mailjet'){
                 try{
-                    const response = await mailjet.get('message').request({
-                        filters:{
-                            MessageId : email.id,
-                            UUID : email.UUID
-                        }
-                    });
 
-                    if (response.body.Data && response.body.Data[0] ){
-                        const MessageStatus = response.body.Data[0].Status;
-                        email.status = MessageStatus.toLowerCase();
-                        console.log('staus : ', email.status)
-                    }
 
+const request = mailjet.get('message').request({
+  CustomID: email.CustomID,
+})
+request
+  .then(result => {
+    // console.log(result.body)
+    const MessageStatus = response.body.Data[0].Status;
+    email.status = MessageStatus.toLowerCase();
+    console.log('staus : ', email.status)
+  })
+  .catch(err => {
+    console.log(err.statusCode)
+  })
 
                 } catch (mjerror) {
                     console.error('error fetching mailjet status: ', mjerror)
@@ -2200,7 +2205,7 @@ async function apiemails(email){
             return email
         }))
 
-        return updatedEmails;
+        res.json(updatedEmails);
     } catch (error) {
         console.error('Error retrieving active mailbox:', error);
         return ({ message: 'Server error' });
@@ -2225,33 +2230,35 @@ app.get('/api/emails', async (req, res) => {
             return res.json(null); // Respond with null
         }
 
-        const updatedEmails = await Promise.all(Emails.map(async (
-            email 
-        ) => {
-            if (email.sentwith === 'mailjet'){
-                try{
-                    const response = await mailjet.get('message').request({
-                        filters:{
-                            MessageId : email.id,
-                            UUID : email.UUID
-                        }
-                    });
-
-                    if (response.body.Data && response.body.Data[0] ){
-                        const MessageStatus = response.body.Data[0].Status;
-                        email.status = MessageStatus.toLowerCase();
-                        console.log('staus : ', email.status)
-                    }
+//         const updatedEmails = await Promise.all(Emails.map(async (
+//             email 
+//         ) => {
+//             if (email.sentwith === 'mailjet'){
+//                 try{
 
 
-                } catch (mjerror) {
-                    console.error('error fetching mailjet status: ', mjerror)
-                }
-            }
-            return email
-        }))
+// const request = mailjet.get('message').request({
+//   CustomID: email.CustomID,
+// })
+// request
+//   .then(result => {
+//     console.log(result.body)
+//     const MessageStatus = response.body.Data[0].Status;
+//     email.status = MessageStatus.toLowerCase();
+//     console.log('staus : ', email.status)
+//   })
+//   .catch(err => {
+//     console.log(err.statusCode)
+//   })
 
-        res.json(updatedEmails);
+//                 } catch (mjerror) {
+//                     console.error('error fetching mailjet status: ', mjerror)
+//                 }
+//             }
+//             return email
+//         }))
+
+        res.json(Emails);
     } catch (error) {
         console.error('Error retrieving active mailbox:', error);
         res.status(500).json({ message: 'Server error' });
@@ -4736,6 +4743,19 @@ app.listen(port, async () => {
     //     service: 'gmail',
     //     campaignid: 'campaignid'
     //   });
+
+//     const request = mailjet
+// 	.get("message")
+// 	.request({
+// 		"UUID":"40fc52d2-09cc-4f5f-b0fa-e864725c0e7e"
+// 	})
+// request
+// 	.then((result) => {
+// 		console.log(result.body)
+// 	})
+// 	.catch((err) => {
+// 		console.log(err.statusCode)
+// 	})
 
 
 //     sendTransactionalEmail({
