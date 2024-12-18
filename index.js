@@ -4723,34 +4723,29 @@ const sendTransactionalEmail = async (to,
   }
 };
 
-async function updateEmailStatusMongo(messageId, newStatus) {
+async function updateEmailStatusMongo(emailId, newStatus) {
     try {
-        // Find the customer that has the email with this messageId
-        const customer = await Customer.findOne({
-            'campaigns.sentEmails.messageId': messageId
-        });
-
-        if (!customer) {
-            throw new Error('Email not found');
-        }
-
-        // Find and update the specific email in the nested array
+        // Find and update the email in the customer's emails array
         const result = await Customer.findOneAndUpdate(
             {
-                'campaigns.sentEmails.messageId': messageId
+                'emails.id': emailId
             },
             {
                 $set: {
-                    'campaigns.$[].sentEmails.$[email].status': newStatus
+                    'emails.$[email].status': newStatus
                 }
             },
             {
                 arrayFilters: [
-                    { 'email.messageId': messageId }
+                    { 'email.id': emailId }
                 ],
                 new: true
             }
         );
+
+        if (!result) {
+            throw new Error('Email not found');
+        }
 
         return result;
     } catch (error) {
@@ -4759,40 +4754,40 @@ async function updateEmailStatusMongo(messageId, newStatus) {
     }
 }
 
-app.post('/webhooks/mailjet', (req, res) => {
+app.post('/webhooks/mailjet', async (req, res) => {
     try {
         const events = req.body;
 
         // Iterate over each event
-        events.forEach(event => {
+        for (const event of events) {
             const { event: eventType, email, timestamp, MessageID } = event;
 
             switch (eventType) {
                 case 'open':
                     console.log(event.MessageID)
                     console.log(`Email opened: ${email}, Message ID: ${MessageID}`);
-                    updateEmailStatusMongo(event.MessageID, 'opened')
+                    await updateEmailStatusMongo(event.MessageID, 'opened')
                     // Handle opened event (e.g., log to DB)
                     break;
 
                 case 'bounce':
                     console.log(event.MessageID)
                     console.log(`Email bounced: ${email}, Message ID: ${messageID}`);
-                    updateEmailStatusMongo(event.MessageID, 'bounced')
+                    await updateEmailStatusMongo(event.MessageID, 'bounced')
                     // Handle bounce event (e.g., mark email as invalid)
                     break;
 
                 case 'spam':
                     console.log(event.MessageID)
                     console.log(`Email marked as spam: ${email}, Message ID: ${messageID}`);
-                    updateEmailStatusMongo(event.MessageID, 'spam')
+                    await updateEmailStatusMongo(event.MessageID, 'spam')
                     // Handle spam event (e.g., flag in DB)
                     break;
 
                 default:
                     console.log(`Unhandled event: ${eventType}`);
             }
-        });
+        };
 
         res.status(200).send('Webhook received');
     } catch (error) {
