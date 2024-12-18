@@ -4776,14 +4776,14 @@ app.post('/webhooks/mailjet', (req, res) => {
                     break;
 
                 case 'bounce':
-                    console.log(event)
+                    console.log(event.MessageID)
                     console.log(`Email bounced: ${email}, Message ID: ${messageID}`);
                     updateEmailStatus(event.MessageID, 'bounced')
                     // Handle bounce event (e.g., mark email as invalid)
                     break;
 
                 case 'spam':
-                    console.log(event)
+                    console.log(event.MessageID)
                     console.log(`Email marked as spam: ${email}, Message ID: ${messageID}`);
                     updateEmailStatus(event.MessageID, 'spam')
                     // Handle spam event (e.g., flag in DB)
