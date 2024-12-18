@@ -2212,6 +2212,27 @@ request
     }
 }
 
+app.get('/api/senders', async (req, res) => {
+try {
+const request = mailjet
+	.get("sender", {'version': 'v3'})
+	.request()
+request
+	.then((result) => {
+		console.log(result.body)
+        res.json(result.body);
+	})
+	.catch((err) => {
+		console.log(err.statusCode)
+        res.json({ message : 'failed'})
+	})
+    
+
+} catch (error) {
+    console.error('Error retrieving active mailbox:', error);
+    res.status(500).json({ message: 'Server error' });
+}
+});
 
 
 
