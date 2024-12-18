@@ -4724,6 +4724,41 @@ const sendTransactionalEmail = async (to,
 };
 
 
+app.post('/webhooks/mailjet', (req, res) => {
+    try {
+        const events = req.body;
+
+        // Iterate over each event
+        events.forEach(event => {
+            const { event: eventType, email, timestamp, messageID } = event;
+
+            switch (eventType) {
+                case 'open':
+                    console.log(`Email opened: ${email}, Message ID: ${messageID}`);
+                    // Handle opened event (e.g., log to DB)
+                    break;
+
+                case 'bounce':
+                    console.log(`Email bounced: ${email}, Message ID: ${messageID}`);
+                    // Handle bounce event (e.g., mark email as invalid)
+                    break;
+
+                case 'spam':
+                    console.log(`Email marked as spam: ${email}, Message ID: ${messageID}`);
+                    // Handle spam event (e.g., flag in DB)
+                    break;
+
+                default:
+                    console.log(`Unhandled event: ${eventType}`);
+            }
+        });
+
+        res.status(200).send('Webhook received');
+    } catch (error) {
+        console.error('Error processing webhook:', error);
+        res.status(500).send('Server error');
+    }
+});
 
 
 
