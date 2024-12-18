@@ -4734,16 +4734,19 @@ app.post('/webhooks/mailjet', (req, res) => {
 
             switch (eventType) {
                 case 'open':
+                    console.log(event)
                     console.log(`Email opened: ${email}, Message ID: ${messageID}`);
                     // Handle opened event (e.g., log to DB)
                     break;
 
                 case 'bounce':
+                    console.log(event)
                     console.log(`Email bounced: ${email}, Message ID: ${messageID}`);
                     // Handle bounce event (e.g., mark email as invalid)
                     break;
 
                 case 'spam':
+                    console.log(event)
                     console.log(`Email marked as spam: ${email}, Message ID: ${messageID}`);
                     // Handle spam event (e.g., flag in DB)
                     break;
