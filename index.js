@@ -4723,7 +4723,7 @@ const sendTransactionalEmail = async (to,
   }
 };
 
-async function updateEmailStatus(messageId, newStatus) {
+async function updateEmailStatusMongo(messageId, newStatus) {
     try {
         // Find the customer that has the email with this messageId
         const customer = await Customer.findOne({
@@ -4771,21 +4771,21 @@ app.post('/webhooks/mailjet', (req, res) => {
                 case 'open':
                     console.log(event.MessageID)
                     console.log(`Email opened: ${email}, Message ID: ${MessageID}`);
-                    updateEmailStatus(event.MessageID, 'opened')
+                    updateEmailStatusMongo(event.MessageID, 'opened')
                     // Handle opened event (e.g., log to DB)
                     break;
 
                 case 'bounce':
                     console.log(event.MessageID)
                     console.log(`Email bounced: ${email}, Message ID: ${messageID}`);
-                    updateEmailStatus(event.MessageID, 'bounced')
+                    updateEmailStatusMongo(event.MessageID, 'bounced')
                     // Handle bounce event (e.g., mark email as invalid)
                     break;
 
                 case 'spam':
                     console.log(event.MessageID)
                     console.log(`Email marked as spam: ${email}, Message ID: ${messageID}`);
-                    updateEmailStatus(event.MessageID, 'spam')
+                    updateEmailStatusMongo(event.MessageID, 'spam')
                     // Handle spam event (e.g., flag in DB)
                     break;
 
