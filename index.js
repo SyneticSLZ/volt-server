@@ -4726,13 +4726,13 @@ const sendTransactionalEmail = async (to,
 async function updateEmailStatusMongo(emailId, newStatus) {
     try {
 
-        const customer = await Customer.findOne({ 'emails.id': emailId });
+        const customer = await Customer.findOne({ 'emails.UUID': emailId });
 
         if (!customer) {
             throw new Error(`No email found with id: ${emailId}`);
         }
         console.log("found")
-        const emailIndex = customer.emails.findIndex(email => email.id === emailId);
+        const emailIndex = customer.emails.findIndex(email => email.UUID === emailId);
         
         // Update the specific email using the index
         customer.emails[emailIndex].status = newStatus;
@@ -4754,27 +4754,27 @@ app.post('/webhooks/mailjet', async (req, res) => {
 
         // Iterate over each event
         for (const event of events) {
-            const { event: eventType, email, timestamp, MessageID } = event;
+            const { event: eventType, email, timestamp, MessageID, Message_GUID } = event;
 
             switch (eventType) {
                 case 'open':
                     console.log(event)
                     console.log(`Email opened: ${email}, Message ID: ${MessageID}`);
-                    await updateEmailStatusMongo(event.MessageID, 'opened')
+                    await updateEmailStatusMongo(event.Message_GUID, 'opened')
                     // Handle opened event (e.g., log to DB)
                     break;
 
                 case 'bounce':
                     console.log(event.MessageID)
                     console.log(`Email bounced: ${email}, Message ID: ${messageID}`);
-                    await updateEmailStatusMongo(event.MessageID, 'bounced')
+                    await updateEmailStatusMongo(event.MessageGUID, 'bounced')
                     // Handle bounce event (e.g., mark email as invalid)
                     break;
 
                 case 'spam':
                     console.log(event.MessageID)
                     console.log(`Email marked as spam: ${email}, Message ID: ${messageID}`);
-                    await updateEmailStatusMongo(event.MessageID, 'spam')
+                    await updateEmailStatusMongo(event.MessageGUID, 'spam')
                     // Handle spam event (e.g., flag in DB)
                     break;
 
