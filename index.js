@@ -2160,6 +2160,11 @@ app.get('/api/mailboxes/active', async (req, res) => {
 });
 
 
+
+
+
+
+
 app.get('/api/emails', async (req, res) => {
     const { email } = req.query;
 
@@ -2169,26 +2174,50 @@ app.get('/api/emails', async (req, res) => {
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
+        const Emails = customer.emails;
 
-        // Find the active mailbox
-        
-        // Filter all active mailboxes and extract their smtp.user
-        const Emails = customer.emails
-
-        
-
-        // If no active mailbox exists, return null
         if (!Emails) {
             return res.json(null); // Respond with null
         }
 
-        // Return the list of smtp.user values
-        res.json(Emails);
+        const updatedEmails = await Promise.all(Emails.map(async (
+            email 
+        ) => {
+            if (email.sentwith === 'mailjet'){
+                try{
+                    const response = await mailjet.get('message').request({
+                        filters:{
+                            MessageId : email.id,
+                            UUID : email.UUID
+                        }
+                    });
+
+                    if (response.body.Data && response.body.Data[0] ){
+                        const MessageStatus = response.body.Data[0].Status;
+                        email.status = MessageStatus.toLowerCase();
+                        console.log('staus : ', email.status)
+                    }
+
+
+                } catch (mjerror) {
+                    console.error('error fetching mailjet status: ', mjerror)
+                }
+            }
+            return email
+        }))
+
+        res.json(updatedEmails);
     } catch (error) {
         console.error('Error retrieving active mailbox:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+
+
+
+
+
 
 async function GetEmailsxx(email){
     const customer = await Customer.findOne({ email });
