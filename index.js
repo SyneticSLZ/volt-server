@@ -2160,7 +2160,52 @@ app.get('/api/mailboxes/active', async (req, res) => {
 });
 
 
+async function apiemails(email){
 
+    try {
+        // Find the customer by email
+        const customer = await Customer.findOne({ email });
+        if (!customer) {
+            return ({ message: 'Customer not found' });
+        }
+        const Emails = customer.emails;
+
+        if (!Emails) {
+            return (null); // Respond with null
+        }
+
+        const updatedEmails = await Promise.all(Emails.map(async (
+            email 
+        ) => {
+            if (email.sentwith === 'mailjet'){
+                try{
+                    const response = await mailjet.get('message').request({
+                        filters:{
+                            MessageId : email.id,
+                            UUID : email.UUID
+                        }
+                    });
+
+                    if (response.body.Data && response.body.Data[0] ){
+                        const MessageStatus = response.body.Data[0].Status;
+                        email.status = MessageStatus.toLowerCase();
+                        console.log('staus : ', email.status)
+                    }
+
+
+                } catch (mjerror) {
+                    console.error('error fetching mailjet status: ', mjerror)
+                }
+            }
+            return email
+        }))
+
+        return updatedEmails;
+    } catch (error) {
+        console.error('Error retrieving active mailbox:', error);
+        return ({ message: 'Server error' });
+    }
+}
 
 
 
@@ -4678,7 +4723,7 @@ const sendTransactionalEmail = async (to,
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
 
-
+    // apiemails('margaeryfrey.325319@gmail.com')
 
     // console.log(await GetEmailsxx('margaeryfrey.325319@gmail.com'))
     // await   sendcampsummaryEmail({
