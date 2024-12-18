@@ -4725,23 +4725,15 @@ const sendTransactionalEmail = async (to,
 
 async function updateEmailStatusMongo(emailId, newStatus) {
     try {
-        const result = await Customer.findOneAndUpdate(
-            {
-                'emails.id': emailId  // This matches the id field in the emails array
-            },
-            {
-                $set: {
-                    'emails.$.status': newStatus  // Using positional $ operator
-                }
-            },
-            { new: true }
-        );
+        const customer = await Customer.findOne({
+            'emails.id': emailId
+        });
 
-        if (!result) {
+        if (!customer) {
             throw new Error(`No email found with id: ${emailId}`);
         }
 
-        return result;
+        return customer.emails;
     } catch (error) {
         console.error('Error updating email status:', error);
         throw error;
