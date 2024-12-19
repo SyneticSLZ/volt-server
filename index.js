@@ -2220,7 +2220,7 @@ const request = mailjet
 request
 	.then((result) => {
 		console.log(result.body)
-        res.json(result.body);
+        res.json(result.body.Data);
 	})
 	.catch((err) => {
 		console.log(err.statusCode)
@@ -4781,33 +4781,37 @@ app.post('/webhooks/mailjet', async (req, res) => {
                 case 'open':
                     console.log(event)
                     console.log(`Email opened: ${email}, Message ID: ${MessageID}`);
-                    await updateEmailStatusMongo(event.Message_GUID, 'opened')
+                    updateEmailStatusMongo(event.Message_GUID, 'opened')
+                    res.status(200).send('Webhook received');
                     // Handle opened event (e.g., log to DB)
-                    break;
+                    // break;
 
                 case 'bounce':
                     console.log(event.MessageID)
                     console.log(`Email bounced: ${email}, Message ID: ${messageID}`);
-                    await updateEmailStatusMongo(event.MessageGUID, 'bounced')
+                    updateEmailStatusMongo(event.MessageGUID, 'bounced')
+                    res.status(200).send('Webhook received');
                     // Handle bounce event (e.g., mark email as invalid)
-                    break;
+                    // break;
 
                 case 'spam':
                     console.log(event.MessageID)
                     console.log(`Email marked as spam: ${email}, Message ID: ${messageID}`);
-                    await updateEmailStatusMongo(event.MessageGUID, 'spam')
+                    updateEmailStatusMongo(event.MessageGUID, 'spam')
                     // Handle spam event (e.g., flag in DB)
-                    break;
+                    res.status(200).send('Webhook received');
+                    // break;
 
                 default:
                     console.log(`Unhandled event: ${eventType}`);
+                    res.status(200).send('Webhook received');
             }
         };
 
         res.status(200).send('Webhook received');
     } catch (error) {
         console.error('Error processing webhook:', error);
-        res.status(500).send('Server error');
+        res.status(200).send('Server error');
     }
 });
 
