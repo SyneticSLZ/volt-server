@@ -27,8 +27,17 @@ const cron = require('node-cron');
 const crypto = require('crypto');
 const moment = require('moment-timezone');
 const sgMail = require('@sendgrid/mail')
+const { XMLParser } = require('fast-xml-parser');
 
 const { JSDOM } = require('jsdom');
+const rateLimit = require('express-rate-limit');
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+
+app.use('/api/', apiLimiter);
 
 const fs = require('fs').promises;
 
@@ -4767,6 +4776,408 @@ async function updateEmailStatusMongo(emailId, newStatus) {
         throw error;
     }
 }
+
+app.get('/api/fda-filings', async (req, res) => {
+    try {
+      const response = await axios.get(`https://api.fda.gov/drug/drugsfda.json`, {
+        params: {
+          api_key: process.env.FDA_API_KEY,
+          // search: "submission_status_date:[2024-01-01 TO 2024-12-19]",
+          // Correct date format
+          limit: 20,
+          // sort: undefined
+          sort: 'submissions.submission_status_date:desc'
+        }
+      });
+  
+      const filings = response.data.results.map(filing => ({
+        company: filing.sponsor_name,
+        type: filing.submissions[0]?.submission_type || 'N/A',
+        date: filing.submissions[0]?.submission_status_date || 'N/A',
+        status: filing.submissions[0]?.submission_status || 'Pending',
+        id: filing.application_number
+      }));
+  
+      res.json(filings);
+    } catch (error) {
+      console.error('FDA API Error Details:', error.response?.data);
+  
+      // console.error('FDA API Error:', error);
+      res.status(500).json({ error: 'Error fetching FDA filings' });
+    }
+  });
+  
+  app.get('/api/patents', async (req, res) => {
+    try {
+      const url = 'https://api.patentsview.org/patents/query';
+      
+      const requestBody = {
+        q: {
+          _and: [
+            {
+              _gte: {
+                patent_date: "2024-01-01",
+                assignee_organization: true
+              }
+            },
+  
+          ]
+        },
+        f: [
+          "patent_number",
+          "patent_title", 
+          "patent_date",
+          "patent_type",           // Type of patent
+          "patent_kind",           // Kind code
+          "assignee_organization", // Organization name
+          "assignee_first_name",   // Individual assignee first name
+          "assignee_last_name",    // Individual assignee last name
+          // To help determine status
+          "patent_processing_time", // Time taken for processing
+  
+          // Joint venture indicators
+          "assignee_sequence",          // Multiple assignees indicate collaboration
+          // "coexaminer_group",          // Different examination groups can indicate tech breadth
+          
+          // Technology transfer indicators
+          "uspc_sequence",             // Multiple classifications suggest tech overlap areas
+          "cited_patent_number",       // Who they cite shows who they follow
+          "citedby_patent_number",     // Who cites them shows industry influence
+          // "num_cited_by_us_patents",   // Citation count indicates tech importance
+          
+          // Geographic scope
+          "assignee_country",          // International presence
+          "inventor_country",          // R&D locations
+          
+          // Tech field breadth
+          // "wipo_field",               // Technology sectors
+          "cpc_group_id",             // Detailed tech classification
+          // "uspc_class",               // US tech classification
+          
+          // Partnership indicators
+          // "inventor_organization",     // Research partnerships
+          "govint_org_name"           // Government/institution partnerships
+  
+        ],
+        o: {
+          "patent_date": "desc"
+        },
+        s: [{"patent_date": "desc"}],
+        per_page: 100
+      };
+      
+      const response = await axios.post(url, requestBody, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      const patents = response.data.patents.map(patent => {
+        // Get patent status based on available fields
+        const status = determinePatentStatus(patent.patent_kind, patent.patent_type);
+        
+        // Handle company/assignee information
+        const assigneeInfo = getAssigneeInfo(patent);
+        console.log(patent)
+        return {
+          title: patent.patent_title,
+          company: assigneeInfo.company,
+          assigneeType: assigneeInfo.type,
+          issueDate: patent.patent_date,
+          id: patent.patent_number,
+          status: status,
+          type: patent.patent_type || 'Unknown Type',
+          applicationNumber: patent.application_number,
+          asignee : patent.assignees[0].assignee_organization || 'Unknown Type'
+        };
+      });
+      
+      res.json(patents);
+    } catch (error) {
+      console.error('PatentsView API Error:', error.response?.data || error.message);
+      res.status(500).json({ 
+        error: 'Error fetching patent data',
+        details: error.response?.data || error.message 
+      });
+    }
+  });
+  
+  // Helper function to determine patent status from available fields
+  function determinePatentStatus(kindCode, patentType) {
+    // Kind codes indicate the publication level
+    const kindCodeMap = {
+      'A1': 'Patent Application Publication',
+      'A2': 'Second Patent Application Publication',
+      'A9': 'Corrected Patent Application Publication',
+      'B1': 'Granted Patent (No previous publication)',
+      'B2': 'Granted Patent (Previously published)',
+      'P1': 'Plant Patent Application Publication',
+      'P2': 'Plant Patent Grant',
+      'P3': 'Plant Patent Application Publication',
+      'P4': 'Plant Patent Grant (Previously published)',
+      'P9': 'Corrected Plant Patent Application Publication',
+      'H1': 'Statutory Invention Registration',
+      'S1': 'Design Patent'
+    };
+  
+    // If we have a kind code, use it
+    if (kindCode && kindCodeMap[kindCode]) {
+      return kindCodeMap[kindCode];
+    }
+  
+    // Fall back to patent type if available
+    if (patentType) {
+      return `${patentType} Patent`;
+    }
+  
+    return 'Status Unknown';
+  }
+  
+  // Helper function to handle assignee information
+  function getAssigneeInfo(patent) {
+    // Check for organization first
+    if (patent.assignee_organization?.[0]) {
+      return {
+        company: patent.assignee_organization[0],
+        type: 'Organization'
+      };
+    }
+    
+    // If no organization, check for individual inventor
+    if (patent.assignee_first_name?.[0] || patent.assignee_last_name?.[0]) {
+      const firstName = patent.assignee_first_name?.[0] || '';
+      const lastName = patent.assignee_last_name?.[0] || '';
+      return {
+        company: `${firstName} ${lastName}`.trim(),
+        type: 'Individual'
+      };
+    }
+    
+    // Default case if no assignee information is available
+    return {
+      company: 'Unassigned',
+      type: 'Unknown'
+    };
+  }
+    //fcc submissions
+    
+    // More aggressive XML sanitization
+  
+    
+    app.get('/api/fcc-submissions', async (req, res) => {
+      try {
+        const response = await axios.get('https://www.fcc.gov/news-events/daily-digest.xml', {
+          timeout: 10000,
+          maxRedirects: 3,
+          headers: {
+            'Accept': 'application/xml, application/rss+xml',
+            'User-Agent': 'Mozilla/5.0 (compatible; YourApp/1.0;)',
+          },
+          // Get response as raw text
+          responseType: 'text',
+          transformResponse: [data => data]
+        });
+    
+        // Create parser with very lenient options
+        const parser = new XMLParser({
+          ignoreAttributes: false,
+          parseAttributeValue: true,
+          trimValues: true,
+          parseTagValue: true,
+          allowBooleanAttributes: true,
+          ignoreDeclaration: true,
+          ignorePiTags: true,
+          removeNSPrefix: true,
+          numberParseOptions: {
+            skipLike: /./
+          }
+        });
+    
+        // Parse the XML
+        const result = parser.parse(response.data);
+        console.log(result)
+        
+        // Navigate through the parsed structure to find items
+        const items = result?.rss?.channel?.item || [];
+        const submissions = (Array.isArray(items) ? items : [items])
+          .slice(0, 10)
+          .map(item => ({
+            title: (item.title || 'No Title').trim(),
+            type: 'Daily Digest Entry',
+            date: formatDate(item.pubDate || item['dc:date'] || new Date()),
+            status: 'Published',
+            id: item.guid || item.link || `fcc-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            link: item.link || 'https://www.fcc.gov/rss/daily-digest.xml'
+          }));
+    console.log(submissions)
+        res.json(submissions);
+        
+      } catch (error) {
+        console.error('FCC Feed Error:', {
+          message: error.message,
+          stack: error.stack
+        });
+    
+        // Return fallback data
+        res.json([{
+          title: 'FCC Daily Digest Feed Temporarily Unavailable',
+          type: 'System Notice',
+          date: new Date().toISOString(),
+          status: 'Feed Error',
+          id: `error-${Date.now()}`,
+          link: 'https://www.fcc.gov/news-events/daily-digest'
+        }]);
+      }
+    });
+    
+    function formatDate(dateStr) {
+      try {
+        const date = new Date(dateStr);
+        return date.toString() === 'Invalid Date' ? 
+          new Date().toISOString() : 
+          date.toISOString();
+      } catch {
+        return new Date().toISOString();
+      }
+    }
+  
+  
+  // Company Data Enrichment
+  app.post('/api/enrich-company', async (req, res) => {
+    const { companyName } = req.body;
+    
+    try {
+      // Fetch additional company data from Apollo
+      const apolloResponse = await axios.get(`https://api.apollo.io/v1/organizations/enrich`, {
+        headers: {
+          'X-API-KEY': process.env.APOLLO_API_KEY
+        },
+        params: {
+          domain: companyName.toLowerCase().replace(/\s+/g, '') + '.com'
+        }
+      });
+  
+      // Get employee email patterns using Hunter.io
+      const hunterResponse = await axios.get('https://api.hunter.io/v2/domain-search', {
+        params: {
+          domain: apolloResponse.data.domain,
+          api_key: process.env.HUNTER_API_KEY
+        }
+      });
+  
+      const enrichedData = {
+        companyInfo: apolloResponse.data,
+        emailPatterns: hunterResponse.data.data.pattern
+      };
+  
+      res.json(enrichedData);
+    } catch (error) {
+      console.error('Enrichment Error:', error);
+      res.status(500).json({ error: 'Error enriching company data' });
+    }
+  });
+  
+  // Funding Rounds (using Crunchbase API)
+  // Fetch funding rounds from Crunchbase API
+  app.get('/api/funding-rounds', async (req, res) => {
+    try {
+      const { CRUNCHBASE_API_KEY } = process.env;
+  
+      if (!CRUNCHBASE_API_KEY) {
+        return res.status(500).json({ error: 'Crunchbase API key is missing' });
+      }
+  
+      const response = await axios.post(
+        'https://api.crunchbase.com/api/v4/searches/organizations',
+        {
+          field_ids: [
+            "identifier",
+            "name",
+            "short_description",
+            // "funding_total",
+            // "categories",
+            // "website",
+            // "founded_on",
+            "rank_org"
+          ],
+          query: [
+            // {
+            //   type: "predicate",
+            //   field_id: "funding_total",
+            //   operator_id: "gt",
+            //   values: [0]
+            // },
+            {
+              type: "predicate",
+              field_id: "facet_ids",
+              operator_id: "includes",
+              values: [
+                "company"
+              ]
+            }
+          ],
+          order: [
+            {
+              field_id: "rank_org",
+              sort: "asc"  // Lower rank means more recent/important updates
+            }
+          ],
+          limit: 10
+        },
+        {
+          headers: { 
+            'X-cb-user-key': CRUNCHBASE_API_KEY,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+  
+      const companies = response.data.entities.map(org => ({
+        company: org.properties.name,
+        description: org.properties.short_description || 'No description available',
+        totalFunding: org.properties.funding_total
+          ? `$${(org.properties.funding_total / 1000000).toFixed(1)}M`
+          : 'Undisclosed',
+        founded: org.properties.founded_on || 'Unknown',
+        website: org.properties.website?.url || 'Not available',
+        categories: org.properties.categories || [],
+        rank: org.properties.rank_org,
+        id: org.properties.identifier
+      }));
+  
+      res.json(companies);
+    } catch (error) {
+      console.error('Crunchbase API Error:', error.response?.data || error);
+      res.status(error.response?.status || 500).json({ 
+        error: 'Error fetching company data'
+      });
+    }
+  });
+
+
+// const Campaign = mongoose.model('Campaign', CampaignSchema);
+
+app.post('/api/campaigns', async (req, res) => {
+    try {
+      const campaign = new Campaign(req.body);
+      await campaign.save();
+      res.json(campaign);
+    } catch (error) {
+      res.status(500).json({ error: 'Error creating campaign' });
+    }
+  });
+  
+  app.get('/api/campaigns', async (req, res) => {
+    try {
+      const campaigns = await Campaign.find();
+      res.json(campaigns);
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching campaigns' });
+    }
+  });
+
+  
+
 
 app.post('/webhooks/mailjet', async (req, res) => {
     try {
