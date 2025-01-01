@@ -4564,6 +4564,7 @@ app.post('/linkedin/personalise', async (req, res) => {
         res.status(200).json({
             status: 'success',
             message: 'LinkedIn message personalized and sent',
+            body: body_linkedin,
             details: {
                 subjectLength: subject_linkedin.length,
                 bodyLength: body_linkedin.length
