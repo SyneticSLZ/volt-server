@@ -4515,6 +4515,7 @@ scraper.scrapeCompanyIntelligence('https://www.voltmailer.com/')
 })
 
 let data = []
+// let body_linkedin
 
 app.post('/linkedin/personalise', async (req, res) => {
     try {
@@ -4633,7 +4634,7 @@ const message = await openai.beta.threads.messages.create(
                     
                     const subjectLine = subjectMatch ? subjectMatch[1] : "No subject found";
                     const body = messageMatch ? messageMatch[1] : "No body found";
-                    
+                    body_linkedin = body
                     // data.push[{
                     //     body: body, subject:subjectLine
                     // }]
