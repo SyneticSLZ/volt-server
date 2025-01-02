@@ -4520,7 +4520,7 @@ let data = []
 app.post('/linkedin/personalise', async (req, res) => {
     try {
         // Validate input
-        const { url, cookie, userAgent, data, pitch } = req.body;
+        const { url, cookie, userAgent, data, pitch, name } = req.body;
 
         // Check for required fields
         if (!url || !cookie || !userAgent || !data || !pitch) {
@@ -4543,7 +4543,7 @@ app.post('/linkedin/personalise', async (req, res) => {
         });
 
         // Attempt personalization
-        await linkedinpersonalise(url, cookie, userAgent, data, pitch);
+        await linkedinpersonalise(url, cookie, userAgent, data, pitch, name);
 
         // } catch (personaliseError) {
         //     console.error('Personalization failed:', personaliseError);
