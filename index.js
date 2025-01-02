@@ -4588,7 +4588,7 @@ process.on('unhandledRejection', (reason, promise) => {
     // Optional: You might want to send an alert or log to a monitoring service
 });
 
-async function linkedinpersonalise(url, cookie, userAgent, data, pitch){
+async function linkedinpersonalise(url, cookie, userAgent, data, pitch, name){
 
 ThreadID = await CreateThread()
 try {
@@ -4596,7 +4596,7 @@ const message = await openai.beta.threads.messages.create(
     ThreadID,
     {
         role: "user",
-        content:  `using this data  :  ${data} the persons name that i am sending the message from is also in that data at the end, make sure you sign off using this name can you please create me a personalised linkedin profile using data from these fields  in this file . This is the pitch I am going to use: ${pitch}.  Generate the subject line then the body of the message please as you would as you are a professional lead generation and cold outreach specialist.
+        content:  `using this data  :  ${data} the persons name that i am sending the message from is also in that data at the end, make sure you sign off using this name: ${name} can you please create me a personalised linkedin profile using data from these fields  in this file . This is the pitch I am going to use: ${pitch}.  Generate the subject line then the body of the message please as you would as you are a professional lead generation and cold outreach specialist.
 `
     }
 );
