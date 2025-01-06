@@ -4779,7 +4779,7 @@ async function newSendLinkedInMessage({ url, cookie, userAgent, message, subject
         const response = await axios.post(
             "https://api.phantombuster.com/api/v2/agents/launch",
             {
-                "id": process.env.PHANTOMBUSTER_AGENT_ID,
+                "id": '3591875049244378',
                 "argument": {
                     numberOfProfilesPerLaunch: 7,
                     spreadsheetUrl: url,
