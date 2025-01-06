@@ -39,7 +39,7 @@ const apiLimiter = rateLimit({
 });
 
 app.use('/api/', apiLimiter);
-
+app.set('trust proxy', true);
 const fs = require('fs').promises;
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Replace with your OpenAI API Key
