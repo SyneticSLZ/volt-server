@@ -4603,6 +4603,49 @@ res.json({
     message: 'hello'
 })
 })
+
+async function checkAgentStatus(phantombusterApiKey, agentId) {
+    const options = {
+        headers: {
+            "x-phantombuster-key": phantombusterApiKey,
+            "Content-Type": "application/json",
+        }
+    };
+
+    try {
+        const response = await axios.get(
+            `https://api.phantombuster.com/api/v2/agents/fetch-output?id=${agentId}`,
+            options
+        );
+        return response.data.status !== 'running';
+    } catch (error) {
+        console.error('Error checking agent status:', error.message);
+        return false;
+    }
+}
+
+async function waitForAgentAvailability(phantombusterApiKey, agentId, maxWaitTime = 300000) {
+    const startTime = Date.now();
+    const checkInterval = 10000; // Check every 10 seconds
+
+    while (Date.now() - startTime < maxWaitTime) {
+        console.log('Checking if agent is available...');
+        const isAvailable = await checkAgentStatus(phantombusterApiKey, agentId);
+        
+        if (isAvailable) {
+            console.log('Agent is now available');
+            return true;
+        }
+
+        console.log('Agent is busy, waiting before next check...');
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+
+    throw new Error('Timeout waiting for agent availability');
+}
+
+
+
 async function newlinkedinpersonalise(url, cookie, userAgent, data, pitch, name) {
     console.log('=== Starting linkedinpersonalise function ===');
     let attempts = 0;
@@ -4768,38 +4811,94 @@ async function newCreateThread() {
 // }
 
 async function newSendLinkedInMessage({ url, cookie, userAgent, message, subject }) {
+    const AGENT_ID = '3591875049244378';
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 5000;
+
     const options = {
         headers: {
             "x-phantombuster-key": process.env.PHANTOMBUSTER_API_KEY,
             "Content-Type": "application/json",
         }
     };
-    
-    try {
-        const response = await axios.post(
-            "https://api.phantombuster.com/api/v2/agents/launch",
-            {
-                "id": '3591875049244378',
-                "argument": {
-                    numberOfProfilesPerLaunch: 7,
-                    spreadsheetUrl: url,
-                    spreadsheetUrlExclusionList: [],
-                    sessionCookie: cookie,
-                    userAgent: userAgent,
-                    message: message,
-                    sendInMail: true,
-                    inMailSubject: subject
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            // Wait for agent availability before attempting to launch
+            await waitForAgentAvailability(process.env.PHANTOMBUSTER_API_KEY, AGENT_ID);
+
+            const response = await axios.post(
+                "https://api.phantombuster.com/api/v2/agents/launch",
+                {
+                    "id": AGENT_ID,
+                    "argument": {
+                        numberOfProfilesPerLaunch: 7,
+                        spreadsheetUrl: url,
+                        spreadsheetUrlExclusionList: [],
+                        sessionCookie: cookie,
+                        userAgent: userAgent,
+                        message: message,
+                        sendInMail: true,
+                        inMailSubject: subject
+                    }
+                },
+                options
+            );
+
+            return response.data;
+
+        } catch (error) {
+            console.error(`Attempt ${attempt} failed:`, error.response?.data || error.message);
+
+            if (error.response?.data?.error === 'Agent maximum parallel executions limit of 1 (agent limit) reached') {
+                console.log('Agent is busy, will retry after waiting...');
+                
+                if (attempt < MAX_RETRIES) {
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                    continue;
                 }
-            },
-            options
-        );
-        
-        return response.data;
-    } catch (error) {
-        console.error('Phantombuster API error:', error.response?.data || error.message);
-        throw new Error('Failed to send LinkedIn message');
+            }
+
+            // If we've reached max retries or it's a different error, throw it
+            throw new Error('Failed to send LinkedIn message: ' + (error.response?.data?.error || error.message));
+        }
     }
 }
+
+
+// async function newSendLinkedInMessage({ url, cookie, userAgent, message, subject }) {
+//     const options = {
+//         headers: {
+//             "x-phantombuster-key": process.env.PHANTOMBUSTER_API_KEY,
+//             "Content-Type": "application/json",
+//         }
+//     };
+    
+//     try {
+//         const response = await axios.post(
+//             "https://api.phantombuster.com/api/v2/agents/launch",
+//             {
+//                 "id": '3591875049244378',
+//                 "argument": {
+//                     numberOfProfilesPerLaunch: 7,
+//                     spreadsheetUrl: url,
+//                     spreadsheetUrlExclusionList: [],
+//                     sessionCookie: cookie,
+//                     userAgent: userAgent,
+//                     message: message,
+//                     sendInMail: true,
+//                     inMailSubject: subject
+//                 }
+//             },
+//             options
+//         );
+        
+//         return response.data;
+//     } catch (error) {
+//         console.error('Phantombuster API error:', error.response?.data || error.message);
+//         throw new Error('Failed to send LinkedIn message');
+//     }
+// }
 // Auth Routes
 app.post('/api/register', async (req, res) => {
     try {
