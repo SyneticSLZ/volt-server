@@ -4540,8 +4540,8 @@ const userSchema = new mongoose.Schema({
     },
     messagesSent: { type: Number, default: 0 },
     messageLimits: {
-        daily: { type: Number, default: 100 },
-        monthly: { type: Number, default: 2000 }
+        daily: { type: Number, default: 5 },
+        monthly: { type: Number, default: 5 }
     },
     pitchTemplates: [{
         name: String,
