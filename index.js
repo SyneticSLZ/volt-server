@@ -4606,7 +4606,7 @@ res.json({
 async function newlinkedinpersonalise(url, cookie, userAgent, data, pitch, name) {
     console.log('=== Starting linkedinpersonalise function ===');
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 5;
 
     while (attempts < maxAttempts) {
         attempts++;
