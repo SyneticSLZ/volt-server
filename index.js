@@ -16,6 +16,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
 const url = require('url');
+const bcrypt = require('bcryptjs');
 const nlp = require('compromise');
 // const fetch = require('node-fetch');
 // const fs = require('fs');
