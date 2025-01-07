@@ -4679,10 +4679,19 @@ async function newlinkedinpersonalise(url, cookie, userAgent, data, pitch, name)
                 ThreadID,
                 {
                     role: "user",
-                    content: `Using this data: ${JSON.stringify(data)} and signing off as: ${name}, create a personalized LinkedIn message. Format the response exactly as follows:
-                    Subject: [Your subject line here]
-                    Message: [Your message content here]
-                    Use this pitch template: ${pitch}`
+                    content: `
+                    Using this data: ${JSON.stringify(data)}, and signing off as: ${name}, create a highly personalized LinkedIn message. 
+                    Follow these steps:
+                    1. Reference a specific detail from the recipient’s profile or recent activity.
+                    2. Relate the user pitch to their expertise, role, or company.
+                    3. Ask a tailored question or suggest a relevant collaboration.
+                    4. Conclude with a professional sign-off.
+
+                    Format your response as:
+                    - Subject: [Your subject line here]
+                    - Message: [Your message content here]
+
+                    The user's pitch is: ${pitch}. Ensure the output message is unique and genuinely personalized. Generic phrasing should be avoided. `
                 }
             );
             console.log('Message created:', message.id);
