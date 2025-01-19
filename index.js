@@ -1162,41 +1162,107 @@ async function sendCampaignSummary(customerId, campaignId) {
   });
 
 
-  async function refreshTokenIfNeeded(account) {
-    // Check if token is expired or about to expire
-    if (account.expiresAt && Date.now() >= account.expiresAt - 300000) { // 5 minutes buffer
-      try {
-        const refreshResponse = await axios.post('https://oauth2.googleapis.com/token', {
-          client_id: GOOGLE_OAUTH_CONFIG.clientId,
-          client_secret: GOOGLE_OAUTH_CONFIG.clientSecret,
-          refresh_token: account.refreshToken,
+//   async function refreshTokenIfNeeded(account) {
+//     // Check if token is expired or about to expire
+//     if (account.expiresAt && Date.now() >= account.expiresAt - 300000) { // 5 minutes buffer
+//       try {
+//         const refreshResponse = await axios.post('https://oauth2.googleapis.com/token', {
+//           client_id: GOOGLE_OAUTH_CONFIG.clientId,
+//           client_secret: GOOGLE_OAUTH_CONFIG.clientSecret,
+//           refresh_token: account.refreshToken,
+//           grant_type: 'refresh_token'
+//         });
+
+//         // Update tokens
+//         account.accessToken = refreshResponse.data.access_token;
+//         account.expiresAt = Date.now() + (refreshResponse.data.expires_in * 1000);
+
+//         // Update in stored accounts
+//         const index = this.accounts.findIndex(a => a.id === account.id);
+//         if (index !== -1) {
+//           this.accounts[index] = account;
+//           this.saveAccounts();
+//         }
+//       } catch (error) {
+//         console.error('Token refresh failed:', error);
+//         throw error;
+//       }
+//     }
+//   }
+
+async function refreshGoogleToken(refreshToken) {
+    try {
+      const response = await axios.post('https://oauth2.googleapis.com/token', 
+        new URLSearchParams({
+          client_id: process.env.CLIENT_ID,
+          client_secret: process.env.CLIENT_SECRET,
+          refresh_token: refreshToken,
           grant_type: 'refresh_token'
-        });
-
-        // Update tokens
-        account.accessToken = refreshResponse.data.access_token;
-        account.expiresAt = Date.now() + (refreshResponse.data.expires_in * 1000);
-
-        // Update in stored accounts
-        const index = this.accounts.findIndex(a => a.id === account.id);
-        if (index !== -1) {
-          this.accounts[index] = account;
-          this.saveAccounts();
+        }).toString(),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
         }
-      } catch (error) {
-        console.error('Token refresh failed:', error);
-        throw error;
+      );
+  
+      return {
+        accessToken: response.data.access_token,
+        expiresAt: Date.now() + (response.data.expires_in * 1000)
+      };
+    } catch (error) {
+      console.error('Token refresh failed:', {
+        error: error.message,
+        details: error.response?.data
+      });
+      throw new Error('Failed to refresh Google token');
+    }
+  }
+  
+  async function refreshTokenIfNeeded(account) {
+    try {
+      // Check if token is expired or will expire in next 5 minutes
+      if (!account.expiresAt || Date.now() >= account.expiresAt - 300000) {
+        console.log('Token needs refresh for account:', account.email);
+        
+        const { accessToken, expiresAt } = await refreshGoogleToken(account.refreshToken);
+        
+        // Update account with new tokens
+        account.accessToken = accessToken;
+        account.expiresAt = expiresAt;
+  
+        // If you're using a database, update it here
+        try {
+          await Account.findOneAndUpdate(
+            { email: account.email },
+            { 
+              accessToken: accessToken,
+              expiresAt: expiresAt
+            }
+          );
+        } catch (dbError) {
+          console.error('Failed to update token in database:', dbError);
+          // Continue anyway since we have the new token in memory
+        }
       }
+      
+      return account;
+    } catch (error) {
+      console.error('Token refresh failed for account:', account.email);
+      throw error;
     }
   }
 
-
+      
   async function sendEmailGMAIL(to, subject, body, fromEmail, selectedAccount) {
 
-// Get account from customer mailbox then 
-    try {
-      // Refresh token if expired
-      await refreshTokenIfNeeded(selectedAccount);
+    let retries = 0;
+    let maxRetries = 4
+    
+    while (retries <= maxRetries) {
+      try {
+        // Refresh token if needed
+        const refreshedAccount = await refreshTokenIfNeeded(selectedAccount);
 
       // Construct raw email message
     //   const rawMessage = btoa(
@@ -1297,12 +1363,24 @@ async function sendCampaignSummary(customerId, campaignId) {
 
 
       return response.data;
-    } catch (error) {
-      console.error('Failed to send email:', error);
-      throw error;
-    }
-  }
+//     } catch (error) {
+//       console.error('Failed to send email:', error);
+//       throw error;
+//     }
+//   }
 
+} catch (error) {
+    if (error.response?.status === 401 && retries < maxRetries) {
+      console.log(`Retry attempt ${retries + 1} due to auth error`);
+      retries++;
+      // Force token refresh on next attempt
+      selectedAccount.expiresAt = 0;
+      continue;
+    }
+    throw error;
+  }
+}
+}
 
   
 async function sendcampsummaryEmail({ to, email, subject, body, user, pass, service, campaignId }) {
