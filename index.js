@@ -1206,11 +1206,18 @@ async function sendCampaignSummary(customerId, campaignId) {
     //     body
     //   ).replace(/\+/g, '-').replace(/\//g, '_');
 
-      const rawMessage = Buffer.from(
+    const rawMessage = Buffer.from(
+        `MIME-Version: 1.0\r\n` +
         `To: ${to}\r\n` +
         `Subject: ${subject}\r\n` +
+        `Content-Type: multipart/alternative; boundary="boundary"\r\n\r\n` +
+        `--boundary\r\n` +
         `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
-        body
+        `${body}\r\n\r\n` +
+        `--boundary\r\n` +
+        `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
+        `<div>${body}</div>\r\n\r\n` +
+        `--boundary--`
       ).toString('base64')
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
