@@ -1206,22 +1206,45 @@ async function sendCampaignSummary(customerId, campaignId) {
     //     body
     //   ).replace(/\+/g, '-').replace(/\//g, '_');
 
-    const rawMessage = Buffer.from(
-        `MIME-Version: 1.0\r\n` +
-        `To: ${to}\r\n` +
-        `Subject: ${subject}\r\n` +
-        `Content-Type: multipart/alternative; boundary="boundary"\r\n\r\n` +
-        `--boundary\r\n` +
-        `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
-        `${body}\r\n\r\n` +
-        `--boundary\r\n` +
-        `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
-        `<div>${body}</div>\r\n\r\n` +
-        `--boundary--`
-      ).toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+    // const rawMessage = Buffer.from(
+    //     `MIME-Version: 1.0\r\n` +
+    //     `To: ${to}\r\n` +
+    //     `Subject: ${subject}\r\n` +
+    //     `Content-Type: multipart/alternative; boundary="boundary"\r\n\r\n` +
+    //     `--boundary\r\n` +
+    //     `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
+    //     `${body}\r\n\r\n` +
+    //     `--boundary\r\n` +
+    //     `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
+    //     `<div>${body}</div>\r\n\r\n` +
+    //     `--boundary--`
+    //   ).toString('base64')
+    //     .replace(/\+/g, '-')
+    //     .replace(/\//g, '_')
+    //     .replace(/=+$/, '');
+
+
+        const rawMessage = Buffer.from(
+            `MIME-Version: 1.0\r\n` +
+            `From: ${selectedAccount.email}\r\n` +
+            `To: ${to}\r\n` +
+            `Subject: ${subject}\r\n` +
+            `Content-Type: multipart/alternative; boundary="boundary"\r\n\r\n` +
+            `--boundary\r\n` +
+            `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
+            `${body}\r\n\r\n` +
+            `--boundary\r\n` +
+            `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
+            `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">` +
+            `<p>${body.replace(/\n/g, '<br>')}</p>` +
+            `<p style="margin-top: 20px; font-size: 12px; color: #777;"></p>` +
+            `</div>\r\n\r\n` +
+            `--boundary--`
+          ).toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+
 
       // Send email via Gmail API
       const response = await axios.post(
