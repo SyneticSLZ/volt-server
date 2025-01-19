@@ -1199,12 +1199,22 @@ async function sendCampaignSummary(customerId, campaignId) {
       await refreshTokenIfNeeded(selectedAccount);
 
       // Construct raw email message
-      const rawMessage = btoa(
+    //   const rawMessage = btoa(
+    //     `To: ${to}\r\n` +
+    //     `Subject: ${subject}\r\n` +
+    //     `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
+    //     body
+    //   ).replace(/\+/g, '-').replace(/\//g, '_');
+
+      const rawMessage = Buffer.from(
         `To: ${to}\r\n` +
         `Subject: ${subject}\r\n` +
         `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
         body
-      ).replace(/\+/g, '-').replace(/\//g, '_');
+      ).toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
 
       // Send email via Gmail API
       const response = await axios.post(
