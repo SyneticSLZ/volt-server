@@ -99,7 +99,7 @@ const hunter = process.env.HUNTER_API_KEY
 const stripe = require('stripe')(process.env.STRIPE_API_KEY);
 
 
-const YOUR_DOMAIN = [ 'https://voltmailer.com','http://127.0.0.1:5502' ];
+const YOUR_DOMAIN = 'https://voltmailer.com' 
 
 const port = process.env.PORT || 10000;
 const CLIENT_ID = process.env.CLIENT_ID;
