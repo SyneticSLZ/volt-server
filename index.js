@@ -3278,6 +3278,7 @@ app.post('/add-customer-to-db', async (req, res) => {
         res.json({ redirectUrl: dashboardUrl });
 
     } catch (error) {
+        console.log(error)
         res.status(500).send('Error adding customer to the database');
     }
 });
