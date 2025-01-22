@@ -2210,6 +2210,8 @@ app.post('/api/mailboxes/switch', async (req, res) => {
 
                 // Find the index of the mailbox to be deleted
                 const mailboxIndex = customer.mailboxes.findIndex(mailbox => mailbox.smtp.user === mailboxUser);
+                console.log(mailboxIndex)
+
                 if (mailboxIndex === -1) {
                     return res.status(404).json({ message: 'Mailbox not found' });
                 }
