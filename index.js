@@ -1233,7 +1233,7 @@ async function refreshGoogleToken(refreshToken) {
   
         // If you're using a database, update it here
         try {
-          await Account.findOneAndUpdate(
+          await Customer.findOneAndUpdate(
             { email: account.email },
             { 
               accessToken: accessToken,
