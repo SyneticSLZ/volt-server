@@ -2197,7 +2197,7 @@ app.post('/api/mailboxes/switch', async (req, res) => {
 
         // Set the specified mailbox as active
         console.log('Mailbox User:', mailboxUser);
-        console.log('Customer Mailboxes:', customer.mailboxes);
+        console.log('Customer Mailboxes:', customer.mailboxes[0].smtp);
 
 
         // const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
