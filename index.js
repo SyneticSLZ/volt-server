@@ -2181,7 +2181,7 @@ app.post('/api/mailboxes/switch', async (req, res) => {
 });
 
     app.post('/api/mailboxes/delete', async (req, res) => {
-        const { email, smtp } = req.body;
+        const { email, mailboxUser } = req.body;
 
     console.log(email, mailboxUser, 'deleting')
 
