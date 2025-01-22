@@ -2180,11 +2180,14 @@ app.post('/api/mailboxes/switch', async (req, res) => {
     }
 });
 
-app.delete('/api/mailboxes/delete', async (req, res) => {
+app.post('/api/mailboxes/delete', async (req, res) => {
     const { email, mailboxUser } = req.body;
+
+    console.log(email, mailboxUser, 'deleting')
 
     try {
         const customer = await Customer.findOne({ email });
+        console.log('found customer')
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
@@ -2213,6 +2216,7 @@ app.delete('/api/mailboxes/delete', async (req, res) => {
         
                 // Remove the mailbox from the mailboxes array
                 customer.mailboxes.splice(mailboxIndex, 1);
+                console.log("customer gone")
         
 
         await customer.save();
