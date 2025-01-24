@@ -2248,13 +2248,20 @@ const mailboxIndex = customer.mailboxes.findIndex(
                 // customer.mailboxes.splice(mailboxIndex, 1);
                 
 
-        customer.mailboxes = customer.mailboxes.filter(
-            (mailbox) => mailbox.smtp.user !== mailboxUser
-        );
+
+        
+
+        customer.mailboxes.splice(mailboxIndex, 1);
+        console.log("Before save:", customer.mailboxes.length);
+        const savedCustomer = await customer.save();
+        console.log("After save:", savedCustomer.mailboxes.length);
+        
+        // Verify the database directly
+        const verifyCustomer = await Customer.findOne({ email });
+        console.log("Verified from DB:", verifyCustomer.mailboxes.length);
 
         console.log("customer gone")
-
-        await customer.save();
+        // await customer.save();
         res.json({ message: 'Active mailbox updated successfully' });
     } catch (error) {
         console.error('Error switching mailbox:', error);
