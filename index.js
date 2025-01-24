@@ -2197,22 +2197,32 @@ app.post('/api/mailboxes/switch', async (req, res) => {
 
         // Set the specified mailbox as active
         // console.log('Mailbox User:', mailboxUser);
-        console.log('Customer Mailboxes:', customer.mailboxes[0].smtp.user);
+        // console.log('Customer Mailboxes:', customer.mailboxes[0].smtp.user);
 
-        console.log('Looking for mailboxUser:', mailboxUser);
-        customer.mailboxes.forEach(mailbox => {
-            console.log('DB mailbox user:', mailbox.smtp.user);
-            console.log('Types:', {
-                mailboxUser: typeof mailboxUser,
-                dbUser: typeof mailbox.smtp.user
-            });
-        });
+        // console.log('Looking for mailboxUser:', mailboxUser);
+        // customer.mailboxes.forEach(mailbox => {
+        //     console.log('DB mailbox user:', mailbox.smtp.user);
+        //     console.log('Types:', {
+        //         mailboxUser: typeof mailboxUser,
+        //         dbUser: typeof mailbox.smtp.user
+        //     });
+        // });
 
         console.log('Direct comparison:', mailboxUser === customer.mailboxes[0].smtp.user);
 console.log('String lengths:', {
   mailboxUser: mailboxUser.length,
   dbUser: customer.mailboxes[0].smtp.user.length
 });
+
+console.log('Character codes:');
+console.log('mailboxUser:', [...mailboxUser].map(c => c.charCodeAt(0)));
+console.log('dbUser:', [...customer.mailboxes[0].smtp.user].map(c => c.charCodeAt(0)));
+
+
+const mailboxIndex = customer.mailboxes.findIndex(
+    mailbox => mailbox.smtp.user.trim() === mailboxUser.trim()
+);
+
         // const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
         // if (!mailbox) {
         //     return res.status(404).json({ message: 'Mailbox not found' });
@@ -2222,7 +2232,7 @@ console.log('String lengths:', {
         // );
 
                 // Find the index of the mailbox to be deleted
-                const mailboxIndex = customer.mailboxes.findIndex(mailbox => mailbox.smtp.user === mailboxUser);
+                // const mailboxIndex = customer.mailboxes.findIndex(mailbox => mailbox.smtp.user === mailboxUser);
                 console.log(mailboxIndex)
         
                 // Debug logs
