@@ -2207,6 +2207,12 @@ app.post('/api/mailboxes/switch', async (req, res) => {
                 dbUser: typeof mailbox.smtp.user
             });
         });
+
+        console.log('Direct comparison:', mailboxUser === customer.mailboxes[0].smtp.user);
+console.log('String lengths:', {
+  mailboxUser: mailboxUser.length,
+  dbUser: customer.mailboxes[0].smtp.user.length
+});
         // const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
         // if (!mailbox) {
         //     return res.status(404).json({ message: 'Mailbox not found' });
@@ -2235,7 +2241,7 @@ app.post('/api/mailboxes/switch', async (req, res) => {
         customer.mailboxes = customer.mailboxes.filter(
             (mailbox) => mailbox.smtp.user !== mailboxUser
         );
-        
+
         console.log("customer gone")
 
         await customer.save();
