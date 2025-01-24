@@ -2196,10 +2196,17 @@ app.post('/api/mailboxes/switch', async (req, res) => {
         // customer.mailboxes.forEach(mailbox => mailbox.isActive = false);
 
         // Set the specified mailbox as active
-        console.log('Mailbox User:', mailboxUser);
+        // console.log('Mailbox User:', mailboxUser);
         console.log('Customer Mailboxes:', customer.mailboxes[0].smtp.user);
 
-
+        console.log('Looking for mailboxUser:', mailboxUser);
+        customer.mailboxes.forEach(mailbox => {
+            console.log('DB mailbox user:', mailbox.smtp.user);
+            console.log('Types:', {
+                mailboxUser: typeof mailboxUser,
+                dbUser: typeof mailbox.smtp.user
+            });
+        });
         // const mailbox = customer.mailboxes.find(mailbox => mailbox.smtp.user === mailboxUser);
         // if (!mailbox) {
         //     return res.status(404).json({ message: 'Mailbox not found' });
@@ -2211,15 +2218,25 @@ app.post('/api/mailboxes/switch', async (req, res) => {
                 // Find the index of the mailbox to be deleted
                 const mailboxIndex = customer.mailboxes.findIndex(mailbox => mailbox.smtp.user === mailboxUser);
                 console.log(mailboxIndex)
+        
+                // Debug logs
+
+        
+
 
                 if (mailboxIndex === -1) {
                     return res.status(404).json({ message: 'Mailbox not found' });
                 }
         
                 // Remove the mailbox from the mailboxes array
-                customer.mailboxes.splice(mailboxIndex, 1);
-                console.log("customer gone")
+                // customer.mailboxes.splice(mailboxIndex, 1);
+                
+
+        customer.mailboxes = customer.mailboxes.filter(
+            (mailbox) => mailbox.smtp.user !== mailboxUser
+        );
         
+        console.log("customer gone")
 
         await customer.save();
         res.json({ message: 'Active mailbox updated successfully' });
