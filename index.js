@@ -2931,6 +2931,10 @@ function separateSubject(input) {
 //     return baseDelay + Math.random() * (maxVariance - minVariance) + minVariance;
 // }
 
+
+
+
+
 app.post('/send-emails', async (req, res) => {
     const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId, UserSubject,  } = req.body;
     res.status(200).send('Emails are being sen t in the background. You can close the tab.');
@@ -3028,8 +3032,12 @@ try {
         // const delay = calculateDelay(cappedEmailsPerHour);
         // console.log(delay)
         // console.log(`Delaying next email by ${Math.round(delay)} ms`);
-
-        await new Promise(resolve => setTimeout(resolve, 3000))
+        const minDelay = 120000; // 2 minutes
+        const maxDelay = 240000; // 4 minutes
+        const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
+        console.log(`Waiting ${randomDelay/1000} seconds before next send`);
+        await new Promise(resolve => setTimeout(resolve, randomDelay));
+        // await new Promise(resolve => setTimeout(resolve, 3000))
 
         const currentSender = activeMailboxUsers[senderIndex];
         console.log(currentSender)
