@@ -1,0 +1,233 @@
+{
+  "url": "https://startupstage.app",
+  "status": "success",
+  "timestamp": "2025-02-02T20:00:27.376Z",
+  "basicInfo": {
+    "title": "StartupStage",
+    "companyName": "StartupStage",
+    "description": "StartupStage is a platform to showcase your startup and compete for free marketing. Submit your company, vote, and engage.",
+    "favicon": "https://startupstage.app/favicon.ico",
+    "language": "en",
+    "industryAnalysis": [
+      {
+        "industry": "Business Services",
+        "confidence": 0.01,
+        "matchedKeywords": 3,
+        "keyTerms": [
+          "business",
+          "strategy",
+          "efficiency"
+        ]
+      },
+      {
+        "industry": "Technology & SaaS",
+        "confidence": 0.01,
+        "matchedKeywords": 4,
+        "keyTerms": [
+          "IT",
+          "saas",
+          "platform",
+          "automation"
+        ]
+      },
+      {
+        "industry": "Marketing & Advertising",
+        "confidence": 0,
+        "matchedKeywords": 3,
+        "keyTerms": [
+          "marketing",
+          "brand",
+          "content"
+        ]
+      }
+    ],
+    "locations": [
+      "window",
+      "dataLayer",
+      "function",
+      "gtag",
+      "push"
+    ]
+  },
+  "metaData": {
+    "meta": {
+      "general": {
+        "viewport": "width=device-width,initial-scale=1",
+        "description": "StartupStage is a platform to showcase your startup and compete for free marketing. Submit your company, vote, and engage."
+      },
+      "openGraph": {
+        "title": "StartupStage",
+        "description": "StartupStage is a platform to showcase your startup and compete for free marketing",
+        "image": "https://i.imgur.com/YhS4heA.png",
+        "url": "https://startupstage.app"
+      },
+      "twitter": {
+        "image": "https://i.imgur.com/YhS4heA.png",
+        "site": "@startup_stage",
+        "title": "StartupStage",
+        "description": "StartupStage is a platform to showcase your startup and compete for free marketing",
+        "card": "summary_large_image"
+      },
+      "dublin": {},
+      "article": {},
+      "product": {},
+      "business": {}
+    },
+    "jsonLd": []
+  },
+  "contactInfo": {
+    "emails": [
+      "support@startupstage.app"
+    ],
+    "phones": [],
+    "addresses": [],
+    "contact_pages": [],
+    "social": {
+      "linkedin": "https://www.linkedin.com/company/thestartupstage",
+      "twitter": "https://x.com/startup_stage",
+      "youtube": "https://www.youtube.com/@theStartupStage"
+    }
+  },
+  "technical": {
+    "technologies": {
+      "analytics": [
+        "Google Analytics",
+        "Google Tag Manager"
+      ],
+      "frameworks": [
+        "Angular",
+        "Bootstrap",
+        "React",
+        "Remix",
+        "Tailwind",
+        "Vue.js"
+      ],
+      "cms": [
+        "Webflow"
+      ],
+      "payment": [
+        "Stripe"
+      ]
+    },
+    "ssl": true,
+    "mobileFriendly": true
+  },
+  "textContent": {
+    "main": "window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-8TQRS6RVN0', { page_path: window.location.pathname, }); VotingStartup DirectorySolutionsBlogAboutLog inSign upScaling Companiesfrom Launch to LegacyStartupStage is the ultimate platform to showcase your startup,compete for features across our networks, and not just growbut soar!Submit Your CompanyEmpowering Your GrowthLeverage bespoke scaling solutions designed to accelerate your startup's growth and navigate the complexities of expansion. Our tailored approach ensures that your unique needs are met at every stage of your journey.Exclusive CommunityJoin a valuable network of like-minded innovators, investors, and industry leaders. Gain access to exclusive connections that open doors to strategic partnerships, investment opportunities, and collaborative ventures.Optimized Operational ExcellenceUtilize our customized tools and resources to streamline your operations, enhance efficiency, and achieve measurable results. From mentorship to cutting-edge industry insights, we equip you with everything you need to scale smarter and faster.Our Story and How We Support Founders at Every StageFounders rely on us for a comprehensive go-to-market strategy, scalable sales teams, and tailored funding solutions. We focus on driving sustainable revenue growth with a coordinated approachmatching you with the right investors, optimizing your marketing and operations, and ensuring all pieces work together seamlessly. Our fractional experts work in sync to create lasting solutions, not quick fixes, so your business thrives at every stage.Listen onApple PodcastsYouTubeSpotifyVote on Our Current CohortThis Cohort Ends in0Days0Hrs0Mins0SecStartupStage | Launch MembershipUSALaunchedPremium MembershipAmplify your brand's visibility and reduce operating costs!StartupStage | Growth MembershipUKActivePremium MembershipScale your startup with our comprehensive growth solutions!StartupStage | Enterprise MembershipEUFeaturedEnterpriseEnterprise-level solutions for established startups!What They Say About Our ServicesUnlock your business potential with proven StartupStageservices: tailored solutions for funding, marketing, and operationsto drive growth and success.Luke and StartupStage have a unique passion for startups and their founders. A lot of people say they do, few do as much to serve and support founders as Luke does. Thank you for all you do!Michael KellyCo-Founder | Resolute FutureABeen following your Twitter forever and have to refrain from liking every single post. Thank you so much for what you do! Starting a company is brutal enough; surviving in this market has been tough and your content always brightens my day.Jake SchusterCEO | Gemini Sports AnalyticsLuke is just excellent, being part of the StartupStage community has opened up so many doors and given me the opportunity to help so many people. They are excellent.Ken VermeilleCEO | Vermillion SkyChoose according to your needs$200/MonthFounders' Circle MembershipWho It's For: Founders and owners committed to scaling their businesses.Get StartedWhat you receive:Exclusive CommunityA private, moderated community where you can exchange insights, celebrate wins, and seek advice from peers and experienced experts.Insane SaaS SavingsGain access to exclusive discounts on over 430 apps, saving you up to $1M. Average savings is 15K per year these savings create the cashflow to help you scale your business.Templates & ToolsInvestor Pitch Deck TemplateFounder's Second Brain TemplatePremium Weekly Newsletter SubscriptionStay ahead with pro tips from successful founders.Expert AccessConnect with fractional leaders within our community for strategic insights.Fractional Co-founder Sessions2 Hours One-on-One with a Fractional Co-Founder. Personalized strategy sessions to analyze your business, set objectives, and receive actionable feedback.Privacy: NDA-friendly, with private discussions, meeting area, and essential fractional leaders$2,600/MonthSmartScale SubscriptionWho It's For: Companies with revenue and a growing user base, ready to scale.Get StartedWhat's included:Everything in the Founders' Circle Subscription, PlusCoFounder-on-CallDirect access to a seasoned Co-Founder for mentorship, strategy, and investor introductions.Expert ToolsExpert specialized SaaS, automation tools, templates, and courses to streamline your operations8 Hours of Fractional Executive CoachingTailor your coaching with:Finance & Tax ManagementSocial Branding StrategyCustomer ExperienceDevelopment & EngineeringProduct ManagementTechnology OversightStrategic Growth & Revenue OptimizationGo-to-Market ExecutionLegal AdvisoryUI/UX Website/Product DesignMarketing StrategiesHR & People ManagementInvestor RelationsPrecision PricingExclusive Engineered SolutionWho It's For: Revenue-generating or well-funded companies ready to rapidly scale multiple aspects of their business!Get StartedWhat we ",
+    "wordCount": 615,
+    "sentiment": -0.1593984962406015,
+    "readability": {
+      "sentences": 39,
+      "words": 614,
+      "syllables": 1385,
+      "gradeLevel": 17.2,
+      "avgSentenceLength": 15.7,
+      "avgSyllablesPerWord": 2.3
+    },
+    "keywords": [
+      {
+        "term": "solutions",
+        "score": 1.8411169166403283
+      },
+      {
+        "term": "growth",
+        "score": 1.8411169166403283
+      },
+      {
+        "term": "founders",
+        "score": 1.8411169166403283
+      },
+      {
+        "term": "fractional",
+        "score": 1.8411169166403283
+      },
+      {
+        "term": "business",
+        "score": 1.5342640972002735
+      },
+      {
+        "term": "every",
+        "score": 1.2274112777602189
+      },
+      {
+        "term": "exclusive",
+        "score": 1.2274112777602189
+      },
+      {
+        "term": "scale",
+        "score": 1.2274112777602189
+      },
+      {
+        "term": "revenue",
+        "score": 1.2274112777602189
+      },
+      {
+        "term": "startupstage",
+        "score": 1.2274112777602189
+      }
+    ],
+    "topics": [
+      {
+        "topic": "your",
+        "frequency": 19,
+        "score": 0.039014373716632446
+      },
+      {
+        "topic": "you",
+        "frequency": 11,
+        "score": 0.022587268993839837
+      },
+      {
+        "topic": "founder",
+        "frequency": 10,
+        "score": 0.02053388090349076
+      },
+      {
+        "topic": "our",
+        "frequency": 9,
+        "score": 0.018480492813141684
+      },
+      {
+        "topic": "scale",
+        "frequency": 6,
+        "score": 0.012320328542094456
+      }
+    ]
+  },
+  "businessInfo": {
+    "offerings": {
+      "products": [
+        "$200/MonthFounders' Circle MembershipWho It's For: Founders and owners committed to scaling their businesses.",
+        "Insane SaaS SavingsGain access to exclusive discounts on over 430 apps, saving you up to $1M. Average savings is 15K per year these savings create the cashflow to help you scale your business.",
+        "Gain access to exclusive discounts on over 430 apps, saving you up to $1M. Average savings is 15K per year these savings create the cashflow to help you scale your business.",
+        "$2,600/MonthSmartScale SubscriptionWho It's For: Companies with revenue and a growing user base, ready to scale."
+      ],
+      "services": [
+        "VotingStartup DirectorySolutionsBlogAboutLog inSign up",
+        "VotingStartup DirectorySolutionsBlogAbout",
+        "What They Say About Our ServicesUnlock your business potential with proven StartupStageservices: tailored solutions for funding, marketing, and operationsto drive growth and success.",
+        "What They Say About Our Services",
+        "Precision PricingExclusive Engineered SolutionWho It's For: Revenue-generating or well-funded companies ready to rapidly scale multiple aspects of their business!"
+      ],
+      "features": [
+        "Investor Pitch Deck Template",
+        "Founder's Second Brain Template",
+        "Finance & Tax Management",
+        "Social Branding Strategy",
+        "Customer Experience",
+        "Development & Engineering",
+        "Product Management",
+        "Technology Oversight",
+        "Strategic Growth & Revenue Optimization",
+        "Go-to-Market Execution"
+      ]
+    },
+    "locations": [
+      "window",
+      "dataLayer",
+      "function",
+      "gtag",
+      "push"
+    ]
+  }
+}

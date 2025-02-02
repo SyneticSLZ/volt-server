@@ -72,6 +72,7 @@ const { extractKeywords } = require('keyword-extractor');
 
 const EmailTracker = require('./EmailTracker');
 const AdvancedCompanyIntelligenceScraper = require('./Webscrape')
+const WebScraper = require('./claude')
 const AdvancedCompanyProfileScraper = require('./profile')
 // const { setupLinkedInScraperRoute } = require('./linkedinscraper');
 
@@ -475,11 +476,23 @@ async function summarizeWebsite( url, maxRetries = 3, retryDelay = 1000) {
 
 
 try {
-    const companyIntel = await scraper.scrapeCompanyIntelligence(url);
+    // const companyIntel = await scraper.scrapeCompanyIntelligence(url);
+    
+    const scraper = new WebScraper();
+    // const fs = require('fs').promises;
+    const companyIntel = await scraper.scrape(url)
+//     .then(async result => 
+        
+//         await fs.writeFile('./results.json', JSON.stringify(result, null, 2)))
+//         // console.log(`Data successfully saved to ${'results.json'}`),
+//         // console.log(result))
+//     .catch(error => console.error(error));
+
+
     // console.log(JSON.stringify(companyIntel, null, 2));
     let description = `${companyIntel.basicInfo.description} plus industry : ${companyIntel.companyCharacteristics.industry}`
     console.log(description)
-    return description
+    return companyIntel
 } catch (error) {
     console.error('Scraping failed:', error);
 
@@ -2933,162 +2946,342 @@ function separateSubject(input) {
 
 
 
-
-
 app.post('/send-emails', async (req, res) => {
-    const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId, UserSubject,  } = req.body;
-    res.status(200).send('Emails are being sen t in the background. You can close the tab.');
-    let SENT_EMAILS = 0;  
+    const { 
+        submittedData, 
+        userPitch, 
+        Uname, 
+        token, 
+        myemail, 
+        Template, 
+        CampaignId, 
+        UserSubject 
+    } = req.body;
 
-let generatedData = []
-    for (let index = 0; index < submittedData.length; index++) {
-        
-        const data = submittedData[index];
-    
+    res.status(200).send('Emails are being sent in the background. You can close the tab.');
+
+    setImmediate(async () => {
         try {
-            const sddata = submittedData[index];
-            let website = sddata.website
-            // if (!/^https:\/\//i.test(website)) {
-            //         website = 'https://' + website;
-            //     }
-            const response = await fetch('https://server.voltmailer.com/generate-email-content', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        website: website, 
-                        userPitch: userPitch, 
-                        Uname: Uname,
-                        To: sddata.name,
-                    Template : Template
-                
-                })
-                });
-    
-                if (!response.ok) {
-                    throw new Error('Failed to generate email content');
-                }
-    
-                const data_new = await response.json();
-    let subjectline = ""
-    if (typeof UserSubject === 'string' && UserSubject.trim().length > 0) {
-     subjectline = UserSubject
-     console.log("if : ",subjectline)
+            const customer = await Customer.findOne({ email: myemail });
+            const activeMailboxes = customer.mailboxes
+                .filter(mailbox => mailbox.isActive)
+                .map(mailbox => ({
+                    ...mailbox.smtp,
+                    dailyCount: 0,
+                    lastSendTime: null,
+                    warmupDays: mailbox.warmupDays || 1 // Track how long this mailbox has been in use
+                }));
 
-    }else{
-     subjectline = separateSubject(data_new.subject_line).subject
-    console.log("else : ", subjectline)
-    }
-                // const subject_line = separateSubject(data_new.subject_line).subject
-                 subject_line = subjectline
-                // console.log(subject_line)
-                 main_message = data_new.body_content
-    
-                console.log(main_message)
-    
-    
-            generatedData.push({
-                email: sddata.email,
-                subject: subject_line,
-                content: main_message
-            });
-
-
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
-        } catch (error) {
-            console.error('Error generating email for', data.email, ':', error);
-    
-        }
-    }
-    
-
-
-
-
-
-
-
-
-
-    const customer = await Customer.findOne({ email: myemail });
-    const activeMailboxUsers = customer.mailboxes
-    .filter(mailbox => mailbox.isActive) // Get active mailboxes
-    .map(mailbox => mailbox.smtp.user); // Extract smtp.user
-     let senderIndex = 0;
-     const failedEmails = [];
-setImmediate(async () => {
-
-try {
-
-    // const cappedEmailsPerHour = Math.min(generatedData.length, 90); // Capped for safe pacing
-    // Example:
-    // const emailsPerHour = generatedData.length
-    // const startTime = Date.now();
-    // let emailsSent = 0;
-   // ~36 seconds for 100 emails/hour
-
-    for (const data of generatedData) {
-        // const delay = calculateDelay(cappedEmailsPerHour);
-        // console.log(delay)
-        // console.log(`Delaying next email by ${Math.round(delay)} ms`);
-        const minDelay = 120000; // 2 minutes
-        const maxDelay = 240000; // 4 minutes
-        const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
-        console.log(`Waiting ${randomDelay/1000} seconds before next send`);
-        await new Promise(resolve => setTimeout(resolve, randomDelay));
-        // await new Promise(resolve => setTimeout(resolve, 3000))
-
-        const currentSender = activeMailboxUsers[senderIndex];
-        console.log(currentSender)
-    console.log(`Starting send to ${data.email}`);
-    const To = data.email;
-    const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === currentSender);
-            if (!mailboxFound) {
-            console.log("none found")
-                return 
+            if (!activeMailboxes.length) {
+                throw new Error('No active mailboxes found');
             }
-            console.log("active mailbox", mailboxFound.smtp)
-            const { host, port, secure, user, pass } = mailboxFound.smtp;
-            console.log("activeMailbox.smtp : ", mailboxFound.smtp)
-            await   sendcampsummaryEmail({
-                to: data.email,
-                email: myemail,
-                subject: data.subject,
-                body: data.content,
-                user:  user,
-                pass: pass, // App password
-                service: 'gmail',
-                campaignId: CampaignId
-              });
-            // const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
-            // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
-            senderIndex = (senderIndex + 1) % activeMailboxUsers.length;
-            // emailsSent ++;
 
-                    // Check if we're exceeding the hourly cap
-        // const elapsedTime = Date.now() - startTime;
-        // if (emailsSent >= cappedEmailsPerHour && elapsedTime < 3600000) {
-        //     const waitTime = 3600000 - elapsedTime; // Wait until one hour has passed
-        //     console.log(`Hourly limit reached. Waiting for ${Math.round(waitTime / 1000)} seconds.`);
-        //     await new Promise(resolve => setTimeout(resolve, waitTime));
-        //     emailsSent = 0; // Reset for the next hour
-        // }
+            const failedEmails = [];
+            let currentMailboxIndex = 0;
 
-        } 
-        console.log("completed")
+            // Calculate safe daily limits based on warmup period
+            function getDailyLimit(warmupDays) {
+                // Start with 20 emails/day, gradually increase up to 100
+                const baseLimit = 20;
+                const maxLimit = 100;
+                const limit = Math.min(baseLimit + (warmupDays * 10), maxLimit);
+                return limit;
+            }
 
-    } catch (error) {
-        console.log(`Error: ${error}`);
-        // failedEmails.push(data.email);
-        // Handle the exception (log it, update status, etc.)
+            // Get next available mailbox that hasn't hit limits
+            function getNextAvailableMailbox() {
+                const now = new Date();
+                const midnight = new Date(now);
+                midnight.setHours(0,0,0,0);
+
+                // Reset daily counts if it's a new day
+                if (now > midnight) {
+                    activeMailboxes.forEach(mailbox => {
+                        mailbox.dailyCount = 0;
+                    });
+                }
+
+                // Try each mailbox
+                for (let i = 0; i < activeMailboxes.length; i++) {
+                    currentMailboxIndex = (currentMailboxIndex + 1) % activeMailboxes.length;
+                    const mailbox = activeMailboxes[currentMailboxIndex];
+                    const dailyLimit = getDailyLimit(mailbox.warmupDays);
+
+                    // Check if this mailbox is available
+                    if (mailbox.dailyCount < dailyLimit && 
+                        (!mailbox.lastSendTime || 
+                         (now - mailbox.lastSendTime) > getMinimumDelay(mailbox.warmupDays))) {
+                        return mailbox;
+                    }
+                }
+                return null;
+            }
+
+            // Calculate minimum delay between emails based on warmup period
+            function getMinimumDelay(warmupDays) {
+                // Start with 5 minutes, gradually decrease to 2 minutes
+                const minDelay = 120000; // 2 minutes
+                const maxDelay = 300000; // 5 minutes
+                return Math.max(maxDelay - (warmupDays * 20000), minDelay);
+            }
+
+            // Add jitter to delays to make sending patterns look more natural
+            function getRandomDelay(baseDelay) {
+                const jitter = Math.floor(Math.random() * 60000); // Up to 1 minute of randomness
+                return baseDelay + jitter;
+            }
+
+            for (const data of submittedData) {
+                try {
+                    // Find an available mailbox
+                    const mailbox = getNextAvailableMailbox();
+                    if (!mailbox) {
+                        console.log('All mailboxes have reached their daily limits. Waiting for next day...');
+                        // Wait until midnight
+                        const now = new Date();
+                        const tomorrow = new Date(now);
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        tomorrow.setHours(0,0,0,0);
+                        const waitTime = tomorrow - now;
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        continue;
+                    }
+
+                    // Generate content
+                    console.log(`Generating content for ${data.email}...`);
+                    const generatedContent = await generateEmailContent({
+                        website: data.website,
+                        userPitch,
+                        Uname,
+                        To: data.name,
+                        Template
+                    });
+
+                    const subjectLine = UserSubject?.trim() 
+                        ? UserSubject 
+                        : separateSubject(generatedContent.subject_line).subject;
+
+                    // Send email
+                    console.log(`Sending to ${data.email} from ${mailbox.user}...`);
+                    await sendcampsummaryEmail({
+                        to: data.email,
+                        email: myemail,
+                        subject: subjectLine,
+                        body: generatedContent.body_content,
+                        user: mailbox.user,
+                        pass: mailbox.pass,
+                        service: 'gmail',
+                        campaignId: CampaignId
+                    });
+
+                    // Update mailbox stats
+                    mailbox.dailyCount++;
+                    mailbox.lastSendTime = new Date();
+
+                    // Calculate and apply delay
+                    const baseDelay = getMinimumDelay(mailbox.warmupDays);
+                    const delay = getRandomDelay(baseDelay);
+                    console.log(`Waiting ${delay/1000} seconds before next send...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+
+                } catch (error) {
+                    console.error(`Failed to process email for ${data.email}:`, error);
+                    failedEmails.push({
+                        email: data.email,
+                        error: error.message
+                    });
+                    
+                    // Add extra delay after errors to be safe
+                    await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minute delay
+                }
+            }
+
+            console.log('Email campaign completed');
+            console.log('Failed emails:', failedEmails);
+
+        } catch (error) {
+            console.error('Campaign execution failed:', error);
+        }
+    });
+});
+
+// Helper function to generate email content
+async function generateEmailContent({ website, userPitch, Uname, To, Template }) {
+    const response = await fetch('https://server.voltmailer.com/generate-email-content', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            website, 
+            userPitch, 
+            Uname,
+            To,
+            Template
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to generate email content: ${response.statusText}`);
     }
-    // res.json({ status: 'completed', sent_emails: SENT_EMAILS });
-	// await sendCampaignSummary(customer._id, campaign._id);
+
+    return response.json();
+}
+
+// app.post('/send-emails', async (req, res) => {
+//     const { submittedData, userPitch, Uname, token, myemail, Template, CampaignId, UserSubject,  } = req.body;
+//     res.status(200).send('Emails are being sen t in the background. You can close the tab.');
+//     let SENT_EMAILS = 0;  
+
+// let generatedData = []
+//     for (let index = 0; index < submittedData.length; index++) {
+        
+//         const data = submittedData[index];
     
-});
-console.log("Failed emails:", failedEmails);
-});
+//         try {
+//             const sddata = submittedData[index];
+//             let website = sddata.website
+//             // if (!/^https:\/\//i.test(website)) {
+//             //         website = 'https://' + website;
+//             //     }
+//             const response = await fetch('https://server.voltmailer.com/generate-email-content', {
+//                     method: 'POST',
+//                     headers: {
+//                         'Content-Type': 'application/json'
+//                     },
+//                     body: JSON.stringify({ 
+//                         website: website, 
+//                         userPitch: userPitch, 
+//                         Uname: Uname,
+//                         To: sddata.name,
+//                     Template : Template
+                
+//                 })
+//                 });
+    
+//                 if (!response.ok) {
+//                     throw new Error('Failed to generate email content');
+//                 }
+    
+//                 const data_new = await response.json();
+//     let subjectline = ""
+//     if (typeof UserSubject === 'string' && UserSubject.trim().length > 0) {
+//      subjectline = UserSubject
+//      console.log("if : ",subjectline)
+
+//     }else{
+//      subjectline = separateSubject(data_new.subject_line).subject
+//     console.log("else : ", subjectline)
+//     }
+//                 // const subject_line = separateSubject(data_new.subject_line).subject
+//                  subject_line = subjectline
+//                 // console.log(subject_line)
+//                  main_message = data_new.body_content
+    
+//                 console.log(main_message)
+    
+    
+//             generatedData.push({
+//                 email: sddata.email,
+//                 subject: subject_line,
+//                 content: main_message
+//             });
+
+
+//             await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+//         } catch (error) {
+//             console.error('Error generating email for', data.email, ':', error);
+    
+//         }
+//     }
+    
+
+
+
+
+
+
+
+
+
+//     const customer = await Customer.findOne({ email: myemail });
+//     const activeMailboxUsers = customer.mailboxes
+//     .filter(mailbox => mailbox.isActive) // Get active mailboxes
+//     .map(mailbox => mailbox.smtp.user); // Extract smtp.user
+//      let senderIndex = 0;
+//      const failedEmails = [];
+// setImmediate(async () => {
+
+// try {
+
+//     // const cappedEmailsPerHour = Math.min(generatedData.length, 90); // Capped for safe pacing
+//     // Example:
+//     // const emailsPerHour = generatedData.length
+//     // const startTime = Date.now();
+//     // let emailsSent = 0;
+//    // ~36 seconds for 100 emails/hour
+
+//     for (const data of generatedData) {
+//         // const delay = calculateDelay(cappedEmailsPerHour);
+//         // console.log(delay)
+//         // console.log(`Delaying next email by ${Math.round(delay)} ms`);
+//         const minDelay = 120000; // 2 minutes
+//         const maxDelay = 240000; // 4 minutes
+//         const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
+//         console.log(`Waiting ${randomDelay/1000} seconds before next send`);
+//         await new Promise(resolve => setTimeout(resolve, randomDelay));
+//         // await new Promise(resolve => setTimeout(resolve, 3000))
+
+//         const currentSender = activeMailboxUsers[senderIndex];
+//         console.log(currentSender)
+//     console.log(`Starting send to ${data.email}`);
+//     const To = data.email;
+//     const mailboxFound = customer.mailboxes.find(mailboxObj => mailboxObj.smtp.user === currentSender);
+//             if (!mailboxFound) {
+//             console.log("none found")
+//                 return 
+//             }
+//             console.log("active mailbox", mailboxFound.smtp)
+//             const { host, port, secure, user, pass } = mailboxFound.smtp;
+//             console.log("activeMailbox.smtp : ", mailboxFound.smtp)
+//             await   sendcampsummaryEmail({
+//                 to: data.email,
+//                 email: myemail,
+//                 subject: data.subject,
+//                 body: data.content,
+//                 user:  user,
+//                 pass: pass, // App password
+//                 service: 'gmail',
+//                 campaignId: CampaignId
+//               });
+//             // const result = await mailboxessend(myemail, To, subject_line, body_content, currentSender)
+//             // const result = await sendEmail(subject_line, body_content, data.email, token, myemail, CampaignId, currentSender);
+//             senderIndex = (senderIndex + 1) % activeMailboxUsers.length;
+//             // emailsSent ++;
+
+//                     // Check if we're exceeding the hourly cap
+//         // const elapsedTime = Date.now() - startTime;
+//         // if (emailsSent >= cappedEmailsPerHour && elapsedTime < 3600000) {
+//         //     const waitTime = 3600000 - elapsedTime; // Wait until one hour has passed
+//         //     console.log(`Hourly limit reached. Waiting for ${Math.round(waitTime / 1000)} seconds.`);
+//         //     await new Promise(resolve => setTimeout(resolve, waitTime));
+//         //     emailsSent = 0; // Reset for the next hour
+//         // }
+
+//         } 
+//         console.log("completed")
+
+//     } catch (error) {
+//         console.log(`Error: ${error}`);
+//         // failedEmails.push(data.email);
+//         // Handle the exception (log it, update status, etc.)
+//     }
+//     // res.json({ status: 'completed', sent_emails: SENT_EMAILS });
+// 	// await sendCampaignSummary(customer._id, campaign._id);
+    
+// });
+// console.log("Failed emails:", failedEmails);
+// });
 
 
     // Retrieve customer details based on their email from the token
@@ -6180,6 +6373,18 @@ app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
 
     // apiemails('margaeryfrey.325319@gmail.com')
+    // const companyIntel = await scraper.scrapeCompanyIntelligence('https://www.startupstage.app');
+    // console.log(companyIntel)
+
+//     const scraper = new WebScraper();
+//     const fs = require('fs').promises;
+// scraper.scrape('startupstage.app')
+//     .then(async result => 
+        
+//         await fs.writeFile('./results.json', JSON.stringify(result, null, 2)))
+//         // console.log(`Data successfully saved to ${'results.json'}`),
+//         // console.log(result))
+//     .catch(error => console.error(error));
 
     // console.log(await GetEmailsxx('margaeryfrey.325319@gmail.com'))
     // await   sendcampsummaryEmail({
