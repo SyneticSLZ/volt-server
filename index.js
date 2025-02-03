@@ -550,6 +550,84 @@ try {
 }
 
 
+async function createTrialSubscription(email) {
+    try {
+      // 1. Create a customer with just an email
+      const customer = await stripe.customers.create({
+        email: email,
+      });
+  
+      // 2. Create a subscription with trial
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [
+          {
+            price: 'price_1PdqxCKJeZAyw8f44eTYC7Rw', // Replace with your price ID from Stripe
+          },
+        ],
+        trial_period_days: 14, // Adjust trial length as needed
+        // Automatically cancel when trial ends if no payment method
+        trial_settings: {
+          end_behavior: {
+            missing_payment_method: 'cancel'
+          }
+        }
+      });
+  console.log(customer.id,subscription.id,subscription.trial_end)
+      return {
+        customerId: customer.id,
+        subscriptionId: subscription.id,
+        trialEnd: subscription.trial_end
+      };
+    } catch (error) {
+      console.error('Error creating trial subscription:', error);
+      throw error;
+    }
+  }
+  
+  // Example Express.js route implementation
+  async function handleTrialSignup(req, res) {
+    try {
+      const { email } = req.body;
+  
+      if (!email) {
+        return res.status(400).json({ 
+          error: 'Email is required' 
+        });
+      }
+  
+      // Check if customer already exists
+      const existingCustomers = await stripe.customers.list({
+        email: email,
+        limit: 1
+      });
+  
+      if (existingCustomers.data.length > 0) {
+        return res.status(400).json({
+          error: 'A trial for this email already exists'
+        });
+      }
+  
+      const trialData = await createTrialSubscription(email);
+  
+      // Store in your database
+      await saveTrialToDatabase(email, trialData);
+  
+      res.json({
+        success: true,
+        ...trialData
+      });
+  
+    } catch (error) {
+      console.error('Signup error:', error);
+      res.status(500).json({
+        error: 'An error occurred during signup'
+      });
+    }
+  }
+
+
+
 
 
 async function CreateThread(){
@@ -3502,8 +3580,22 @@ app.post('/add-customer-to-db', async (req, res) => {
     const data = req.body;
     console.log(data)
     try {
+
+    // Create Stripe customer with trial
+    let newCustomer;
+    try {
+        newCustomer = await createTrialSubscription(data.email);
+        console.log('Stripe customer created:', newCustomer.customerId);
+    } catch (stripeError) {
+        console.error('Stripe error:', stripeError);
+        return res.status(400).json({
+            error: 'Failed to create Stripe customer',
+            details: stripeError.message
+        });
+    }
+
         const customer = new Customer({
-            stripeID: data.stripeID,
+            stripeID: newCustomer.customerId || 'null',
             email: data.email,
             plan: data.plan,
             total_emails: data.total_emails || 0, // Initialize with 0 if not provided
@@ -6371,6 +6463,8 @@ app.post('/webhooks/mailjet', async (req, res) => {
 
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
+    // const data = await createTrialSubscription("sdaa@gmail.com");
+    // console.log(data.customerId)
 
     // apiemails('margaeryfrey.325319@gmail.com')
     // const companyIntel = await scraper.scrapeCompanyIntelligence('https://www.startupstage.app');
