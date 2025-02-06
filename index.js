@@ -490,8 +490,8 @@ try {
 
 
     // console.log(JSON.stringify(companyIntel, null, 2));
-    let description = `${companyIntel.basicInfo.description} plus industry : ${companyIntel.companyCharacteristics.industry}`
-    console.log(description)
+    // let description = `${companyIntel.basicInfo.description} plus industry : ${companyIntel.companyCharacteristics.industry}`
+    // console.log(description)
     return companyIntel
 } catch (error) {
     console.error('Scraping failed:', error);
@@ -6460,6 +6460,116 @@ app.post('/webhooks/mailjet', async (req, res) => {
 });
 
 
+// //signatures
+
+// // MongoDB Schema
+// const signatureSchema = new mongoose.Schema({
+//     userId: {
+//         type: mongoose.Schema.Types.ObjectId,
+//         required: true,
+//         ref: 'User'
+//     },
+//     name: {
+//         type: String,
+//         required: true
+//     },
+//     content: {
+//         type: String,
+//         required: true
+//     },
+//     isActive: {
+//         type: Boolean,
+//         default: false
+//     },
+//     createdAt: {
+//         type: Date,
+//         default: Date.now
+//     }
+// });
+
+// const Signature = mongoose.model('Signature', signatureSchema);
+
+// // API Routes
+// app.get('/api/signatures',  async (req, res) => {
+//     try {
+//         const signatures = await Signature.find({ userId: req.user._id });
+//         res.json(signatures);
+//     } catch (error) {
+//         res.status(500).json({ error: 'Failed to fetch signatures', error });
+//     }
+// });
+
+// app.post('/api/signatures',  async (req, res) => {
+//     try {
+//         const { name, content } = req.body;
+//         const signature = new Signature({
+//             userId: req.user._id,
+//             name,
+//             content
+//         });
+//         await signature.save();
+//         res.status(201).json(signature);
+//     } catch (error) {
+//         res.status(500).json({ error: 'Failed to create signature' });
+//     }
+// });
+
+// app.put('/api/signatures/:id',  async (req, res) => {
+//     try {
+//         const { name, content } = req.body;
+//         const signature = await Signature.findOneAndUpdate(
+//             { _id: req.params.id, userId: req.user._id },
+//             { name, content },
+//             { new: true }
+//         );
+//         if (!signature) {
+//             return res.status(404).json({ error: 'Signature not found' });
+//         }
+//         res.json(signature);
+//     } catch (error) {
+//         res.status(500).json({ error: 'Failed to update signature' });
+//     }
+// });
+
+// app.delete('/api/signatures/:id',  async (req, res) => {
+//     try {
+//         const signature = await Signature.findOneAndDelete({
+//             _id: req.params.id,
+//             userId: req.user._id
+//         });
+//         if (!signature) {
+//             return res.status(404).json({ error: 'Signature not found' });
+//         }
+//         res.status(204).send();
+//     } catch (error) {
+//         res.status(500).json({ error: 'Failed to delete signature' });
+//     }
+// });
+
+// app.post('/api/signatures/:id/activate',  async (req, res) => {
+//     try {
+//         await Signature.updateMany(
+//             { userId: req.user._id },
+//             { isActive: false }
+//         );
+        
+//         const signature = await Signature.findOneAndUpdate(
+//             { _id: req.params.id, userId: req.user._id },
+//             { isActive: true },
+//             { new: true }
+//         );
+        
+//         if (!signature) {
+//             return res.status(404).json({ error: 'Signature not found' });
+//         }
+//         res.json(signature);
+//     } catch (error) {
+//         res.status(500).json({ error: 'Failed to activate signature' });
+//     }
+// });
+
+
+
 
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
@@ -6467,7 +6577,7 @@ app.listen(port, async () => {
     // console.log(data.customerId)
 
     // apiemails('margaeryfrey.325319@gmail.com')
-    // const companyIntel = await scraper.scrapeCompanyIntelligence('https://www.startupstage.app');
+    // const companyIntel = await scraper.scrapeCompanyIntelligence('https://knipper.com');
     // console.log(companyIntel)
 
 //     const scraper = new WebScraper();
