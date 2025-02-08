@@ -490,8 +490,8 @@ try {
 
 
     // console.log(JSON.stringify(companyIntel, null, 2));
-    // let description = `${companyIntel.basicInfo.description} plus industry : ${companyIntel.companyCharacteristics.industry}`
-    // console.log(description)
+    let description = `${companyIntel.basicInfo.description} plus industry : ${companyIntel.companyCharacteristics.industry}`
+    console.log(description)
     return companyIntel
 } catch (error) {
     console.error('Scraping failed:', error);
@@ -3197,7 +3197,7 @@ app.post('/send-emails', async (req, res) => {
                     return mailjet.post('send').request(mailjetData);
                 }
             }
-            
+
 
             for (const data of submittedData) {
                 try {
