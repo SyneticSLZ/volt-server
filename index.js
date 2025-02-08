@@ -3245,8 +3245,11 @@ app.post('/send-emails', async (req, res) => {
                 ${signature ? `<div class="signature">${signature}</div>` : ''}
             </div>
         `;
+        const accountGmail = mailbox.smtp.gmail
 
-        if (mailbox.smtp.gmail) {
+
+        if (mailbox.smtp.user == accountGmail.email){
+
             // For Gmail
             console.log('Using Gmail for sending');
            const attachmentsFormatted = processedAttachments.map(att => {
@@ -3352,6 +3355,7 @@ app.post('/send-emails', async (req, res) => {
                         await new Promise(resolve => setTimeout(resolve, waitTime));
                         continue;
                     }
+                    console.log(mailbox)
 
                     // Generate content
                     console.log(`Generating content for ${data.email}...`);
