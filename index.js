@@ -3245,10 +3245,10 @@ app.post('/send-emails', async (req, res) => {
                 ${signature ? `<div class="signature">${signature}</div>` : ''}
             </div>
         `;
-        const accountGmail = mailbox.smtp.gmail
+        // const accountGmail = mailbox.smtp.gmail
 
 
-        if (mailbox.smtp.user == accountGmail.email){
+        if (mailbox.gmail ){
 
             // For Gmail
             console.log('Using Gmail for sending');
@@ -3277,7 +3277,7 @@ app.post('/send-emails', async (req, res) => {
                subject, 
                body, 
                myemail, 
-               mailbox.smtp.gmail, 
+               mailbox.gmail, 
                htmlContent, 
                attachmentsFormatted
            );
