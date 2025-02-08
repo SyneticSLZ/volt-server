@@ -11,7 +11,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');	
 const { Email, Campaign, Customer, Mailbox, EData } = require('./models/customer');
 const Driver = require('./models/Driver');
-
+const { v4: uuidv4 } = require('uuid');
 dotenv.config();
 const axios = require('axios');
 const cheerio = require('cheerio');
@@ -3112,7 +3112,7 @@ app.post('/send-emails', async (req, res) => {
         mediaAttachments // New
     } = req.body;
 
-    const uploadId = uuid.v4();
+    const uploadId = uuidv4();
     tempStorage.set(uploadId, {
         metadata: req.body.attachmentMetadata,
         chunks: new Map(),
