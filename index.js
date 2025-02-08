@@ -1,5 +1,6 @@
 const { Configuration, OpenAI } = require('openai');
 const express = require('express');
+const app = express();
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
@@ -10,7 +11,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');	
 const { Email, Campaign, Customer, Mailbox, EData } = require('./models/customer');
 const Driver = require('./models/Driver');
-const app = express();
+
 dotenv.config();
 const axios = require('axios');
 const cheerio = require('cheerio');
@@ -32,6 +33,13 @@ const { XMLParser } = require('fast-xml-parser');
 
 const { JSDOM } = require('jsdom');
 const rateLimit = require('express-rate-limit');
+
+// Increase payload size limit
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({limit: '50mb', extended: true}));
+app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+
 
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -3058,6 +3066,36 @@ function separateSubject(input) {
 //     return baseDelay + Math.random() * (maxVariance - minVariance) + minVariance;
 // }
 
+const tempStorage = new Map();
+app.post('/upload/:id/chunk', async (req, res) => {
+    const { id } = req.params;
+    const chunk = req.body;
+    
+    const upload = tempStorage.get(id);
+    if (upload) {
+        upload.chunks.set(`${chunk.attachmentId}-${chunk.chunkIndex}`, chunk);
+        res.sendStatus(200);
+    } else {
+        res.sendStatus(404);
+    }
+});
+
+app.post('/upload/:id/complete', async (req, res) => {
+    const { id } = req.params;
+    const upload = tempStorage.get(id);
+    
+    if (upload) {
+        upload.complete = true;
+        res.sendStatus(200);
+        
+        // Clean up after some time
+        setTimeout(() => {
+            tempStorage.delete(id);
+        }, 1800000); // 30 minutes
+    } else {
+        res.sendStatus(404);
+    }
+});
 
 
 app.post('/send-emails', async (req, res) => {
@@ -3074,7 +3112,14 @@ app.post('/send-emails', async (req, res) => {
         mediaAttachments // New
     } = req.body;
 
-    res.status(200).send('Emails are being sent in the background. You can close the tab.');
+    const uploadId = uuid.v4();
+    tempStorage.set(uploadId, {
+        metadata: req.body.attachmentMetadata,
+        chunks: new Map(),
+        complete: false
+    });
+
+    res.json({ uploadUrl: `/upload/${uploadId}` });
 
     setImmediate(async () => {
         try {
