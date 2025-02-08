@@ -2752,7 +2752,8 @@ console.log("activeMailbox.smtp : ", mailboxFound.smtp)
             subject,
             text,
             signature,
-            mediaAttachments
+            mediaAttachments,
+            email
         );
 
         console.log("Email sent:");
@@ -3114,7 +3115,7 @@ function separateSubject(input) {
 //     return baseDelay + Math.random() * (maxVariance - minVariance) + minVariance;
 // }
 
-async function sendEmailWithAttachments(mailbox, to, subject, body, signature, attachments) {
+async function sendEmailWithAttachments(mailbox, to, subject, body, signature, attachments, myemail) {
     try{
         console.log('=== Starting Email Attachment Processing ===');
         console.log('Recipient:', to);
@@ -3448,7 +3449,8 @@ app.post('/send-emails', async (req, res) => {
                         subjectLine,
                         generatedContent.body_content,
                         signature,
-                        mediaAttachments
+                        mediaAttachments,
+                        myemail
                     );
                     console.log('Successfully processed email for:', data.email);
                     // Update mailbox stats
