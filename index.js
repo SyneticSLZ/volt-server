@@ -488,8 +488,8 @@ try {
     
     const scraper = new WebScraper();
     // const fs = require('fs').promises;
-    const companyIntel = await scraper.scrape(url)
-    console.log(`companyintel for ${url} : `, companyIntel)
+    const data = await scraper.scrape(url)
+    console.log(`companyintel for ${url} : `)
 //     .then(async result => 
         
 //         await fs.writeFile('./results.json', JSON.stringify(result, null, 2)))
