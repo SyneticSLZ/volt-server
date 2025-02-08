@@ -489,6 +489,7 @@ try {
     const scraper = new WebScraper();
     // const fs = require('fs').promises;
     const companyIntel = await scraper.scrape(url)
+    console.log(`companyintel for ${url} : `, companyIntel)
 //     .then(async result => 
         
 //         await fs.writeFile('./results.json', JSON.stringify(result, null, 2)))
@@ -498,8 +499,8 @@ try {
 
 
     // console.log(JSON.stringify(companyIntel, null, 2));
-    let description = `${companyIntel.basicInfo.description} plus industry : ${companyIntel.companyCharacteristics.industry}`
-    console.log(description)
+    // let description = `${companyIntel.basicInfo.description} plus industry : ${companyIntel.companyCharacteristics.industry}`
+    // console.log(description)
     return companyIntel
 } catch (error) {
     console.error('Scraping failed:', error);
