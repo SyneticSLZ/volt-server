@@ -499,9 +499,32 @@ try {
 
 
     // console.log(JSON.stringify(companyIntel, null, 2));
-    // let description = `${companyIntel.basicInfo.description} plus industry : ${companyIntel.companyCharacteristics.industry}`
-    // console.log(description)
-    return companyIntel
+    let summary = `
+    Company: ${data.basicInfo.companyName}
+    Title: ${data.basicInfo.title}
+    Description: ${data.basicInfo.description}
+    Language: ${data.basicInfo.language}
+    Industries: ${data.basicInfo.industryAnalysis.map(i => `${i.industry} (confidence: ${i.confidence})`).join(', ')}
+    URL: ${data.url} (Favicon: ${data.basicInfo.favicon})
+    Technical Details: ${data.technical.ssl ? 'Secure' : 'Non-secure'} and ${data.technical.mobileFriendly ? 'mobile-friendly' : 'not mobile-friendly'}
+    Contact: ${data.contactInfo.phones?.[0] || 'Not available'}
+    
+    Metadata: ${Object.entries(data.metaData.meta.general).map(([key, value]) => `${key}: ${value}`).join(', ')}
+    
+    Business Offerings:
+    ${Object.entries(data.businessInfo.offerings).map(([category, items]) => 
+      `${category}: ${Array.isArray(items) ? items.join(', ') : 'None'}`
+    ).join('\n')}
+    
+    Topics: ${data.textContent.topics.map(t => `${t.topic} (frequency: ${t.frequency}, score: ${t.score})`).join(', ')}
+    
+    Keywords: ${data.textContent.keywords.map(k => `${k.term} (score: ${k.score})`).join(', ')}
+    `;
+    
+    // console.log(summary);
+
+
+    return summary
 } catch (error) {
     console.error('Scraping failed:', error);
 
@@ -6831,10 +6854,33 @@ app.listen(port, async () => {
     // const companyIntel = await scraper.scrapeCompanyIntelligence('https://knipper.com');
     // console.log(companyIntel)
 
-//     const scraper = new WebScraper();
+    // const scraper = new WebScraper();
 //     const fs = require('fs').promises;
-// scraper.scrape('startupstage.app')
-//     .then(async result => 
+// const data =  await scraper.scrape('startupstage.app')
+// let summary = `
+// Company: ${data.basicInfo.companyName}
+// Title: ${data.basicInfo.title}
+// Description: ${data.basicInfo.description}
+// Language: ${data.basicInfo.language}
+// Industries: ${data.basicInfo.industryAnalysis.map(i => `${i.industry} (confidence: ${i.confidence})`).join(', ')}
+// URL: ${data.url} (Favicon: ${data.basicInfo.favicon})
+// Technical Details: ${data.technical.ssl ? 'Secure' : 'Non-secure'} and ${data.technical.mobileFriendly ? 'mobile-friendly' : 'not mobile-friendly'}
+// Contact: ${data.contactInfo.phones?.[0] || 'Not available'}
+
+// Metadata: ${Object.entries(data.metaData.meta.general).map(([key, value]) => `${key}: ${value}`).join(', ')}
+
+// Business Offerings:
+// ${Object.entries(data.businessInfo.offerings).map(([category, items]) => 
+//   `${category}: ${Array.isArray(items) ? items.join(', ') : 'None'}`
+// ).join('\n')}
+
+// Topics: ${data.textContent.topics.map(t => `${t.topic} (frequency: ${t.frequency}, score: ${t.score})`).join(', ')}
+
+// Keywords: ${data.textContent.keywords.map(k => `${k.term} (score: ${k.score})`).join(', ')}
+// `;
+
+// console.log(summary);
+    // .then(async result => 
         
 //         await fs.writeFile('./results.json', JSON.stringify(result, null, 2)))
 //         // console.log(`Data successfully saved to ${'results.json'}`),

@@ -1,0 +1,270 @@
+// Add this to your mongoose schemas
+const ClientQuotaSchema = new mongoose.Schema({
+  userId: { type: String, unique: true },
+  currentConcurrent: { type: Number, default: 0 },
+  maxConcurrent: { type: Number, default: 5 },
+  dailyEmailsSent: { type: Number, default: 0 },
+  dailyQuota: { type: Number, default: 50000 },
+  lastQuotaReset: { type: Date, default: Date.now },
+  tier: { type: String, default: 'standard' } // 'standard', 'premium', 'enterprise'
+});
+
+const ClientQuota = mongoose.model('ClientQuota', ClientQuotaSchema);
+
+class MultiClientQueue {
+  constructor() {
+    this.maxGlobalConcurrent = 50; // Total campaigns across all clients
+    this.currentlyProcessing = new Map(); // userId -> Set of campaignIds
+    this.checkInterval = 5000;
+    this.tierLimits = {
+      standard: { concurrent: 5, dailyEmails: 50000 },
+      premium: { concurrent: 15, dailyEmails: 200000 },
+      enterprise: { concurrent: 30, dailyEmails: 500000 }
+    };
+    
+    this.startProcessor();
+    this.startDailyQuotaReset();
+  }
+
+  async startProcessor() {
+    setInterval(async () => {
+      await this.processNextBatch();
+    }, this.checkInterval);
+  }
+
+  async startDailyQuotaReset() {
+    // Reset quotas daily at midnight
+    setInterval(async () => {
+      const now = new Date();
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
+        await this.resetDailyQuotas();
+      }
+    }, 60000); // Check every minute
+  }
+
+  async resetDailyQuotas() {
+    await ClientQuota.updateMany(
+      {},
+      { 
+        $set: { 
+          dailyEmailsSent: 0,
+          lastQuotaReset: new Date()
+        }
+      }
+    );
+  }
+
+  async getCurrentLoad(userId) {
+    return this.currentlyProcessing.get(userId)?.size || 0;
+  }
+
+  async getClientQuota(userId) {
+    let quota = await ClientQuota.findOne({ userId });
+    if (!quota) {
+      quota = await ClientQuota.create({ userId });
+    }
+    return quota;
+  }
+
+  async processNextBatch() {
+    const totalProcessing = Array.from(this.currentlyProcessing.values())
+      .reduce((sum, set) => sum + set.size, 0);
+
+    if (totalProcessing >= this.maxGlobalConcurrent) {
+      return;
+    }
+
+    try {
+      // Get all clients with queued campaigns
+      const clientsWithQueued = await Campaign.distinct('userId', { 
+        status: 'queued' 
+      });
+
+      // Fair scheduling - round robin between clients
+      for (const userId of clientsWithQueued) {
+        const quota = await this.getClientQuota(userId);
+        const currentLoad = await this.getCurrentLoad(userId);
+
+        if (currentLoad >= quota.maxConcurrent) {
+          continue;
+        }
+
+        // Find next campaign for this client
+        const campaign = await Campaign.findOne({
+          userId,
+          status: 'queued'
+        }).sort({ priority: -1, createdAt: 1 });
+
+        if (campaign) {
+          this.processCampaign(campaign, quota);
+        }
+      }
+    } catch (error) {
+      console.error('Error in queue processing:', error);
+    }
+  }
+
+  async processCampaign(campaign, quota) {
+    // Initialize client's processing set if needed
+    if (!this.currentlyProcessing.has(campaign.userId)) {
+      this.currentlyProcessing.set(campaign.userId, new Set());
+    }
+    
+    this.currentlyProcessing.get(campaign.userId).add(campaign.campaignId);
+
+    try {
+      campaign.status = 'processing';
+      campaign.startedAt = new Date();
+      await campaign.save();
+
+      // Process emails in chunks with quota checking
+      const chunkSize = 50;
+      const { recipients } = campaign.data;
+      
+      for (let i = campaign.lastProcessedIndex; i < recipients.length; i += chunkSize) {
+        // Check daily quota before processing chunk
+        const updatedQuota = await ClientQuota.findOne({ userId: campaign.userId });
+        const remainingDaily = updatedQuota.dailyQuota - updatedQuota.dailyEmailsSent;
+        
+        if (remainingDaily <= 0) {
+          // Pause campaign if daily quota exceeded
+          campaign.status = 'paused';
+          campaign.error = 'Daily quota exceeded';
+          await campaign.save();
+          break;
+        }
+
+        const chunkLimit = Math.min(chunkSize, remainingDaily);
+        const chunk = recipients.slice(i, Math.min(i + chunkLimit, recipients.length));
+        
+        // Process chunk with rate limiting
+        for (const recipient of chunk) {
+          try {
+            await this.sendEmail(recipient, campaign.data.template);
+            
+            campaign.progress.completed++;
+            campaign.lastProcessedIndex = i + 1;
+            
+            // Update daily sent count
+            await ClientQuota.findOneAndUpdate(
+              { userId: campaign.userId },
+              { $inc: { dailyEmailsSent: 1 } }
+            );
+            
+          } catch (error) {
+            campaign.progress.failed++;
+            console.error(`Failed to send email to ${recipient.email}:`, error);
+          }
+
+          await campaign.save();
+        }
+
+        // Rate limiting delay between chunks
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      if (campaign.status !== 'paused') {
+        campaign.status = 'completed';
+        campaign.completedAt = new Date();
+        await campaign.save();
+      }
+
+    } catch (error) {
+      campaign.status = 'failed';
+      campaign.error = error.message;
+      await campaign.save();
+    } finally {
+      this.currentlyProcessing.get(campaign.userId).delete(campaign.campaignId);
+    }
+  }
+
+  async addCampaign(userId, campaignData) {
+    // Check if client has quota set up
+    const quota = await this.getClientQuota(userId);
+    
+    // Calculate total queued and processing campaigns for this user
+    const activeCampaigns = await Campaign.countDocuments({
+      userId,
+      status: { $in: ['queued', 'processing'] }
+    });
+
+    if (activeCampaigns >= quota.maxConcurrent * 2) {
+      throw new Error('Too many pending campaigns. Please wait for some to complete.');
+    }
+
+    const campaign = new Campaign({
+      userId,
+      campaignId: generateUniqueId(),
+      progress: {
+        total: campaignData.recipients.length,
+        completed: 0,
+        failed: 0
+      },
+      data: campaignData,
+      priority: campaignData.priority || 0
+    });
+
+    await campaign.save();
+    return campaign;
+  }
+
+  async upgradeClientTier(userId, newTier) {
+    if (!this.tierLimits[newTier]) {
+      throw new Error('Invalid tier');
+    }
+
+    await ClientQuota.findOneAndUpdate(
+      { userId },
+      {
+        $set: {
+          tier: newTier,
+          maxConcurrent: this.tierLimits[newTier].concurrent,
+          dailyQuota: this.tierLimits[newTier].dailyEmails
+        }
+      },
+      { upsert: true }
+    );
+  }
+}
+
+// API endpoints for quota management
+app.get('/api/quota', async (req, res) => {
+  try {
+    const userId = req.user.id; // Assume authentication middleware
+    const quota = await ClientQuota.findOne({ userId });
+    
+    res.json({
+      tier: quota.tier,
+      maxConcurrent: quota.maxConcurrent,
+      currentConcurrent: quota.currentConcurrent,
+      dailyQuota: quota.dailyQuota,
+      dailyEmailsSent: quota.dailyEmailsSent,
+      remainingDaily: quota.dailyQuota - quota.dailyEmailsSent
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add to your existing campaign submission endpoint
+app.post('/api/campaigns', async (req, res) => {
+  try {
+    const { userId, campaignData } = req.body;
+    
+    // Check quota before accepting campaign
+    const quota = await ClientQuota.findOne({ userId });
+    if (quota.dailyEmailsSent + campaignData.recipients.length > quota.dailyQuota) {
+      return res.status(429).json({ 
+        error: 'Daily email quota would be exceeded by this campaign' 
+      });
+    }
+    
+    const campaign = await campaignQueue.addCampaign(userId, campaignData);
+    res.json({
+      campaignId: campaign.campaignId,
+      status: campaign.status
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
