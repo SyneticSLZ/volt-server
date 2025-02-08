@@ -3193,37 +3193,95 @@ app.post('/send-emails', async (req, res) => {
             }
             async function sendEmailWithAttachments(mailbox, to, subject, body, signature, attachments) {
                 try{
-                const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB
+                    console.log('=== Starting Email Attachment Processing ===');
+                    console.log('Recipient:', to);
+                    console.log('Number of attachments received:', attachments ? attachments.length : 0);
+                    
+                    const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB
                 let totalSize = 0;
                 
-                const processedAttachments = attachments.filter(att => {
-                    const size = Buffer.from(att.data.split('base64,')[1], 'base64').length;
+                const validAttachments = Array.isArray(attachments) ? attachments : [];
+                console.log('Valid attachments array:', validAttachments.length);
+        
+                const processedAttachments = validAttachments
+                .filter(att => {
+                    if (!att || !att.data) {
+                        console.log('Skipping invalid attachment:', att?.name || 'unnamed', '- Missing data');
+                        return false;
+                    }
+                    return true;
+                })
+                .filter(att => {
+                    try {
+                    // Handle both full data URLs and raw base64
+                    const base64Data = att.data.includes('base64,') ? 
+                        att.data.split('base64,')[1] : 
+                        att.data;
+                        
+                    const size = Buffer.from(base64Data, 'base64').length;
+                    console.log('Attachment details:', {
+                        name: att.name,
+                        type: att.type,
+                        size: `${(size / 1024 / 1024).toFixed(2)}MB`,
+                        totalAccumulatedSize: `${(totalSize / 1024 / 1024).toFixed(2)}MB`,
+                        withinLimit: (totalSize + size <= MAX_TOTAL_SIZE)
+                    });
                     if (totalSize + size <= MAX_TOTAL_SIZE) {
                         totalSize += size;
                         return true;
                     }
                     console.warn(`Skipping attachment ${att.name}: size limit exceeded`);
                     return false;
-                });
+                } catch (error) {
+                    console.warn(`Invalid attachment data for ${att.name}:`, error);
+                    return false;
+                }
+            });
+            console.log('Successfully processed attachments:', processedAttachments.length);
+            console.log('Total size of attachments:', `${(totalSize / 1024 / 1024).toFixed(2)}MB`);
+        const htmlContent = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <p>${body.replace(/\n/g, '<br>')}</p>
+                ${signature ? `<div class="signature">${signature}</div>` : ''}
+            </div>
+        `;
 
-                const htmlContent = `
-                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                        <p>${body.replace(/\n/g, '<br>')}</p>
-                        ${signature ? `<div class="signature">${signature}</div>` : ''}
-                    </div>
-                `;
-        
-                if (mailbox.smtp.gmail) {
-                    // For Gmail
-                    const attachmentsFormatted = processedAttachments.map(att => ({
-                filename: att.name,
-                content: att.data.split('base64,')[1],
-                encoding: 'base64',
-                contentType: att.type
-            }));
+        if (mailbox.smtp.gmail) {
+            // For Gmail
+            console.log('Using Gmail for sending');
+           const attachmentsFormatted = processedAttachments.map(att => {
+               const base64Data = att.data.includes('base64,') ? 
+                   att.data.split('base64,')[1] : 
+                   att.data;
+                   
+               console.log('Formatting attachment for Gmail:', {
+                   filename: att.name,
+                   type: att.type
+               });
 
-            return sendEmailGMAIL(to, subject, body, myemail, mailbox.smtp.gmail, htmlContent, attachmentsFormatted);
-                } else {
+               return {
+                   filename: att.name,
+                   content: base64Data,
+                   encoding: 'base64',
+                   contentType: att.type
+               };
+           });
+
+           console.log('Attempting to send email with', attachmentsFormatted.length, 'attachments');
+           
+           const result = await sendEmailGMAIL(
+               to, 
+               subject, 
+               body, 
+               myemail, 
+               mailbox.smtp.gmail, 
+               htmlContent, 
+               attachmentsFormatted
+           );
+
+           console.log('Email sent successfully with attachments');
+           return result;
+        } else {
                     // For Mailjet
                     const attachmentsFormatted = processedAttachments.map(att => ({
                         'Content-Type': att.type,
@@ -3244,14 +3302,43 @@ app.post('/send-emails', async (req, res) => {
                     return mailjet.post('send').request(mailjetData);
                 }
             } catch (error) {
-                console.error('Error sending email with attachments:', error);
-                throw error;
+                console.error('=== Error in sendEmailWithAttachments ===');
+                console.error('Error details:', error);
+                console.error('Recipient:', to);
+                console.error('Attempted attachments:', attachments?.length || 0);
+                console.error('Full error:', error.stack);
+                
+                console.log('Attempting to send email without attachments as fallback');
+                
+                const htmlContent = `
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <p>${body.replace(/\n/g, '<br>')}</p>
+                        ${signature ? `<div class="signature">${signature}</div>` : ''}
+                    </div>
+                `;
+         
+                const result = await sendEmailGMAIL(
+                    to, 
+                    subject, 
+                    body, 
+                    myemail, 
+                    mailbox.smtp.gmail, 
+                    htmlContent, 
+                    [] // Empty attachments array
+                );
+         
+                console.log('Fallback email sent successfully without attachments');
+                return result;
             }
-        }
+         }
 
 
             for (const data of submittedData) {
                 try {
+                        console.log('\n=== Starting New Email Process ===');
+                        console.log('Processing email for:', data.email);
+                        console.log('Attachments being sent:', mediaAttachments?.length || 0);
+
                     // Find an available mailbox
                     const mailbox = getNextAvailableMailbox();
                     if (!mailbox) {
@@ -3280,6 +3367,13 @@ app.post('/send-emails', async (req, res) => {
                         ? UserSubject 
                         : separateSubject(generatedContent.subject_line).subject;
 
+                    console.log('Email details:', {
+                            to: data.email,
+                            subject: subjectLine,
+                            hasSignature: !!signature,
+                            attachmentsCount: Array.isArray(mediaAttachments) ? mediaAttachments.length : 0
+                        });
+
                     // Send email
                     console.log(`Sending to ${data.email} from ${mailbox.user}...`);
 
@@ -3302,7 +3396,7 @@ app.post('/send-emails', async (req, res) => {
                         signature,
                         mediaAttachments
                     );
-
+                    console.log('Successfully processed email for:', data.email);
                     // Update mailbox stats
                     mailbox.dailyCount++;
                     mailbox.lastSendTime = new Date();
@@ -3315,6 +3409,7 @@ app.post('/send-emails', async (req, res) => {
 
                 } catch (error) {
                     console.error(`Failed to process email for ${data.email}:`, error);
+                    console.error('Full error stack:', error.stack);
                     failedEmails.push({
                         email: data.email,
                         error: error.message
