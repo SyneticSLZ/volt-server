@@ -1345,7 +1345,7 @@ async function refreshGoogleToken(refreshToken) {
   }
 
       
-  async function sendEmailGMAIL(to, subject, body, fromEmail, selectedAccount) {
+  async function sendEmailGMAIL(to, subject, body, fromEmail, selectedAccount, htmlContent, attachments = []) {
 
     let retries = 0;
     let maxRetries = 4
@@ -1381,26 +1381,62 @@ async function refreshGoogleToken(refreshToken) {
     //     .replace(/=+$/, '');
 
 
-        const rawMessage = Buffer.from(
-            `MIME-Version: 1.0\r\n` +
-            `From: ${selectedAccount.email}\r\n` +
-            `To: ${to}\r\n` +
-            `Subject: ${subject}\r\n` +
-            `Content-Type: multipart/alternative; boundary="boundary"\r\n\r\n` +
-            `--boundary\r\n` +
-            `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
-            `${body}\r\n\r\n` +
-            `--boundary\r\n` +
-            `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
-            `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">` +
-            `<p>${body.replace(/\n/g, '<br>')}</p>` +
-            `<p style="margin-top: 20px; font-size: 12px; color: #777;"></p>` +
-            `</div>\r\n\r\n` +
-            `--boundary--`
-          ).toString('base64')
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=+$/, '');
+        const rawMessage 
+        // = Buffer.from(
+        //     `MIME-Version: 1.0\r\n` +
+        //     `From: ${selectedAccount.email}\r\n` +
+        //     `To: ${to}\r\n` +
+        //     `Subject: ${subject}\r\n` +
+        //     `Content-Type: multipart/alternative; boundary="boundary"\r\n\r\n` +
+        //     `--boundary\r\n` +
+        //     `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
+        //     `${body}\r\n\r\n` +
+        //     `--boundary\r\n` +
+        //     `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
+        //     `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">` +
+        //     `<p>${body.replace(/\n/g, '<br>')}</p>` +
+        //     `<p style="margin-top: 20px; font-size: 12px; color: #777;"></p>` +
+        //     `</div>\r\n\r\n` +
+        //     `--boundary--`
+        //   ).toString('base64')
+        //     .replace(/\+/g, '-')
+        //     .replace(/\//g, '_')
+        //     .replace(/=+$/, '');
+
+            = new Buffer.from(
+                `MIME-Version: 1.0\r\n` +
+                `From: ${selectedAccount.email}\r\n` +
+                `To: ${to}\r\n` +
+                `Subject: ${subject}\r\n` +
+                `Content-Type: multipart/mixed; boundary="boundary"\r\n\r\n` +
+                
+                `--boundary\r\n` +
+                `Content-Type: multipart/alternative; boundary="boundary-alt"\r\n\r\n` +
+                
+                `--boundary-alt\r\n` +
+                `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
+                `${body}\r\n\r\n` +
+                
+                `--boundary-alt\r\n` +
+                `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
+                `${htmlContent}\r\n\r\n` +
+                
+                `--boundary-alt--\r\n` +
+                
+                // Add attachments if they exist
+                attachments.map(att => 
+                    `--boundary\r\n` +
+                    `Content-Type: ${att.contentType}\r\n` +
+                    `Content-Transfer-Encoding: base64\r\n` +
+                    `Content-Disposition: attachment; filename="${att.filename}"\r\n\r\n` +
+                    `${att.content}\r\n`
+                ).join('\r\n') +
+                
+                `--boundary--`
+            ).toString('base64')
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
 
 
       // Send email via Gmail API
@@ -3033,7 +3069,9 @@ app.post('/send-emails', async (req, res) => {
         myemail, 
         Template, 
         CampaignId, 
-        UserSubject 
+        UserSubject,
+        signature,  // New
+        mediaAttachments // New
     } = req.body;
 
     res.status(200).send('Emails are being sent in the background. You can close the tab.');
@@ -3108,6 +3146,58 @@ app.post('/send-emails', async (req, res) => {
                 const jitter = Math.floor(Math.random() * 60000); // Up to 1 minute of randomness
                 return baseDelay + jitter;
             }
+            async function sendEmailWithAttachments(mailbox, to, subject, body, signature, attachments) {
+                const htmlContent = `
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <p>${body.replace(/\n/g, '<br>')}</p>
+                        ${signature ? `<div class="signature">${signature}</div>` : ''}
+                    </div>
+                `;
+        
+                if (mailbox.smtp.gmail) {
+                    // For Gmail
+                    const attachmentPromises = mediaAttachments.map(async attachment => ({
+                        filename: attachment.name,
+                        content: attachment.data.split('base64,')[1],
+                        encoding: 'base64'
+                    }));
+        
+                    const attachmentsFormatted = await Promise.all(attachmentPromises);
+        
+                    return sendEmailGMAIL(
+                        to, 
+                        subject, 
+                        body, 
+                        myemail, 
+                        mailbox.smtp.gmail, 
+                        htmlContent,
+                        attachmentsFormatted
+                    );
+                } else {
+                    // For Mailjet
+                    const attachmentPromises = mediaAttachments.map(async attachment => ({
+                        'Content-Type': attachment.type,
+                        Filename: attachment.name,
+                        Base64Content: attachment.data.split('base64,')[1]
+                    }));
+        
+                    const attachmentsFormatted = await Promise.all(attachmentPromises);
+        
+                    const mailjetData = {
+                        FromEmail: mailbox.smtp.user,
+                        FromName: 'Alex',
+                        Subject: subject,
+                        'Text-part': body,
+                        'Html-part': htmlContent,
+                        Recipients: [{ Email: to }],
+                        'Mj-CustomID': `${mailbox.smtp.user}:${new Date().toISOString()}:${Math.floor(Math.random() * 10)}`,
+                        Attachments: attachmentsFormatted
+                    };
+        
+                    return mailjet.post('send').request(mailjetData);
+                }
+            }
+            
 
             for (const data of submittedData) {
                 try {
@@ -3141,16 +3231,26 @@ app.post('/send-emails', async (req, res) => {
 
                     // Send email
                     console.log(`Sending to ${data.email} from ${mailbox.user}...`);
-                    await sendcampsummaryEmail({
-                        to: data.email,
-                        email: myemail,
-                        subject: subjectLine,
-                        body: generatedContent.body_content,
-                        user: mailbox.user,
-                        pass: mailbox.pass,
-                        service: 'gmail',
-                        campaignId: CampaignId
-                    });
+
+                    // await sendcampsummaryEmail({
+                    //     to: data.email,
+                    //     email: myemail,
+                    //     subject: subjectLine,
+                    //     body: generatedContent.body_content,
+                    //     user: mailbox.user,
+                    //     pass: mailbox.pass,
+                    //     service: 'gmail',
+                    //     campaignId: CampaignId
+                    // });
+
+                    await sendEmailWithAttachments(
+                        mailbox,
+                        data.email,
+                        subjectLine,
+                        generatedContent.body_content,
+                        signature,
+                        mediaAttachments
+                    );
 
                     // Update mailbox stats
                     mailbox.dailyCount++;
