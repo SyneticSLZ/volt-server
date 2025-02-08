@@ -3147,6 +3147,20 @@ app.post('/send-emails', async (req, res) => {
                 return baseDelay + jitter;
             }
             async function sendEmailWithAttachments(mailbox, to, subject, body, signature, attachments) {
+                try{
+                const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB
+                let totalSize = 0;
+                
+                const processedAttachments = attachments.filter(att => {
+                    const size = Buffer.from(att.data.split('base64,')[1], 'base64').length;
+                    if (totalSize + size <= MAX_TOTAL_SIZE) {
+                        totalSize += size;
+                        return true;
+                    }
+                    console.warn(`Skipping attachment ${att.name}: size limit exceeded`);
+                    return false;
+                });
+
                 const htmlContent = `
                     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                         <p>${body.replace(/\n/g, '<br>')}</p>
@@ -3156,32 +3170,21 @@ app.post('/send-emails', async (req, res) => {
         
                 if (mailbox.smtp.gmail) {
                     // For Gmail
-                    const attachmentPromises = mediaAttachments.map(async attachment => ({
-                        filename: attachment.name,
-                        content: attachment.data.split('base64,')[1],
-                        encoding: 'base64'
-                    }));
-        
-                    const attachmentsFormatted = await Promise.all(attachmentPromises);
-        
-                    return sendEmailGMAIL(
-                        to, 
-                        subject, 
-                        body, 
-                        myemail, 
-                        mailbox.smtp.gmail, 
-                        htmlContent,
-                        attachmentsFormatted
-                    );
+                    const attachmentsFormatted = processedAttachments.map(att => ({
+                filename: att.name,
+                content: att.data.split('base64,')[1],
+                encoding: 'base64',
+                contentType: att.type
+            }));
+
+            return sendEmailGMAIL(to, subject, body, myemail, mailbox.smtp.gmail, htmlContent, attachmentsFormatted);
                 } else {
                     // For Mailjet
-                    const attachmentPromises = mediaAttachments.map(async attachment => ({
-                        'Content-Type': attachment.type,
-                        Filename: attachment.name,
-                        Base64Content: attachment.data.split('base64,')[1]
+                    const attachmentsFormatted = processedAttachments.map(att => ({
+                        'Content-Type': att.type,
+                        'Filename': att.name,
+                        'Base64Content': att.data.split('base64,')[1]
                     }));
-        
-                    const attachmentsFormatted = await Promise.all(attachmentPromises);
         
                     const mailjetData = {
                         FromEmail: mailbox.smtp.user,
@@ -3190,13 +3193,16 @@ app.post('/send-emails', async (req, res) => {
                         'Text-part': body,
                         'Html-part': htmlContent,
                         Recipients: [{ Email: to }],
-                        'Mj-CustomID': `${mailbox.smtp.user}:${new Date().toISOString()}:${Math.floor(Math.random() * 10)}`,
                         Attachments: attachmentsFormatted
                     };
         
                     return mailjet.post('send').request(mailjetData);
                 }
+            } catch (error) {
+                console.error('Error sending email with attachments:', error);
+                throw error;
             }
+        }
 
 
             for (const data of submittedData) {
