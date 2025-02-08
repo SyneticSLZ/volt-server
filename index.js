@@ -2747,7 +2747,7 @@ console.log("activeMailbox.smtp : ", mailboxFound.smtp)
     //       });
 
           await sendEmailWithAttachments(
-            mailboxFound,
+            mailboxFound.smtp,
             to,
             subject,
             text,
