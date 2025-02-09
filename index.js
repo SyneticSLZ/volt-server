@@ -496,20 +496,20 @@ try {
 //         // console.log(`Data successfully saved to ${'results.json'}`),
 //         // console.log(result))
 //     .catch(error => console.error(error));
-const { metadata } = await axios.get(url, { timeout: 10000 });
+// const { metadata } = await axios.get(url, { timeout: 10000 });
             
-// Parse the HTML content
-const $ = cheerio.load(metadata);
+// // Parse the HTML content
+// const $ = cheerio.load(metadata);
 
-// Attempt to extract meta description
-let description = $('meta[name="description"]').attr('content');
+// // Attempt to extract meta description
+// let description = $('meta[name="description"]').attr('content');
 
-if (!description) {
-    // Fallback to using headings and first paragraphs if no meta description is present
-    const headings = $('h1, h2').map((i, el) => $(el).text()).get();
-    const paragraphs = $('p').map((i, el) => $(el).text()).get();
-    description = headings.concat(paragraphs).slice(0, 3).join(' ').trim();
-}
+// if (!description) {
+//     // Fallback to using headings and first paragraphs if no meta description is present
+//     const headings = $('h1, h2').map((i, el) => $(el).text()).get();
+//     const paragraphs = $('p').map((i, el) => $(el).text()).get();
+//     description = headings.concat(paragraphs).slice(0, 3).join(' ').trim();
+// }
 
 
     // console.log(JSON.stringify(companyIntel, null, 2));
@@ -534,9 +534,9 @@ if (!description) {
     Topics: ${data.textContent.topics.map(t => `${t.topic} (frequency: ${t.frequency}, score: ${t.score})`).join(', ')}
     
     Keywords: ${data.textContent.keywords.map(k => `${k.term} (score: ${k.score})`).join(', ')}
-    metadescription : ${description}
-    `;
     
+    `;
+    // metadescription : ${description}
     // console.log(summary);
 
 
