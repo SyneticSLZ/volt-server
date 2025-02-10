@@ -75,36 +75,6 @@ router.post('/send-emails', requireDatabaseConnection, requireQueueSystem, async
 });
 
 
-const tempStorage = new Map();
-app.post('/upload/:id/chunk', async (req, res) => {
-    const { id } = req.params;
-    const chunk = req.body;
-    
-    const upload = tempStorage.get(id);
-    if (upload) {
-        upload.chunks.set(`${chunk.attachmentId}-${chunk.chunkIndex}`, chunk);
-        res.sendStatus(200);
-    } else {
-        res.sendStatus(404);
-    }
-});
-
-app.post('/upload/:id/complete', async (req, res) => {
-    const { id } = req.params;
-    const upload = tempStorage.get(id);
-    
-    if (upload) {
-        upload.complete = true;
-        res.sendStatus(200);
-        
-        // Clean up after some time
-        setTimeout(() => {
-            tempStorage.delete(id);
-        }, 1800000); // 30 minutes
-    } else {
-        res.sendStatus(404);
-    }
-});
 
 // Get campaign status
 router.get('/campaign-status/:campaignId', requireDatabaseConnection, async (req, res) => {
