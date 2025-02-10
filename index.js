@@ -3594,6 +3594,7 @@ app.post('/send-emails', async (req, res) => {
     });
 
 } catch (error) {
+    console.log(error)
     res.status(500).json({ 
         error: 'Failed to create campaign',
         details: error.message
