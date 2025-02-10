@@ -25,16 +25,88 @@ const EDataSchema = new mongoose.Schema({
     customID:String
 });
 
+const followUpSchema = new mongoose.Schema({
+    subject: String,
+    body: String,
+    timeDelay: {
+        value: Number,
+        unit: {
+            type: String,
+            enum: ['hours', 'days'],
+            default: 'days'
+        }
+    },
+    sent: {
+        type: Boolean,
+        default: false
+    },
+    scheduledTime: Date,
+    actualSentTime: Date
+});
+
+
+// const campaignSchema = new mongoose.Schema({
+//     campaignName: String,
+//     template: String,
+//     pitch: String,
+//     sentEmails: [emailSchema],
+//     createdTime: { type: Date, default: Date.now },
+//     SENT_EMAILS: { type: Number, default: 0 },
+//     bounceRate: { type: Number, default: 0 },
+//     replyRate: { type: Number, default: 0 }
+// });
+
 const campaignSchema = new mongoose.Schema({
     campaignName: String,
     template: String,
     pitch: String,
+    username: String,
+    senderEmail: String,
+    signature: String,
+    mediaAttachments: [{
+        name: String,
+        type: String,
+        data: String
+    }],
+    status: {
+        type: String,
+        enum: ['paused', 'failed', 'success', 'in_progress'],
+        default: 'paused'
+    },
+    errorDetails: {
+        message: String,
+        timestamp: Date
+    },
     sentEmails: [emailSchema],
     createdTime: { type: Date, default: Date.now },
     SENT_EMAILS: { type: Number, default: 0 },
     bounceRate: { type: Number, default: 0 },
-    replyRate: { type: Number, default: 0 }
+    replyRate: { type: Number, default: 0 },
+    followUps: [followUpSchema],
+    targetRecipients: [{
+        email: String,
+        name: String,
+        website: String,
+        status: {
+            type: String,
+            enum: ['pending', 'sent', 'failed'],
+            default: 'pending'
+        },
+        error: String,
+        followUpStatus: [{
+            followUpId: mongoose.Schema.Types.ObjectId,
+            status: {
+                type: String,
+                enum: ['pending', 'sent', 'failed'],
+                default: 'pending'
+            },
+            sentTime: Date,
+            error: String
+        }]
+    }]
 });
+
+
 
 const mailboxSchema = new mongoose.Schema({
     smtp: {

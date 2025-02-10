@@ -3338,7 +3338,8 @@ app.post('/send-emails', async (req, res) => {
         CampaignId, 
         UserSubject,
         signature,  // New
-        mediaAttachments // New
+        mediaAttachments, // New
+        followUps = []
     } = req.body;
 
     const uploadId = uuidv4();
@@ -3348,11 +3349,69 @@ app.post('/send-emails', async (req, res) => {
         complete: false
     });
 
+
+
     res.json({ uploadUrl: `/upload/${uploadId}` });
+
+    try {
+    const processedFollowUps = followUps.map(followUp => {
+        const scheduledTime = new Date();
+        if (followUp.timeDelay.unit === 'days') {
+            scheduledTime.setDate(scheduledTime.getDate() + followUp.timeDelay.value);
+        } else {
+            scheduledTime.setHours(scheduledTime.getHours() + followUp.timeDelay.value);
+        }
+        return {
+            ...followUp,
+            scheduledTime,
+            sent: false
+        };
+    });
+
+    const campaign = new Campaign({
+        campaignName: `Campaign ${new Date().toLocaleString()}`,
+        template: Template,
+        pitch: userPitch,
+        username: Uname,
+        senderEmail: myemail,
+        signature: signature,
+        mediaAttachments: mediaAttachments,
+        status: 'in_progress',
+        followUps: processedFollowUps,
+        targetRecipients: submittedData.map(data => ({
+            email: data.email,
+            name: data.name,
+            website: data.website,
+            status: 'pending',
+            followUpStatus: processedFollowUps.map(fu => ({
+                followUpId: fu._id,
+                status: 'pending'
+            }))
+        }))
+    });
+
+    // Find customer and add campaign to their campaigns array
+    const customer = await Customer.findOne({ email: myemail });
+    if (!customer) {
+        throw new Error('Customer not found');
+    }
+    
+    // Save the campaign
+    await campaign.save();
+    
+    // Add campaign to customer's campaigns
+    customer.campaigns.push(campaign);
+    await customer.save();
+
+    // Send initial response
+    res.status(200).send({ 
+        message: 'Campaign created and emails are being sent in the background',
+        campaignId: campaign._id
+    });
 
     setImmediate(async () => {
         try {
-            const customer = await Customer.findOne({ email: myemail });
+            // const customer = await Customer.findOne({ email: myemail });
             const activeMailboxes = customer.mailboxes
                 .filter(mailbox => mailbox.isActive)
                 .map(mailbox => ({
@@ -3490,6 +3549,7 @@ app.post('/send-emails', async (req, res) => {
                     );
                     console.log('Successfully processed email for:', data.email);
                     // Update mailbox stats
+                    updateRecipientStatus(campaign, data.email, 'sent');
                     mailbox.dailyCount++;
                     mailbox.lastSendTime = new Date();
 
@@ -3502,6 +3562,7 @@ app.post('/send-emails', async (req, res) => {
                 } catch (error) {
                     console.error(`Failed to process email for ${data.email}:`, error);
                     console.error('Full error stack:', error.stack);
+                    updateRecipientStatus(campaign, data.email, 'failed', error.message);
                     failedEmails.push({
                         email: data.email,
                         error: error.message
@@ -3512,15 +3573,115 @@ app.post('/send-emails', async (req, res) => {
                 }
             }
 
+                // Update final campaign status
+                updateCampaignStatus(campaign);
+                await campaign.save();
             console.log('Email campaign completed');
             console.log('Failed emails:', failedEmails);
 
         } catch (error) {
+            campaign.status = 'failed';
+            campaign.errorDetails = {
+                message: error.message,
+                timestamp: new Date()
+            };
+            await campaign.save();
+        
             console.error('Campaign execution failed:', error);
         }
     });
+
+} catch (error) {
+    res.status(500).json({ 
+        error: 'Failed to create campaign',
+        details: error.message
+    });
+}
 });
 
+
+// Helper function to send follow-up emails
+async function sendFollowUpEmails(campaignId, followUpId, customerId) {
+    const campaign = await Campaign.findById(campaignId);
+    const customer = await Customer.findById(customerId);
+    const followUp = campaign.followUps.id(followUpId);
+
+    if (!followUp || followUp.sent) return;
+
+    const activeMailboxes = customer.mailboxes
+        .filter(mailbox => mailbox.isActive)
+        .map(mailbox => ({
+            ...mailbox.smtp,
+            dailyCount: 0,
+            lastSendTime: null
+        }));
+
+    for (const recipient of campaign.targetRecipients) {
+        if (recipient.status !== 'sent') continue;
+
+        try {
+            const mailbox = getNextAvailableMailbox(activeMailboxes);
+            if (!mailbox) {
+                updateFollowUpStatus(campaign, recipient.email, followUpId, 'failed', 'No available mailbox');
+                continue;
+            }
+
+            await sendEmailWithAttachments(
+                mailbox,
+                recipient.email,
+                followUp.subject,
+                followUp.body,
+                campaign.signature,
+                campaign.mediaAttachments,
+                campaign.senderEmail
+            );
+
+            updateFollowUpStatus(campaign, recipient.email, followUpId, 'sent');
+            mailbox.dailyCount++;
+            mailbox.lastSendTime = new Date();
+
+            await new Promise(resolve => setTimeout(resolve, getRandomDelay(getMinimumDelay(mailbox.warmupDays))));
+
+        } catch (error) {
+            updateFollowUpStatus(campaign, recipient.email, followUpId, 'failed', error.message);
+            await new Promise(resolve => setTimeout(resolve, 300000));
+        }
+    }
+
+    followUp.sent = true;
+    followUp.actualSentTime = new Date();
+    await campaign.save();
+}
+
+
+
+function updateRecipientStatus(campaign, email, status, error = null) {
+    const recipient = campaign.targetRecipients.find(r => r.email === email);
+    if (recipient) {
+        recipient.status = status;
+        if (error) recipient.error = error;
+    }
+}
+
+function updateFollowUpStatus(campaign, email, followUpId, status, error = null) {
+    const recipient = campaign.targetRecipients.find(r => r.email === email);
+    if (recipient) {
+        const followUpStatus = recipient.followUpStatus.find(f => f.followUpId.equals(followUpId));
+        if (followUpStatus) {
+            followUpStatus.status = status;
+            followUpStatus.sentTime = new Date();
+            if (error) followUpStatus.error = error;
+        }
+    }
+}
+
+function updateCampaignStatus(campaign) {
+    const failedEmails = campaign.targetRecipients.filter(r => r.status === 'failed').length;
+    campaign.status = failedEmails === campaign.targetRecipients.length 
+        ? 'failed' 
+        : failedEmails > 0 ? 'partial_success' : 'success';
+    campaign.SENT_EMAILS = campaign.targetRecipients.filter(r => r.status === 'sent').length;
+}
 // app.post('/send-emails', async (req, res) => {
 //     const { myemail, submittedData, userPitch, Uname, UserSubject, signature, mediaAttachments } = req.body;
 
