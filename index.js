@@ -3313,233 +3313,233 @@ app.post('/upload/:id/complete', async (req, res) => {
 });
 
 
-// app.post('/send-emails', async (req, res) => {
-//     const { 
-//         submittedData, 
-//         userPitch, 
-//         Uname, 
-//         token, 
-//         myemail, 
-//         Template, 
-//         CampaignId, 
-//         UserSubject,
-//         signature,  // New
-//         mediaAttachments // New
-//     } = req.body;
+app.post('/send-emails', async (req, res) => {
+    const { 
+        submittedData, 
+        userPitch, 
+        Uname, 
+        token, 
+        myemail, 
+        Template, 
+        CampaignId, 
+        UserSubject,
+        signature,  // New
+        mediaAttachments // New
+    } = req.body;
 
-//     const uploadId = uuidv4();
-//     tempStorage.set(uploadId, {
-//         metadata: req.body.attachmentMetadata,
-//         chunks: new Map(),
-//         complete: false
-//     });
+    const uploadId = uuidv4();
+    tempStorage.set(uploadId, {
+        metadata: req.body.attachmentMetadata,
+        chunks: new Map(),
+        complete: false
+    });
 
-//     res.json({ uploadUrl: `/upload/${uploadId}` });
+    res.json({ uploadUrl: `/upload/${uploadId}` });
 
-//     setImmediate(async () => {
-//         try {
-//             const customer = await Customer.findOne({ email: myemail });
-//             const activeMailboxes = customer.mailboxes
-//                 .filter(mailbox => mailbox.isActive)
-//                 .map(mailbox => ({
-//                     ...mailbox.smtp,
-//                     dailyCount: 0,
-//                     lastSendTime: null,
-//                     warmupDays: mailbox.warmupDays || 1 // Track how long this mailbox has been in use
-//                 }));
+    setImmediate(async () => {
+        try {
+            const customer = await Customer.findOne({ email: myemail });
+            const activeMailboxes = customer.mailboxes
+                .filter(mailbox => mailbox.isActive)
+                .map(mailbox => ({
+                    ...mailbox.smtp,
+                    dailyCount: 0,
+                    lastSendTime: null,
+                    warmupDays: mailbox.warmupDays || 1 // Track how long this mailbox has been in use
+                }));
 
-//             if (!activeMailboxes.length) {
-//                 throw new Error('No active mailboxes found');
-//             }
+            if (!activeMailboxes.length) {
+                throw new Error('No active mailboxes found');
+            }
 
-//             const failedEmails = [];
-//             let currentMailboxIndex = 0;
+            const failedEmails = [];
+            let currentMailboxIndex = 0;
 
-//             // Calculate safe daily limits based on warmup period
-//             function getDailyLimit(warmupDays) {
-//                 // Start with 20 emails/day, gradually increase up to 100
-//                 const baseLimit = 20;
-//                 const maxLimit = 100;
-//                 const limit = Math.min(baseLimit + (warmupDays * 10), maxLimit);
-//                 return limit;
-//             }
+            // Calculate safe daily limits based on warmup period
+            function getDailyLimit(warmupDays) {
+                // Start with 20 emails/day, gradually increase up to 100
+                const baseLimit = 20;
+                const maxLimit = 100;
+                const limit = Math.min(baseLimit + (warmupDays * 10), maxLimit);
+                return limit;
+            }
 
-//             // Get next available mailbox that hasn't hit limits
-//             function getNextAvailableMailbox() {
-//                 const now = new Date();
-//                 const midnight = new Date(now);
-//                 midnight.setHours(0,0,0,0);
+            // Get next available mailbox that hasn't hit limits
+            function getNextAvailableMailbox() {
+                const now = new Date();
+                const midnight = new Date(now);
+                midnight.setHours(0,0,0,0);
 
-//                 // Reset daily counts if it's a new day
-//                 if (now > midnight) {
-//                     activeMailboxes.forEach(mailbox => {
-//                         mailbox.dailyCount = 0;
-//                     });
-//                 }
+                // Reset daily counts if it's a new day
+                if (now > midnight) {
+                    activeMailboxes.forEach(mailbox => {
+                        mailbox.dailyCount = 0;
+                    });
+                }
 
-//                 // Try each mailbox
-//                 for (let i = 0; i < activeMailboxes.length; i++) {
-//                     currentMailboxIndex = (currentMailboxIndex + 1) % activeMailboxes.length;
-//                     const mailbox = activeMailboxes[currentMailboxIndex];
-//                     const dailyLimit = getDailyLimit(mailbox.warmupDays);
+                // Try each mailbox
+                for (let i = 0; i < activeMailboxes.length; i++) {
+                    currentMailboxIndex = (currentMailboxIndex + 1) % activeMailboxes.length;
+                    const mailbox = activeMailboxes[currentMailboxIndex];
+                    const dailyLimit = getDailyLimit(mailbox.warmupDays);
 
-//                     // Check if this mailbox is available
-//                     if (mailbox.dailyCount < dailyLimit && 
-//                         (!mailbox.lastSendTime || 
-//                          (now - mailbox.lastSendTime) > getMinimumDelay(mailbox.warmupDays))) {
-//                         return mailbox;
-//                     }
-//                 }
-//                 return null;
-//             }
+                    // Check if this mailbox is available
+                    if (mailbox.dailyCount < dailyLimit && 
+                        (!mailbox.lastSendTime || 
+                         (now - mailbox.lastSendTime) > getMinimumDelay(mailbox.warmupDays))) {
+                        return mailbox;
+                    }
+                }
+                return null;
+            }
 
-//             // Calculate minimum delay between emails based on warmup period
-//             function getMinimumDelay(warmupDays) {
-//                 // Start with 5 minutes, gradually decrease to 2 minutes
-//                 const minDelay = 120000; // 2 minutes
-//                 const maxDelay = 300000; // 5 minutes
-//                 return Math.max(maxDelay - (warmupDays * 20000), minDelay);
-//             }
+            // Calculate minimum delay between emails based on warmup period
+            function getMinimumDelay(warmupDays) {
+                // Start with 5 minutes, gradually decrease to 2 minutes
+                const minDelay = 120000; // 2 minutes
+                const maxDelay = 300000; // 5 minutes
+                return Math.max(maxDelay - (warmupDays * 20000), minDelay);
+            }
 
-//             // Add jitter to delays to make sending patterns look more natural
-//             function getRandomDelay(baseDelay) {
-//                 const jitter = Math.floor(Math.random() * 60000); // Up to 1 minute of randomness
-//                 return baseDelay + jitter;
-//             }
+            // Add jitter to delays to make sending patterns look more natural
+            function getRandomDelay(baseDelay) {
+                const jitter = Math.floor(Math.random() * 60000); // Up to 1 minute of randomness
+                return baseDelay + jitter;
+            }
             
 
 
-//             for (const data of submittedData) {
-//                 try {
-//                         console.log('\n=== Starting New Email Process ===');
-//                         console.log('Processing email for:', data.email);
-//                         console.log('Attachments being sent:', mediaAttachments?.length || 0);
+            for (const data of submittedData) {
+                try {
+                        console.log('\n=== Starting New Email Process ===');
+                        console.log('Processing email for:', data.email);
+                        console.log('Attachments being sent:', mediaAttachments?.length || 0);
 
-//                     // Find an available mailbox
-//                     const mailbox = getNextAvailableMailbox();
-//                     if (!mailbox) {
-//                         console.log('All mailboxes have reached their daily limits. Waiting for next day...');
-//                         // Wait until midnight
-//                         const now = new Date();
-//                         const tomorrow = new Date(now);
-//                         tomorrow.setDate(tomorrow.getDate() + 1);
-//                         tomorrow.setHours(0,0,0,0);
-//                         const waitTime = tomorrow - now;
-//                         await new Promise(resolve => setTimeout(resolve, waitTime));
-//                         continue;
-//                     }
-//                     console.log(mailbox)
+                    // Find an available mailbox
+                    const mailbox = getNextAvailableMailbox();
+                    if (!mailbox) {
+                        console.log('All mailboxes have reached their daily limits. Waiting for next day...');
+                        // Wait until midnight
+                        const now = new Date();
+                        const tomorrow = new Date(now);
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        tomorrow.setHours(0,0,0,0);
+                        const waitTime = tomorrow - now;
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        continue;
+                    }
+                    console.log(mailbox)
 
-//                     // Generate content
-//                     console.log(`Generating content for ${data.email}...`);
-//                     const generatedContent = await generateEmailContent({
-//                         website: data.website,
-//                         userPitch,
-//                         Uname,
-//                         To: data.name,
-//                         Template
-//                     });
+                    // Generate content
+                    console.log(`Generating content for ${data.email}...`);
+                    const generatedContent = await generateEmailContent({
+                        website: data.website,
+                        userPitch,
+                        Uname,
+                        To: data.name,
+                        Template
+                    });
 
-//                     const subjectLine = UserSubject?.trim() 
-//                         ? UserSubject 
-//                         : separateSubject(generatedContent.subject_line).subject;
+                    const subjectLine = UserSubject?.trim() 
+                        ? UserSubject 
+                        : separateSubject(generatedContent.subject_line).subject;
 
-//                     console.log('Email details:', {
-//                             to: data.email,
-//                             subject: subjectLine,
-//                             hasSignature: !!signature,
-//                             attachmentsCount: Array.isArray(mediaAttachments) ? mediaAttachments.length : 0
-//                         });
+                    console.log('Email details:', {
+                            to: data.email,
+                            subject: subjectLine,
+                            hasSignature: !!signature,
+                            attachmentsCount: Array.isArray(mediaAttachments) ? mediaAttachments.length : 0
+                        });
 
-//                     // Send email
-//                     console.log(`Sending to ${data.email} from ${mailbox.user}...`);
+                    // Send email
+                    console.log(`Sending to ${data.email} from ${mailbox.user}...`);
 
-//                     // await sendcampsummaryEmail({
-//                     //     to: data.email,
-//                     //     email: myemail,
-//                     //     subject: subjectLine,
-//                     //     body: generatedContent.body_content,
-//                     //     user: mailbox.user,
-//                     //     pass: mailbox.pass,
-//                     //     service: 'gmail',
-//                     //     campaignId: CampaignId
-//                     // });
+                    // await sendcampsummaryEmail({
+                    //     to: data.email,
+                    //     email: myemail,
+                    //     subject: subjectLine,
+                    //     body: generatedContent.body_content,
+                    //     user: mailbox.user,
+                    //     pass: mailbox.pass,
+                    //     service: 'gmail',
+                    //     campaignId: CampaignId
+                    // });
 
-//                     await sendEmailWithAttachments(
-//                         mailbox,
-//                         data.email,
-//                         subjectLine,
-//                         generatedContent.body_content,
-//                         signature,
-//                         mediaAttachments,
-//                         myemail
-//                     );
-//                     console.log('Successfully processed email for:', data.email);
-//                     // Update mailbox stats
-//                     mailbox.dailyCount++;
-//                     mailbox.lastSendTime = new Date();
+                    await sendEmailWithAttachments(
+                        mailbox,
+                        data.email,
+                        subjectLine,
+                        generatedContent.body_content,
+                        signature,
+                        mediaAttachments,
+                        myemail
+                    );
+                    console.log('Successfully processed email for:', data.email);
+                    // Update mailbox stats
+                    mailbox.dailyCount++;
+                    mailbox.lastSendTime = new Date();
 
-//                     // Calculate and apply delay
-//                     const baseDelay = getMinimumDelay(mailbox.warmupDays);
-//                     const delay = getRandomDelay(baseDelay);
-//                     console.log(`Waiting ${delay/1000} seconds before next send...`);
-//                     await new Promise(resolve => setTimeout(resolve, delay));
+                    // Calculate and apply delay
+                    const baseDelay = getMinimumDelay(mailbox.warmupDays);
+                    const delay = getRandomDelay(baseDelay);
+                    console.log(`Waiting ${delay/1000} seconds before next send...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
 
-//                 } catch (error) {
-//                     console.error(`Failed to process email for ${data.email}:`, error);
-//                     console.error('Full error stack:', error.stack);
-//                     failedEmails.push({
-//                         email: data.email,
-//                         error: error.message
-//                     });
+                } catch (error) {
+                    console.error(`Failed to process email for ${data.email}:`, error);
+                    console.error('Full error stack:', error.stack);
+                    failedEmails.push({
+                        email: data.email,
+                        error: error.message
+                    });
                     
-//                     // Add extra delay after errors to be safe
-//                     await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minute delay
-//                 }
-//             }
+                    // Add extra delay after errors to be safe
+                    await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minute delay
+                }
+            }
 
-//             console.log('Email campaign completed');
-//             console.log('Failed emails:', failedEmails);
+            console.log('Email campaign completed');
+            console.log('Failed emails:', failedEmails);
 
-//         } catch (error) {
-//             console.error('Campaign execution failed:', error);
-//         }
-//     });
-// });
-
-app.post('/send-emails', async (req, res) => {
-    const { myemail, submittedData, userPitch, Uname, UserSubject, signature, mediaAttachments } = req.body;
-
-    // Basic validations
-    if (!myemail || !submittedData || !submittedData.length) {
-        return res.status(400).json({ error: 'Invalid campaign data' });
-    }
-
-    const campaignData = {
-        userEmail: myemail,
-        emails: submittedData,
-        template: {
-            pitch: userPitch,
-            name: Uname,
-            subject: UserSubject,
-            signature
-        },
-        attachments: mediaAttachments || []
-    };
-
-    try {
-        const campaign = await emailCampaignSystem.submitCampaign(campaignData);
-        res.json({
-            message: 'Campaign queued successfully',
-            campaignId: campaign._id
-        });
-    } catch (error) {
-        res.status(500).json({
-            error: 'Failed to queue campaign',
-            details: error.message
-        });
-    }
+        } catch (error) {
+            console.error('Campaign execution failed:', error);
+        }
+    });
 });
+
+// app.post('/send-emails', async (req, res) => {
+//     const { myemail, submittedData, userPitch, Uname, UserSubject, signature, mediaAttachments } = req.body;
+
+//     // Basic validations
+//     if (!myemail || !submittedData || !submittedData.length) {
+//         return res.status(400).json({ error: 'Invalid campaign data' });
+//     }
+
+//     const campaignData = {
+//         userEmail: myemail,
+//         emails: submittedData,
+//         template: {
+//             pitch: userPitch,
+//             name: Uname,
+//             subject: UserSubject,
+//             signature
+//         },
+//         attachments: mediaAttachments || []
+//     };
+
+//     try {
+//         const campaign = await emailCampaignSystem.submitCampaign(campaignData);
+//         res.json({
+//             message: 'Campaign queued successfully',
+//             campaignId: campaign._id
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             error: 'Failed to queue campaign',
+//             details: error.message
+//         });
+//     }
+// });
 // Helper function to generate email content
 async function generateEmailContent({ website, userPitch, Uname, To, Template }) {
     const response = await fetch('https://server.voltmailer.com/generate-email-content', {
