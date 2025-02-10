@@ -3398,6 +3398,7 @@ app.post('/send-emails', async (req, res) => {
     
     // Save the campaign
     await campaign.save();
+    console.log('campaign : ', campaign)
     
     // Add campaign to customer's campaigns
     customer.campaigns.push(campaign);
