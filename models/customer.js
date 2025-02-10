@@ -64,9 +64,30 @@ const campaignSchema = new mongoose.Schema({
     senderEmail: String,
     signature: String,
     mediaAttachments: [{
-        name: String,
-        type: String,
-        data: String
+        attachmentId: String,
+        name: {
+            type: String,
+            required: true
+        },
+        type: {
+            type: String,
+            required: true
+        },
+        data: {
+            type: String,
+            required: true,
+            validate: {
+                validator: function(v) {
+                    // Add validation for base64 data
+                    return v.startsWith('data:');
+                },
+                message: props => 'Invalid attachment data format'
+            }
+        },
+        size: {
+            type: Number,
+            max: [25 * 1024 * 1024, 'File size cannot exceed 25MB']
+        }
     }],
     status: {
         type: String,
