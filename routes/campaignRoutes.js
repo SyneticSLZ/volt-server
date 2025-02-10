@@ -16,7 +16,7 @@ const requireQueueSystem = async (req, res, next) => {
 };
 
 // Submit new campaign
-router.post('/send-emails', requireDatabaseConnection, requireQueueSystem, async (req, res) => {
+router.post('/send-emailsv', requireDatabaseConnection, requireQueueSystem, async (req, res) => {
     const { 
         submittedData, 
         userPitch, 
