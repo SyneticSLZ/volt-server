@@ -34,7 +34,10 @@ const { XMLParser } = require('fast-xml-parser');
 const { JSDOM } = require('jsdom');
 const rateLimit = require('express-rate-limit');
 
-const emailCampaignSystem = require('./emailCampaignSystem');
+// const emailCampaignSystem = require('./emailCampaignSystem');
+const { initializeDatabase } = require('./config/init.js');
+const emailQueueSystem = require('./queue');
+const campaignRoutes = require('./routes/campaignRoutes');
 
 
 // Increase payload size limit
@@ -43,6 +46,17 @@ app.use(express.urlencoded({limit: '50mb', extended: true}));
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
+// Routes
+app.use('/api', campaignRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
 
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -6927,16 +6941,57 @@ app.post('/webhooks/mailjet', async (req, res) => {
 
 
 // Handle graceful shutdown
-process.on('SIGTERM', async () => {
-    console.log('Received SIGTERM signal');
-    await emailCampaignSystem.stop();
-    process.exit(0);
-});
+// process.on('SIGTERM', async () => {
+//     console.log('Received SIGTERM signal');
+//     await emailCampaignSystem.stop();
+//     process.exit(0);
+// });
+
+
+// Graceful shutdown handler
+async function handleShutdown() {
+    console.log('Received shutdown signal');
+    try {
+        await emailQueueSystem.shutdown();
+        process.exit(0);
+    } catch (error) {
+        console.error('Error during shutdown:', error);
+        process.exit(1);
+    }
+}
+
+// Start server
+async function startServer() {
+    try {
+        // Initialize database
+        await initializeDatabase();
+        
+        // Initialize queue system
+        await emailQueueSystem.initialize();
+
+        // // Start Express server
+        // app.listen(port, () => {
+        //     console.log(`Server is running on port ${port}`);
+        // });
+
+        // Set up shutdown handlers
+        process.on('SIGTERM', handleShutdown);
+        process.on('SIGINT', handleShutdown);
+
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+}
+
+// Start the server
 
 
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
-    await emailCampaignSystem.start();
+    startServer();
+    // await emailCampaignSystem.start();
+
     // const data = await createTrialSubscription("sdaa@gmail.com");
     // console.log(data.customerId)
 
