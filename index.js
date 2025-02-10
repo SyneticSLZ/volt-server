@@ -6951,16 +6951,16 @@ app.post('/webhooks/mailjet', async (req, res) => {
 
 
 // Graceful shutdown handler
-async function handleShutdown() {
-    console.log('Received shutdown signal');
-    try {
-        await emailQueueSystem.shutdown();
-        process.exit(0);
-    } catch (error) {
-        console.error('Error during shutdown:', error);
-        process.exit(1);
-    }
-}
+// async function handleShutdown() {
+//     console.log('Received shutdown signal');
+//     try {
+//         await emailQueueSystem.shutdown();
+//         process.exit(0);
+//     } catch (error) {
+//         console.error('Error during shutdown:', error);
+//         process.exit(1);
+//     }
+// }
 
 // Start server
 async function startServer() {
@@ -6977,8 +6977,8 @@ async function startServer() {
         // });
 
         // Set up shutdown handlers
-        process.on('SIGTERM', handleShutdown);
-        process.on('SIGINT', handleShutdown);
+        // process.on('SIGTERM', handleShutdown);
+        // process.on('SIGINT', handleShutdown);
 
     } catch (error) {
         console.error('Failed to start server:', error);
