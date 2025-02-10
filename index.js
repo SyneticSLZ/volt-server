@@ -3351,7 +3351,7 @@ app.post('/send-emails', async (req, res) => {
 
 
 
-    res.json({ uploadUrl: `/upload/${uploadId}` });
+    // res.json({ uploadUrl: `/upload/${uploadId}` });
 
     try {
     const processedFollowUps = followUps.map(followUp => {
@@ -3406,7 +3406,8 @@ app.post('/send-emails', async (req, res) => {
     // Send initial response
     res.status(200).send({ 
         message: 'Campaign created and emails are being sent in the background',
-        campaignId: campaign._id
+        campaignId: campaign._id,
+        uploadUrl: `/upload/${uploadId}`
     });
 
     setImmediate(async () => {
