@@ -3508,16 +3508,23 @@ app.post('/upload/:id/complete', async (req, res) => {
 // });
 
 app.post('/send-emails', async (req, res) => {
+    const { myemail, submittedData, userPitch, Uname, UserSubject, signature, mediaAttachments } = req.body;
+
+    // Basic validations
+    if (!myemail || !submittedData || !submittedData.length) {
+        return res.status(400).json({ error: 'Invalid campaign data' });
+    }
+
     const campaignData = {
-        userEmail: req.body.myemail,
-        submittedData: req.body.submittedData,
+        userEmail: myemail,
+        emails: submittedData,
         template: {
-            pitch: req.body.userPitch,
-            name: req.body.Uname,
-            subject: req.body.UserSubject,
-            signature: req.body.signature
+            pitch: userPitch,
+            name: Uname,
+            subject: UserSubject,
+            signature
         },
-        attachments: req.body.mediaAttachments
+        attachments: mediaAttachments || []
     };
 
     try {
@@ -3533,7 +3540,6 @@ app.post('/send-emails', async (req, res) => {
         });
     }
 });
-
 // Helper function to generate email content
 async function generateEmailContent({ website, userPitch, Uname, To, Template }) {
     const response = await fetch('https://server.voltmailer.com/generate-email-content', {

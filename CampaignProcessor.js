@@ -1,3 +1,7 @@
+const Campaign = require('./models/queCampaign');
+const Customer = require('./models/customer');
+const { generateEmailContent, sendEmailWithAttachments } = require('./emailservices.js');
+// const { CampaignProcessor, MailboxManager, EmailSender } = require('./CampaignProcessor');
 
 class CampaignProcessor {
     constructor(queueManager) {
@@ -212,7 +216,7 @@ class CampaignProcessor {
                     progress: {
                         currentBatch: progress.batchIndex + 1,
                         totalBatches: progress.totalBatches,
-                        percentage: Math.round((progress.processedCount / total) * 100)
+                        percentage: Math.round((progress.processedCount / progress.totalBatches) * 100)
                     }
                 }
             }
@@ -220,6 +224,7 @@ class CampaignProcessor {
     }
 
     async completeCampaign(campaignId, stats) {
+        const campaign = await Campaign.findById(campaignId);
         await Campaign.updateOne(
             { _id: campaignId },
             {
@@ -369,7 +374,7 @@ class MailboxManager {
         const now = new Date();
         const midnight = new Date(now);
 
-        
+
         midnight.setHours(0, 0, 0, 0);
 
         // Reset daily counts if it's a new day

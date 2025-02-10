@@ -1,5 +1,6 @@
 const CampaignQueueManager = require('./CampaignQueueManager');
 const { CampaignProcessor, MailboxManager, EmailSender } = require('./CampaignProcessor');
+const Campaign = require('./models/queCampaign');
 
 class EmailCampaignSystem {
     constructor(options = {}) {
@@ -72,6 +73,41 @@ class EmailCampaignSystem {
             return campaign;
         } catch (error) {
             console.error('Error submitting campaign:', error);
+            throw error;
+        }
+    }
+
+    async createCampaign(campaignData) {
+        try {
+            // Validate required fields
+            if (!campaignData.userEmail || !campaignData.emails || campaignData.emails.length === 0) {
+                throw new Error('Invalid campaign data: userEmail and emails are required');
+            }
+    
+            const newCampaign = new Campaign({
+                userEmail: campaignData.userEmail,
+                template: {
+                    pitch: campaignData.pitch || '',
+                    name: campaignData.name || '',
+                    subject: campaignData.subject || '',
+                    templateId: campaignData.templateId || '',
+                    signature: campaignData.signature || ''
+                },
+                emails: campaignData.emails.map(email => ({
+                    recipient: email.recipient,
+                    metadata: email.metadata || {},
+                    status: 'pending'
+                })),
+                attachments: campaignData.attachments || [],
+                scheduledFor: campaignData.scheduledFor || new Date(),
+                warmupDays: campaignData.warmupDays || 1,
+                status: 'pending',
+                totalEmails: campaignData.emails.length
+            });
+    
+            return await newCampaign.save();
+        } catch (error) {
+            console.error('Error creating campaign:', error);
             throw error;
         }
     }

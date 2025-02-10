@@ -1,6 +1,9 @@
 const pLimit = require('p-limit');
 const { EventEmitter } = require('events');
 const Campaign = require('./models/queCampaign'); // Adjust the path to where your Campaign model is defined
+const { CampaignProcessor, MailboxManager, EmailSender } = require('./CampaignProcessor');
+const campaignProcessor = new CampaignProcessor(this);
+
 
 class CampaignQueueManager extends EventEmitter {
     constructor(options = {}) {
@@ -71,6 +74,30 @@ class CampaignQueueManager extends EventEmitter {
             this.handleError(error);
             this.isProcessing = false;
             this.emit('stopped', error);
+        }
+    }
+
+    async processCampaignWithUserLimits(campaign, userEmail) {
+        if (!this.userCampaigns.has(userEmail)) {
+            this.userCampaigns.set(userEmail, new Set());
+        }
+        this.userCampaigns.get(userEmail).add(campaign._id);
+    
+        try {
+            // You'll need to import or define a campaign processor
+            await campaignProcessor.processCampaign(campaign);
+            this.stats.totalSuccessful++;
+        } catch (error) {
+            this.stats.totalFailed++;
+            this.handleError(error);
+        } finally {
+            // Clean up tracking
+            if (this.userCampaigns.has(userEmail)) {
+                this.userCampaigns.get(userEmail).delete(campaign._id);
+                if (this.userCampaigns.get(userEmail).size === 0) {
+                    this.userCampaigns.delete(userEmail);
+                }
+            }
         }
     }
 
