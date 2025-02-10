@@ -71,11 +71,12 @@ class CampaignProcessor {
 
                 } catch (batchError) {
                     console.error(`Batch ${batchIndex} failed:`, batchError);
-                    this.queueManager.emit('batchError', {
-                        campaignId: campaign._id,
-                        batchIndex,
-                        error: batchError
-                    });
+                    console.error(`Batch ${batchIndex} failed:`, batchError);
+                    // this.queueManager.emit('batchError', {
+                    //     campaignId: campaign._id,
+                    //     batchIndex,
+                    //     error: batchError
+                    // });
                 }
             }
 
@@ -103,7 +104,7 @@ class CampaignProcessor {
 
     async processBatch(campaign, batch) {
         const results = [];
-        const customer = await Customer.findOne({ email: campaign.userEmail });
+        const customer = await Customer.findOne({ email: campaign.userEmail }).lean();
         
         if (!customer) {
             throw new Error('Customer not found');

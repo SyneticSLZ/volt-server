@@ -53,7 +53,7 @@ class CampaignQueue {
     // Process a single campaign
     async processCampaign(campaign) {
         try {
-            const customer = await Customer.findOne({ email: campaign.userEmail });
+            const customer = await Customer.findOne({ email: campaign.userEmail }).lean();
             if (!customer) {
                 throw new Error('Customer not found');
             }
