@@ -3552,7 +3552,7 @@ app.post('/send-emails', async (req, res) => {
                     );
                     console.log('Successfully processed email for:', data.email);
                     // Update mailbox stats
-                    updateRecipientStatus(campaign, data.email, 'sent');
+                    await updateRecipientStatus(campaign, data.email, 'sent');
                     mailbox.dailyCount++;
                     mailbox.lastSendTime = new Date();
 
@@ -3565,7 +3565,7 @@ app.post('/send-emails', async (req, res) => {
                 } catch (error) {
                     console.error(`Failed to process email for ${data.email}:`, error);
                     console.error('Full error stack:', error.stack);
-                    updateRecipientStatus(campaign, data.email, 'failed', error.message);
+                    await updateRecipientStatus(campaign, data.email, 'failed', error.message);
                     failedEmails.push({
                         email: data.email,
                         error: error.message
@@ -3577,7 +3577,7 @@ app.post('/send-emails', async (req, res) => {
             }
 
                 // Update final campaign status
-                updateCampaignStatus(campaign);
+                await updateCampaignStatus(campaign);
                 await campaign.save();
             console.log('Email campaign completed');
             console.log('Failed emails:', failedEmails);
@@ -3657,35 +3657,189 @@ async function sendFollowUpEmails(campaignId, followUpId, customerId) {
     await campaign.save();
 }
 
+async function updateRecipientStatus(campaign, email, status, error = null) {
+    try {
+        // Find the customer that owns this campaign
+        const customer = await Customer.findOne({ 
+            'campaigns._id': campaign._id 
+        });
 
-
-function updateRecipientStatus(campaign, email, status, error = null) {
-    const recipient = campaign.targetRecipients.find(r => r.email === email);
-    if (recipient) {
-        recipient.status = status;
-        if (error) recipient.error = error;
-    }
-}
-
-function updateFollowUpStatus(campaign, email, followUpId, status, error = null) {
-    const recipient = campaign.targetRecipients.find(r => r.email === email);
-    if (recipient) {
-        const followUpStatus = recipient.followUpStatus.find(f => f.followUpId.equals(followUpId));
-        if (followUpStatus) {
-            followUpStatus.status = status;
-            followUpStatus.sentTime = new Date();
-            if (error) followUpStatus.error = error;
+        if (!customer) {
+            throw new Error('Customer not found for campaign');
         }
+
+        // Find and update the campaign within the customer document
+        const campaignIndex = customer.campaigns.findIndex(
+            camp => camp._id.equals(campaign._id)
+        );
+
+        if (campaignIndex === -1) {
+            throw new Error('Campaign not found in customer document');
+        }
+
+        // Find and update the recipient status
+        const recipientIndex = customer.campaigns[campaignIndex].targetRecipients.findIndex(
+            r => r.email === email
+        );
+
+        if (recipientIndex === -1) {
+            throw new Error('Recipient not found in campaign');
+        }
+
+        // Update the recipient status
+        customer.campaigns[campaignIndex].targetRecipients[recipientIndex].status = status;
+        if (error) {
+            customer.campaigns[campaignIndex].targetRecipients[recipientIndex].error = error;
+        }
+
+        // If the email was sent successfully, update campaign metrics
+        if (status === 'sent') {
+            customer.campaigns[campaignIndex].SENT_EMAILS += 1;
+        }
+
+        // Save the updated customer document
+        await customer.save();
+
+        return customer.campaigns[campaignIndex];
+    } catch (error) {
+        console.error('Error updating recipient status:', error);
+        throw error;
     }
 }
 
-function updateCampaignStatus(campaign) {
-    const failedEmails = campaign.targetRecipients.filter(r => r.status === 'failed').length;
-    campaign.status = failedEmails === campaign.targetRecipients.length 
-        ? 'failed' 
-        : failedEmails > 0 ? 'partial_success' : 'success';
-    campaign.SENT_EMAILS = campaign.targetRecipients.filter(r => r.status === 'sent').length;
+async function updateFollowUpStatus(campaign, email, followUpId, status, error = null) {
+    try {
+        // Find the customer that owns this campaign
+        const customer = await Customer.findOne({ 
+            'campaigns._id': campaign._id 
+        });
+
+        if (!customer) {
+            throw new Error('Customer not found for campaign');
+        }
+
+        // Find the campaign within the customer document
+        const campaignIndex = customer.campaigns.findIndex(
+            camp => camp._id.equals(campaign._id)
+        );
+
+        if (campaignIndex === -1) {
+            throw new Error('Campaign not found in customer document');
+        }
+
+        // Find the recipient
+        const recipientIndex = customer.campaigns[campaignIndex].targetRecipients.findIndex(
+            r => r.email === email
+        );
+
+        if (recipientIndex === -1) {
+            throw new Error('Recipient not found in campaign');
+        }
+
+        // Find and update the follow-up status
+        const followUpStatusIndex = customer.campaigns[campaignIndex]
+            .targetRecipients[recipientIndex].followUpStatus.findIndex(
+                f => f.followUpId.equals(followUpId)
+            );
+
+        if (followUpStatusIndex === -1) {
+            throw new Error('Follow-up status not found for recipient');
+        }
+
+        // Update the follow-up status
+        const followUpStatus = customer.campaigns[campaignIndex]
+            .targetRecipients[recipientIndex].followUpStatus[followUpStatusIndex];
+        
+        followUpStatus.status = status;
+        followUpStatus.sentTime = new Date();
+        if (error) {
+            followUpStatus.error = error;
+        }
+
+        // Save the updated customer document
+        await customer.save();
+
+        return customer.campaigns[campaignIndex];
+    } catch (error) {
+        console.error('Error updating follow-up status:', error);
+        throw error;
+    }
 }
+
+async function updateCampaignStatus(campaign) {
+    try {
+        // Find the customer that owns this campaign
+        const customer = await Customer.findOne({ 
+            'campaigns._id': campaign._id 
+        });
+
+        if (!customer) {
+            throw new Error('Customer not found for campaign');
+        }
+
+        // Find the campaign within the customer document
+        const campaignIndex = customer.campaigns.findIndex(
+            camp => camp._id.equals(campaign._id)
+        );
+
+        if (campaignIndex === -1) {
+            throw new Error('Campaign not found in customer document');
+        }
+
+        // Calculate total recipients and successful sends
+        const totalRecipients = customer.campaigns[campaignIndex].targetRecipients.length;
+        const successfulSends = customer.campaigns[campaignIndex].targetRecipients.filter(
+            r => r.status === 'sent'
+        ).length;
+
+        // Update campaign status
+        if (successfulSends === totalRecipients) {
+            customer.campaigns[campaignIndex].status = 'success';
+        } else if (successfulSends === 0) {
+            customer.campaigns[campaignIndex].status = 'failed';
+        } else {
+            customer.campaigns[campaignIndex].status = 'in_progress';
+        }
+
+        // Save the updated customer document
+        await customer.save();
+
+        return customer.campaigns[campaignIndex];
+    } catch (error) {
+        console.error('Error updating campaign status:', error);
+        throw error;
+    }
+}
+
+// function updateRecipientStatus(campaign, email, status, error = null) {
+//     const recipient = campaign.targetRecipients.find(r => r.email === email);
+//     if (recipient) {
+//         recipient.status = status;
+//         if (error) recipient.error = error;
+//     }
+// }
+
+// function updateFollowUpStatus(campaign, email, followUpId, status, error = null) {
+//     const recipient = campaign.targetRecipients.find(r => r.email === email);
+//     if (recipient) {
+//         const followUpStatus = recipient.followUpStatus.find(f => f.followUpId.equals(followUpId));
+//         if (followUpStatus) {
+//             followUpStatus.status = status;
+//             followUpStatus.sentTime = new Date();
+//             if (error) followUpStatus.error = error;
+//         }
+//     }
+// }
+
+// function updateCampaignStatus(campaign) {
+//     const failedEmails = campaign.targetRecipients.filter(r => r.status === 'failed').length;
+//     campaign.status = failedEmails === campaign.targetRecipients.length 
+//         ? 'failed' 
+//         : failedEmails > 0 ? 'partial_success' : 'success';
+//     campaign.SENT_EMAILS = campaign.targetRecipients.filter(r => r.status === 'sent').length;
+// }
+
+
 // app.post('/send-emails', async (req, res) => {
 //     const { myemail, submittedData, userPitch, Uname, UserSubject, signature, mediaAttachments } = req.body;
 
