@@ -3368,7 +3368,8 @@ app.post('/send-emails', async (req, res) => {
             sent: false
         };
     });
-
+    const formattedFollowUps = formatFollowUpsForServer(followUps);
+    
     const campaign = new Campaign({
         campaignName: `Campaign ${new Date().toLocaleString()}`,
         template: Template,
@@ -3378,7 +3379,7 @@ app.post('/send-emails', async (req, res) => {
         signature: signature,
         mediaAttachments: mediaAttachments,
         status: 'in_progress',
-        followUps: processedFollowUps,
+        followUps: formattedFollowUps,
         targetRecipients: submittedData.map(data => ({
             email: data.email,
             name: data.name,
@@ -3493,6 +3494,11 @@ app.post('/send-emails', async (req, res) => {
 
                     // Find an available mailbox
                     const mailbox = getNextAvailableMailbox();
+                    const baseDelay = getMinimumDelay(mailbox.warmupDays);
+                    const delay = getRandomDelay(baseDelay);
+                    console.log(`Waiting ${delay/1000} seconds before next send...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    
                     if (!mailbox) {
                         console.log('All mailboxes have reached their daily limits. Waiting for next day...');
                         // Wait until midnight
@@ -3557,10 +3563,7 @@ app.post('/send-emails', async (req, res) => {
                     mailbox.lastSendTime = new Date();
 
                     // Calculate and apply delay
-                    const baseDelay = getMinimumDelay(mailbox.warmupDays);
-                    const delay = getRandomDelay(baseDelay);
-                    console.log(`Waiting ${delay/1000} seconds before next send...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
+
 
                 } catch (error) {
                     console.error(`Failed to process email for ${data.email}:`, error);
@@ -3604,6 +3607,289 @@ app.post('/send-emails', async (req, res) => {
 });
 
 
+async function checkAndSendFollowUps() {
+    try {
+        const now = new Date();
+        
+        // Find all campaigns with pending follow-ups
+        const customers = await Customer.find({
+            'campaigns.followUps': {
+                $elemMatch: {
+                    sent: false,
+                    scheduledTime: { $lte: now }
+                }
+            }
+        });
+
+        for (const customer of customers) {
+            for (const campaign of customer.campaigns) {
+                // Find follow-ups that need to be sent
+                const pendingFollowUps = campaign.followUps.filter(followUp => 
+                    !followUp.sent && new Date(followUp.scheduledTime) <= now
+                );
+
+                for (const followUp of pendingFollowUps) {
+                    try {
+                        // Get recipients who received the initial email successfully
+                        const eligibleRecipients = campaign.targetRecipients.filter(
+                            recipient => recipient.status === 'sent'
+                        );
+
+                        const activeMailboxes = customer.mailboxes
+                            .filter(mailbox => mailbox.isActive)
+                            .map(mailbox => ({
+                                ...mailbox.smtp,
+                                dailyCount: 0,
+                                lastSendTime: null,
+                                warmupDays: mailbox.warmupDays || 1
+                            }));
+
+                        if (!activeMailboxes.length) {
+                            console.log(`No active mailboxes for customer ${customer.email}`);
+                            continue;
+                        }
+
+                        let currentMailboxIndex = 0;
+
+                        // Helper functions for mailbox management
+                        function getDailyLimit(warmupDays) {
+                            const baseLimit = 20;
+                            const maxLimit = 100;
+                            return Math.min(baseLimit + (warmupDays * 10), maxLimit);
+                        }
+
+                        function getMinimumDelay(warmupDays) {
+                            const minDelay = 120000; // 2 minutes
+                            const maxDelay = 300000; // 5 minutes
+                            return Math.max(maxDelay - (warmupDays * 20000), minDelay);
+                        }
+
+                        function getRandomDelay(baseDelay) {
+                            const jitter = Math.floor(Math.random() * 60000);
+                            return baseDelay + jitter;
+                        }
+
+                        function getNextAvailableMailbox() {
+                            const now = new Date();
+                            const midnight = new Date(now);
+                            midnight.setHours(0,0,0,0);
+
+                            if (now > midnight) {
+                                activeMailboxes.forEach(mailbox => {
+                                    mailbox.dailyCount = 0;
+                                });
+                            }
+
+                            for (let i = 0; i < activeMailboxes.length; i++) {
+                                currentMailboxIndex = (currentMailboxIndex + 1) % activeMailboxes.length;
+                                const mailbox = activeMailboxes[currentMailboxIndex];
+                                const dailyLimit = getDailyLimit(mailbox.warmupDays);
+
+                                if (mailbox.dailyCount < dailyLimit && 
+                                    (!mailbox.lastSendTime || 
+                                     (now - mailbox.lastSendTime) > getMinimumDelay(mailbox.warmupDays))) {
+                                    return mailbox;
+                                }
+                            }
+                            return null;
+                        }
+
+                        // Send follow-ups to eligible recipients
+                        for (const recipient of eligibleRecipients) {
+                            try {
+                                const mailbox = getNextAvailableMailbox();
+                                if (!mailbox) {
+                                    console.log('No available mailboxes. Waiting for cooldown...');
+                                    await new Promise(resolve => setTimeout(resolve, 900000)); // 15 minute wait
+                                    continue;
+                                }
+
+                                // Process recipient's follow-up status
+                                const followUpStatus = recipient.followUpStatus.find(
+                                    status => status.followUpId.equals(followUp._id)
+                                );
+
+                                if (!followUpStatus || followUpStatus.status === 'failed') {
+                                    // Send the follow-up email
+                                    console.log(`Sending follow-up to ${recipient.email} from ${mailbox.user}`);
+                                    
+                                    await sendEmailWithAttachments(
+                                        mailbox,
+                                        recipient.email,
+                                        followUp.subject,
+                                        followUp.body,
+                                        campaign.signature,
+                                        campaign.mediaAttachments,
+                                        campaign.senderEmail
+                                    );
+
+                                    // Update status
+                                    if (followUpStatus) {
+                                        followUpStatus.status = 'sent';
+                                        followUpStatus.sentTime = new Date();
+                                    } else {
+                                        recipient.followUpStatus.push({
+                                            followUpId: followUp._id,
+                                            status: 'sent',
+                                            sentTime: new Date()
+                                        });
+                                    }
+
+                                    // Update mailbox stats
+                                    mailbox.dailyCount++;
+                                    mailbox.lastSendTime = new Date();
+
+                                    // Add delay before next send
+                                    const baseDelay = getMinimumDelay(mailbox.warmupDays);
+                                    const delay = getRandomDelay(baseDelay);
+                                    await new Promise(resolve => setTimeout(resolve, delay));
+                                }
+                            } catch (error) {
+                                console.error(`Failed to send follow-up to ${recipient.email}:`, error);
+                                
+                                // Update failure status
+                                const followUpStatus = recipient.followUpStatus.find(
+                                    status => status.followUpId.equals(followUp._id)
+                                );
+                                if (followUpStatus) {
+                                    followUpStatus.status = 'failed';
+                                    followUpStatus.error = error.message;
+                                } else {
+                                    recipient.followUpStatus.push({
+                                        followUpId: followUp._id,
+                                        status: 'failed',
+                                        error: error.message
+                                    });
+                                }
+
+                                // Add longer delay after error
+                                await new Promise(resolve => setTimeout(resolve, 300000));
+                            }
+                        }
+
+                        // Update follow-up status
+                        followUp.sent = true;
+                        followUp.actualSentTime = new Date();
+                        await customer.save();
+                    } catch (error) {
+                        console.error(`Error processing follow-up:`, error);
+                        continue;
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error processing follow-ups:', error);
+    }
+}
+                
+                // Function to schedule follow-up checking
+                function scheduleFollowUpChecks() {
+                    // Check every 5 minutes
+                    setInterval(checkAndSendFollowUps, 300000);
+                }
+                
+                // Helper function to format follow-ups from frontend
+                function formatFollowUpsForServer(followUps) {
+                    return followUps.map(followUp => {
+                        const scheduledTime = new Date();
+                        if (followUp.timeDelay.unit === 'days') {
+                            scheduledTime.setDate(scheduledTime.getDate() + followUp.timeDelay.value);
+                        } else {
+                            scheduledTime.setHours(scheduledTime.getHours() + followUp.timeDelay.value);
+                        }
+                
+                        return {
+                            subject: followUp.subject,
+                            body: followUp.body,
+                            timeDelay: followUp.timeDelay,
+                            scheduledTime,
+                            sent: false
+                        };
+                    });
+                }
+                
+                // Update the campaign creation to include follow-ups
+                async function createCampaignWithFollowUps(campaignData) {
+                    const { followUps, ...campaignDetails } = campaignData;
+                    
+                    const formattedFollowUps = formatFollowUpsForServer(followUps);
+                    
+                    const campaign = new Campaign({
+                        ...campaignDetails,
+                        followUps: formattedFollowUps,
+                        status: 'in_progress',
+                        targetRecipients: campaignData.submittedData.map(data => ({
+                            email: data.email,
+                            name: data.name,
+                            website: data.website,
+                            status: 'pending',
+                            followUpStatus: formattedFollowUps.map(fu => ({
+                                followUpId: fu._id,
+                                status: 'pending'
+                            }))
+                        }))
+                    });
+                
+                    return campaign;
+                }
+
+                
+// Example usage in your send-emails endpoint:
+app.post('/send-emails', async (req, res) => {
+    const { 
+        submittedData, 
+        userPitch, 
+        Uname, 
+        myemail, 
+        Template, 
+        UserSubject,
+        signature,
+        mediaAttachments,
+        followUps = [] // Get follow-ups from frontend
+    } = req.body;
+
+    try {
+        // Create campaign with follow-ups
+        const campaign = await createCampaignWithFollowUps({
+            campaignName: `Campaign ${new Date().toLocaleString()}`,
+            template: Template,
+            pitch: userPitch,
+            username: Uname,
+            senderEmail: myemail,
+            signature,
+            mediaAttachments,
+            submittedData,
+            followUps
+        });
+
+        // Save and continue with your existing logic...
+        const customer = await Customer.findOne({ email: myemail });
+        if (!customer) {
+            throw new Error('Customer not found');
+        }
+
+        await campaign.save();
+        customer.campaigns.push(campaign);
+        await customer.save();
+
+        // Your existing email sending logic...
+
+        res.json({ 
+            message: 'Campaign created with follow-ups',
+            campaignId: campaign._id
+        });
+    } catch (error) {
+        console.error('Error creating campaign:', error);
+        res.status(500).json({ 
+            error: 'Failed to create campaign',
+            details: error.message
+        });
+    }
+});
+
+                
+              
 // Helper function to send follow-up emails
 async function sendFollowUpEmails(campaignId, followUpId, customerId) {
     const campaign = await Campaign.findById(campaignId);
