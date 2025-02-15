@@ -3498,7 +3498,7 @@ app.post('/send-emails', async (req, res) => {
                     const delay = getRandomDelay(baseDelay);
                     console.log(`Waiting ${delay/1000} seconds before next send...`);
                     await new Promise(resolve => setTimeout(resolve, delay));
-                    
+
                     if (!mailbox) {
                         console.log('All mailboxes have reached their daily limits. Waiting for next day...');
                         // Wait until midnight
@@ -7380,8 +7380,14 @@ app.post('/api/campaigns', async (req, res) => {
   
   app.get('/api/campaigns', async (req, res) => {
     try {
-      const campaigns = await Campaign.find();
-      res.json(campaigns);
+        const { email } = req.body
+        const customer = await Customer.findOne({ email: email });
+        if (!customer) {
+            throw new Error('Customer not found');
+        }
+
+    //   const campaigns = await Campaign.find();
+      res.json(customer.campaigns);
     } catch (error) {
       res.status(500).json({ error: 'Error fetching campaigns' });
     }
