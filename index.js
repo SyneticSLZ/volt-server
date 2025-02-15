@@ -7380,7 +7380,11 @@ app.post('/api/campaigns', async (req, res) => {
   
   app.get('/api/campaigns', async (req, res) => {
     try {
-        const { email } = req.body
+        const { email } = req.query;
+        
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
         const customer = await Customer.findOne({ email: email });
         if (!customer) {
             throw new Error('Customer not found');
