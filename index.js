@@ -3835,58 +3835,58 @@ async function checkAndSendFollowUps() {
                 }
 
                 
-// Example usage in your send-emails endpoint:
-app.post('/send-emails', async (req, res) => {
-    const { 
-        submittedData, 
-        userPitch, 
-        Uname, 
-        myemail, 
-        Template, 
-        UserSubject,
-        signature,
-        mediaAttachments,
-        followUps = [] // Get follow-ups from frontend
-    } = req.body;
+// // Example usage in your send-emails endpoint:
+// app.post('/send-emails', async (req, res) => {
+//     const { 
+//         submittedData, 
+//         userPitch, 
+//         Uname, 
+//         myemail, 
+//         Template, 
+//         UserSubject,
+//         signature,
+//         mediaAttachments,
+//         followUps = [] // Get follow-ups from frontend
+//     } = req.body;
 
-    try {
-        // Create campaign with follow-ups
-        const campaign = await createCampaignWithFollowUps({
-            campaignName: `Campaign ${new Date().toLocaleString()}`,
-            template: Template,
-            pitch: userPitch,
-            username: Uname,
-            senderEmail: myemail,
-            signature,
-            mediaAttachments,
-            submittedData,
-            followUps
-        });
+//     try {
+//         // Create campaign with follow-ups
+//         const campaign = await createCampaignWithFollowUps({
+//             campaignName: `Campaign ${new Date().toLocaleString()}`,
+//             template: Template,
+//             pitch: userPitch,
+//             username: Uname,
+//             senderEmail: myemail,
+//             signature,
+//             mediaAttachments,
+//             submittedData,
+//             followUps
+//         });
 
-        // Save and continue with your existing logic...
-        const customer = await Customer.findOne({ email: myemail });
-        if (!customer) {
-            throw new Error('Customer not found');
-        }
+//         // Save and continue with your existing logic...
+//         const customer = await Customer.findOne({ email: myemail });
+//         if (!customer) {
+//             throw new Error('Customer not found');
+//         }
 
-        await campaign.save();
-        customer.campaigns.push(campaign);
-        await customer.save();
+//         await campaign.save();
+//         customer.campaigns.push(campaign);
+//         await customer.save();
 
-        // Your existing email sending logic...
+//         // Your existing email sending logic...
 
-        res.json({ 
-            message: 'Campaign created with follow-ups',
-            campaignId: campaign._id
-        });
-    } catch (error) {
-        console.error('Error creating campaign:', error);
-        res.status(500).json({ 
-            error: 'Failed to create campaign',
-            details: error.message
-        });
-    }
-});
+//         res.json({ 
+//             message: 'Campaign created with follow-ups',
+//             campaignId: campaign._id
+//         });
+//     } catch (error) {
+//         console.error('Error creating campaign:', error);
+//         res.status(500).json({ 
+//             error: 'Failed to create campaign',
+//             details: error.message
+//         });
+//     }
+// });
 
                 
               
